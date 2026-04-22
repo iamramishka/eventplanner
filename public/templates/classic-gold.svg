@@ -1,0 +1,10 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="#FBF6F1"/>
+  <rect x="118" y="92" width="964" height="716" rx="34" fill="#FFFDFB"/>
+  <rect x="152" y="126" width="896" height="648" rx="26" stroke="#D3B07F" stroke-width="3"/>
+  <circle cx="600" cy="286" r="74" fill="#F7E6D0"/>
+  <text x="430" y="414" fill="#2B2220" font-family="Georgia, serif" font-size="72">Classic Gold</text>
+  <text x="386" y="462" fill="#7D6A5F" font-family="Arial, sans-serif" font-size="26">Timeless, formal, and made for elegant evenings.</text>
+  <rect x="316" y="552" width="568" height="82" rx="41" fill="#2B2220"/>
+  <text x="465" y="605" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="30">Preview Invitation</text>
+</svg>
