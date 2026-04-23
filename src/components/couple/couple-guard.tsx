@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { authService } from "@/lib/services/auth-service";
-import { getWeddings } from "@/lib/services/browser-store";
 
 type CoupleGuardProps = {
   children: React.ReactNode;
@@ -28,8 +27,7 @@ export function CoupleGuard({ children }: CoupleGuardProps) {
         return;
       }
 
-      const wedding = getWeddings().find((item) => item.userId === session.id);
-      if (!wedding && pathname !== "/onboarding/wedding") {
+      if (!session.hasWedding && pathname !== "/onboarding/wedding") {
         router.replace("/onboarding/wedding");
         setAllowed(false);
         return;

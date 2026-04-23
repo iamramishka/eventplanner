@@ -219,6 +219,7 @@ export function VendorServicesPage() {
               <div className="grid gap-2">
                 <span className="text-sm font-medium text-[var(--vendor-text)]">Title</span>
                 <input
+                  aria-label="Service title"
                   value={serviceForm.title}
                   onChange={(event) => setServiceForm((current) => ({ ...current, title: event.target.value }))}
                   className="vendor-focus rounded-[1.25rem] border border-[var(--vendor-border)] bg-white px-4 py-3 text-sm text-[var(--vendor-text)]"
@@ -227,6 +228,7 @@ export function VendorServicesPage() {
               <label className="grid gap-2">
                 <span className="text-sm font-medium text-[var(--vendor-text)]">Description</span>
                 <textarea
+                  aria-label="Service description"
                   value={serviceForm.description}
                   onChange={(event) => setServiceForm((current) => ({ ...current, description: event.target.value }))}
                   rows={4}
@@ -295,6 +297,7 @@ export function VendorServicesPage() {
               <label className="grid gap-2">
                 <span className="text-sm font-medium text-[var(--vendor-text)]">Service</span>
                 <select
+                  aria-label="Service"
                   value={selectedServiceId}
                   onChange={(event) => setSelectedServiceId(event.target.value)}
                   className="vendor-focus rounded-[1.25rem] border border-[var(--vendor-border)] bg-white px-4 py-3 text-sm text-[var(--vendor-text)]"
@@ -310,6 +313,7 @@ export function VendorServicesPage() {
               <div className="grid gap-2">
                 <span className="text-sm font-medium text-[var(--vendor-text)]">Package name</span>
                 <input
+                  aria-label="Package name"
                   value={packageForm.packageName}
                   onChange={(event) => setPackageForm((current) => ({ ...current, packageName: event.target.value }))}
                   className="vendor-focus rounded-[1.25rem] border border-[var(--vendor-border)] bg-white px-4 py-3 text-sm text-[var(--vendor-text)]"
@@ -318,6 +322,7 @@ export function VendorServicesPage() {
               <label className="grid gap-2">
                 <span className="text-sm font-medium text-[var(--vendor-text)]">Description</span>
                 <textarea
+                  aria-label="Package description"
                   value={packageForm.description}
                   onChange={(event) => setPackageForm((current) => ({ ...current, description: event.target.value }))}
                   rows={4}
@@ -328,6 +333,7 @@ export function VendorServicesPage() {
                 <div className="grid gap-2">
                   <span className="text-sm font-medium text-[var(--vendor-text)]">Price note</span>
                   <input
+                    aria-label="Price note"
                     value={packageForm.priceNote}
                     onChange={(event) => setPackageForm((current) => ({ ...current, priceNote: event.target.value }))}
                     className="vendor-focus rounded-[1.25rem] border border-[var(--vendor-border)] bg-white px-4 py-3 text-sm text-[var(--vendor-text)]"
@@ -336,6 +342,7 @@ export function VendorServicesPage() {
                 <div className="grid gap-2">
                   <span className="text-sm font-medium text-[var(--vendor-text)]">Inclusions</span>
                   <input
+                    aria-label="Inclusions"
                     value={packageForm.inclusionsText}
                     onChange={(event) => setPackageForm((current) => ({ ...current, inclusionsText: event.target.value }))}
                     placeholder="Coverage, album, highlights"

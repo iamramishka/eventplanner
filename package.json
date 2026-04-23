@@ -13,6 +13,8 @@
     "test:e2e:headed": "npm run build && playwright test --headed"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.103.3",
     "es-abstract": "^1.24.2",
     "next": "15.2.4",
     "react": "^19.0.0",

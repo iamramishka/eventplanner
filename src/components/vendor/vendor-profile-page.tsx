@@ -69,6 +69,7 @@ export function VendorProfilePage() {
             <div className="grid gap-2">
               <span className="text-sm font-medium text-[var(--vendor-text)]">Business name</span>
               <input
+                aria-label="Business name"
                 value={form.businessName}
                 onChange={(event) => setForm((current) => current ? { ...current, businessName: event.target.value } : current)}
                 className="vendor-focus rounded-[1.25rem] border border-[var(--vendor-border)] bg-white px-4 py-3 text-sm text-[var(--vendor-text)]"
@@ -78,6 +79,7 @@ export function VendorProfilePage() {
               <label className="grid gap-2">
                 <span className="text-sm font-medium text-[var(--vendor-text)]">Category</span>
                 <select
+                  aria-label="Category"
                   value={form.category}
                   onChange={(event) =>
                     setForm((current) =>
@@ -96,6 +98,7 @@ export function VendorProfilePage() {
               <div className="grid gap-2">
                 <span className="text-sm font-medium text-[var(--vendor-text)]">Tagline</span>
                 <input
+                  aria-label="Tagline"
                   value={form.tagline}
                   onChange={(event) => setForm((current) => current ? { ...current, tagline: event.target.value } : current)}
                   className="vendor-focus rounded-[1.25rem] border border-[var(--vendor-border)] bg-white px-4 py-3 text-sm text-[var(--vendor-text)]"
@@ -105,6 +108,7 @@ export function VendorProfilePage() {
             <label className="grid gap-2">
               <span className="text-sm font-medium text-[var(--vendor-text)]">Description</span>
               <textarea
+                aria-label="Description"
                 value={form.description}
                 onChange={(event) => setForm((current) => current ? { ...current, description: event.target.value } : current)}
                 rows={6}
@@ -115,6 +119,7 @@ export function VendorProfilePage() {
               <div className="grid gap-2">
                 <span className="text-sm font-medium text-[var(--vendor-text)]">Location</span>
                 <input
+                  aria-label="Location"
                   value={form.location}
                   onChange={(event) => setForm((current) => current ? { ...current, location: event.target.value } : current)}
                   className="vendor-focus rounded-[1.25rem] border border-[var(--vendor-border)] bg-white px-4 py-3 text-sm text-[var(--vendor-text)]"
@@ -123,6 +128,7 @@ export function VendorProfilePage() {
               <div className="grid gap-2">
                 <span className="text-sm font-medium text-[var(--vendor-text)]">Coverage area</span>
                 <input
+                  aria-label="Coverage area"
                   value={form.coverageArea}
                   onChange={(event) => setForm((current) => current ? { ...current, coverageArea: event.target.value } : current)}
                   className="vendor-focus rounded-[1.25rem] border border-[var(--vendor-border)] bg-white px-4 py-3 text-sm text-[var(--vendor-text)]"
@@ -133,6 +139,7 @@ export function VendorProfilePage() {
               <div className="grid gap-2">
                 <span className="text-sm font-medium text-[var(--vendor-text)]">Years of experience</span>
                 <input
+                  aria-label="Years of experience"
                   type="number"
                   value={String(form.experienceYears)}
                   onChange={(event) => setForm((current) => current ? { ...current, experienceYears: Number(event.target.value || 0) } : current)}
@@ -142,6 +149,7 @@ export function VendorProfilePage() {
               <div className="grid gap-2">
                 <span className="text-sm font-medium text-[var(--vendor-text)]">Price range</span>
                 <input
+                  aria-label="Price range"
                   value={form.priceRange}
                   onChange={(event) => setForm((current) => current ? { ...current, priceRange: event.target.value } : current)}
                   className="vendor-focus rounded-[1.25rem] border border-[var(--vendor-border)] bg-white px-4 py-3 text-sm text-[var(--vendor-text)]"

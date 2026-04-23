@@ -1,7 +1,38 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 function uniqueEmail(prefix: string) {
   return `${prefix}-${Date.now()}@example.com`;
+}
+
+function uniqueLabel(prefix: string) {
+  return `${prefix} ${Date.now()}`;
+}
+
+function tinyPngFile(name: string) {
+  return {
+    name,
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WlAb9sAAAAASUVORK5CYII=",
+      "base64",
+    ),
+  };
+}
+
+async function signInAsSeededCouple(page: Page) {
+  await page.goto("/auth?tab=signin");
+  await page.getByLabel("Email").fill("amaya@vinyup.com");
+  await page.getByLabel("Password", { exact: true }).fill("Welcome123!");
+  await page.getByRole("button", { name: "Sign In" }).click();
+  await expect(page).toHaveURL(/\/couple-dashboard$/);
+}
+
+async function signInAsSeededVendor(page: Page) {
+  await page.goto("/vendor-dashboard/login");
+  await page.getByLabel("Email").fill("studio@vinyup.com");
+  await page.getByLabel("Password", { exact: true }).fill("Vendor123!");
+  await page.locator("form").getByRole("button", { name: "Sign In" }).click();
+  await expect(page).toHaveURL(/\/vendor-dashboard$/);
 }
 
 test("couple signup flows into onboarding and dashboard", async ({ page }) => {
@@ -70,6 +101,127 @@ test("vendor signup lands in the vendor dashboard", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("vendor profile edits persist after reload and approved edits trigger re-review", async ({
+  page,
+}) => {
+  const tagline = uniqueLabel("Warm documentary coverage");
+
+  await signInAsSeededVendor(page);
+  await page.goto("/vendor-dashboard/profile");
+
+  await page.getByLabel("Tagline").fill(tagline);
+  await page.getByRole("button", { name: "Save Profile" }).click();
+
+  await expect(page.getByText("Vendor profile updated.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Tagline")).toHaveValue(tagline);
+
+  await page.goto("/vendor-dashboard/visibility");
+  await expect(
+    page.getByText(
+      "Your latest changes are pending admin review before your profile can go live again.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByText("pending").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Make Public" })).toBeVisible();
+});
+
+test("vendor gallery uploads persist after reload", async ({ page }) => {
+  const fileName = `${uniqueLabel("vendor-portfolio")}.png`;
+  const altText = fileName.replace(/\.png$/, "");
+
+  await signInAsSeededVendor(page);
+  await page.goto("/vendor-dashboard/gallery");
+
+  await page.getByLabel("Upload image").setInputFiles(tinyPngFile(fileName));
+  await expect(page.getByText("Portfolio image uploaded.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(altText)).toBeVisible();
+});
+
+test("vendor services and contact info survive reload", async ({ page }) => {
+  const serviceTitle = uniqueLabel("Vendor Service");
+  const packageName = uniqueLabel("Vendor Package");
+  const website = `https://vendor.example.com/${Date.now()}`;
+
+  await signInAsSeededVendor(page);
+
+  await page.goto("/vendor-dashboard/services");
+  await page.getByLabel("Service title").fill(serviceTitle);
+  await page.getByLabel("Service description").fill(
+    "A focused coverage offering for couples who want a clear starting point.",
+  );
+  await page.getByRole("button", { name: "Save Service" }).click();
+  await expect(page.getByText("Service saved.")).toBeVisible();
+
+  await page.getByLabel("Package name").fill(packageName);
+  await page.getByLabel("Package description").fill(
+    "Includes planning support, coverage, and polished delivery.",
+  );
+  await page.getByLabel("Price note").fill("Starting from LKR 120,000");
+  await page.getByLabel("Inclusions").fill("Planning call, coverage, delivery");
+  await page.getByRole("button", { name: "Save Package" }).click();
+  await expect(page.getByText("Package saved.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(serviceTitle, { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(packageName, { exact: true }).first()).toBeVisible();
+
+  await page.goto("/vendor-dashboard/contact");
+  await page.getByLabel("Website").fill(website);
+  await page.getByRole("button", { name: "Save Contact Info" }).click();
+  await expect(page.getByText("Contact information updated.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Website")).toHaveValue(website);
+});
+
+test("vendor can submit a complete profile for review", async ({ page }) => {
+  await signInAsSeededVendor(page);
+  await page.goto("/vendor-dashboard/visibility");
+
+  await page.getByRole("button", { name: "Submit for Review" }).click();
+
+  await expect(
+    page
+      .getByText("Your profile has been submitted and is waiting for admin review.")
+      .first(),
+  ).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("pending").first()).toBeVisible();
+});
+
+test("vendor settings changes persist and password updates allow sign-in", async ({ page }) => {
+  const fullName = uniqueLabel("Vendor Owner");
+  const businessName = uniqueLabel("Vendor Studio");
+  const nextPassword = "VendorPass9!";
+
+  await signInAsSeededVendor(page);
+  await page.goto("/vendor-dashboard/settings");
+
+  await page.getByLabel("Full name").fill(fullName);
+  await page.getByLabel("Business name").fill(businessName);
+  await page.getByRole("button", { name: "Save Account" }).click();
+
+  await expect(page.getByText("Account details updated.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Full name")).toHaveValue(fullName);
+  await expect(page.getByLabel("Business name")).toHaveValue(businessName);
+
+  await page.getByLabel("Current password").fill("Vendor123!");
+  await page.getByLabel("New password", { exact: true }).fill(nextPassword);
+  await page.getByLabel("Confirm new password").fill(nextPassword);
+  await page.getByRole("button", { name: "Update Password" }).click();
+
+  await expect(page.getByText("Password updated.")).toBeVisible();
+  await page.getByRole("button", { name: "Sign Out" }).click();
+  await expect(page).toHaveURL(/\/vendor-dashboard\/login/);
+
+  await page.getByLabel("Email").fill("studio@vinyup.com");
+  await page.getByLabel("Password", { exact: true }).fill(nextPassword);
+  await page.locator("form").getByRole("button", { name: "Sign In" }).click();
+
+  await expect(page).toHaveURL(/\/vendor-dashboard$/);
+});
+
 test("admin login lands in the admin dashboard", async ({ page }) => {
   await page.goto("/admin/login");
 
@@ -106,4 +258,40 @@ test("protected routes redirect anonymous visitors to the correct entry points",
 
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/admin\/login/);
+});
+
+test("couple wedding settings persist after reload", async ({ page }) => {
+  const introMessage = uniqueLabel("Smoke intro message");
+
+  await signInAsSeededCouple(page);
+  await page.goto("/couple-dashboard/wedding");
+
+  await page.getByLabel("Intro message").fill(introMessage);
+  await page.getByRole("button", { name: "Save Wedding Settings" }).click();
+
+  await expect(page.getByText("Wedding settings saved.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Intro message")).toHaveValue(introMessage);
+});
+
+test("couple budget and checklist entries survive reload", async ({ page }) => {
+  const budgetTitle = uniqueLabel("Smoke Budget");
+  const checklistTitle = uniqueLabel("Smoke Task");
+
+  await signInAsSeededCouple(page);
+
+  await page.goto("/couple-dashboard/budget");
+  await page.getByLabel("Title").fill(budgetTitle);
+  await page.getByLabel("Estimated").fill("50000");
+  await page.getByRole("button", { name: "Add Item" }).click();
+  await expect(page.getByText("Budget item added.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("cell", { name: budgetTitle })).toBeVisible();
+
+  await page.goto("/couple-dashboard/checklist");
+  await page.getByLabel("Task title").fill(checklistTitle);
+  await page.getByRole("button", { name: "Add Task" }).click();
+  await expect(page.getByText("Task added.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(checklistTitle)).toBeVisible();
 });

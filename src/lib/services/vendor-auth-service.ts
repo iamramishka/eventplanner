@@ -28,6 +28,7 @@ import {
 } from "@/types/vendor";
 import { VendorAccount } from "@/types/auth";
 import { getAuthAccounts, normalizeAuthEmail } from "@/lib/services/shared-auth-store";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 function wait(ms = 320) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -39,6 +40,33 @@ function buildVendorId() {
 
 export const vendorAuthService = {
   async login(payload: VendorLoginPayload): Promise<VendorSession> {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const body = (await response.json().catch(() => ({}))) as {
+        message?: string;
+        session?: VendorSession;
+      };
+
+      if (!response.ok || !body.session) {
+        throw new Error(body.message || "Invalid vendor credentials.");
+      }
+
+      if (body.session.role !== "vendor") {
+        throw new Error("This account is not a vendor account.");
+      }
+
+      saveVendorSession(body.session);
+      return body.session;
+    }
+
     await wait();
 
     const email = normalizeAuthEmail(payload.email);
@@ -65,6 +93,39 @@ export const vendorAuthService = {
   },
 
   async register(payload: VendorSignupPayload): Promise<VendorSession> {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/auth/register", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role: "vendor",
+          fullName: payload.fullName,
+          businessName: payload.businessName,
+          email: payload.email,
+          password: payload.password,
+        }),
+      });
+
+      const body = (await response.json().catch(() => ({}))) as {
+        message?: string;
+        session?: VendorSession;
+      };
+
+      if (!response.ok || !body.session) {
+        throw new Error(body.message || "Something went wrong while creating your vendor account.");
+      }
+
+      if (body.session.role !== "vendor") {
+        throw new Error("This account is not a vendor account.");
+      }
+
+      saveVendorSession(body.session);
+      return body.session;
+    }
+
     await wait(360);
 
     const fullName = payload.fullName.trim();
@@ -180,11 +241,43 @@ export const vendorAuthService = {
   },
 
   async getSession() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/auth/session", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const body = (await response.json()) as { session: VendorSession | null };
+      const session = body.session?.role === "vendor" ? body.session : null;
+      saveVendorSession(session);
+      return session;
+    }
+
     await wait(80);
     return getVendorSession();
   },
 
   async logout() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || "Unable to sign out.");
+      }
+
+      saveVendorSession(null);
+      return;
+    }
+
     await wait(120);
     saveVendorSession(null);
   },

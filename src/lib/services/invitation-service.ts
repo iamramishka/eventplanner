@@ -1,6 +1,7 @@
 "use client";
 
 import { musicTracks } from "@/data/couple-mock";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import {
   getAgendaMap,
   getAssignmentMap,
@@ -67,6 +68,20 @@ function getInvitationSectionVisibility(
   key: InvitationSectionSetting["key"],
 ) {
   return visibility.find((item) => item.key === key)?.enabled ?? false;
+}
+
+async function parseJson<T>(response: Response): Promise<T> {
+  const payload = (await response.json().catch(() => ({}))) as T & {
+    message?: string;
+  };
+
+  if (!response.ok) {
+    throw Object.assign(new Error(payload.message || "Request failed."), {
+      status: response.status,
+    });
+  }
+
+  return payload;
 }
 
 function findGuestByToken(token: string) {
@@ -236,11 +251,44 @@ function buildInvitationPageData(
 
 export const invitationService = {
   async getInvitationBySlug(slug: string, guestToken?: string | null) {
+    if (isSupabaseConfigured()) {
+      try {
+        const search = guestToken ? `?token=${encodeURIComponent(guestToken)}` : "";
+        const response = await fetch(`/api/v1/invitations/slug/${slug}${search}`, {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const data = await parseJson<{ page: InvitationPageData }>(response);
+        return data.page;
+      } catch (error) {
+        if ((error as { status?: number }).status !== 501) {
+          throw error;
+        }
+      }
+    }
+
     await wait();
     return buildInvitationPageData(slug, guestToken);
   },
 
   async getInvitationByToken(token: string) {
+    if (isSupabaseConfigured()) {
+      try {
+        const response = await fetch(`/api/v1/invitations/token/${encodeURIComponent(token)}`, {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const data = await parseJson<{ page: InvitationPageData }>(response);
+        return data.page;
+      } catch (error) {
+        if ((error as { status?: number }).status !== 501) {
+          throw error;
+        }
+      }
+    }
+
     await wait();
     const match = findGuestByToken(token);
     if (!match) {
@@ -283,6 +331,25 @@ export const invitationService = {
   },
 
   async submitRsvp(token: string, payload: InvitationRsvpInput) {
+    if (isSupabaseConfigured()) {
+      try {
+        const response = await fetch(`/api/v1/invitations/rsvp/${encodeURIComponent(token)}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await parseJson<{ page: InvitationPageData }>(response);
+        return data.page;
+      } catch (error) {
+        if ((error as { status?: number }).status !== 501) {
+          throw error;
+        }
+      }
+    }
+
     await wait(320);
     const match = findGuestByToken(token);
     if (!match) {
@@ -337,12 +404,47 @@ export const invitationService = {
   },
 
   async lookupGuestTokenForWedding(slug: string, token: string) {
+    if (isSupabaseConfigured()) {
+      try {
+        const response = await fetch(
+          `/api/v1/invitations/slug/${slug}?token=${encodeURIComponent(token)}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          },
+        );
+
+        const data = await parseJson<{ page: InvitationPageData }>(response);
+        return data.page.status === "ready" && data.page.guestContext ? data.page : null;
+      } catch (error) {
+        if ((error as { status?: number }).status !== 501) {
+          throw error;
+        }
+      }
+    }
+
     await wait(160);
     const page = buildInvitationPageData(slug, token);
     return page.status === "ready" && page.guestContext ? page : null;
   },
 
   async findTableByToken(token: string): Promise<InvitationTableLookupResult> {
+    if (isSupabaseConfigured()) {
+      try {
+        const response = await fetch(`/api/v1/invitations/table/${encodeURIComponent(token)}`, {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const data = await parseJson<{ result: InvitationTableLookupResult }>(response);
+        return data.result;
+      } catch (error) {
+        if ((error as { status?: number }).status !== 501) {
+          throw error;
+        }
+      }
+    }
+
     await wait(160);
     const page = await this.getInvitationByToken(token);
 
@@ -376,6 +478,25 @@ export const invitationService = {
   },
 
   async findTableByName(slug: string, query: string): Promise<InvitationTableLookupResult> {
+    if (isSupabaseConfigured()) {
+      try {
+        const response = await fetch(`/api/v1/invitations/lookup/${slug}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        });
+
+        const data = await parseJson<{ result: InvitationTableLookupResult }>(response);
+        return data.result;
+      } catch (error) {
+        if ((error as { status?: number }).status !== 501) {
+          throw error;
+        }
+      }
+    }
+
     await wait(220);
     const page = buildInvitationPageData(slug);
     if (page.status !== "ready") {

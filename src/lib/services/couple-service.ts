@@ -1,7 +1,8 @@
 "use client";
 
-import { musicTracks } from "@/data/couple-mock";
+import { coupleSupportEmail, musicTracks } from "@/data/couple-mock";
 import { formatCountdownLabel, buildOverviewFromMetrics } from "@/lib/couple-utils";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import {
   getAssignmentMap,
   getChecklistMap,
@@ -33,18 +34,33 @@ import {
   AgendaItemRecord,
   BudgetItemRecord,
   ChecklistItemRecord,
+  CoupleAccountSettings,
   CoupleOverviewData,
+  CoupleSubscriptionSnapshot,
   GalleryAsset,
   GuestRecord,
   GuestRsvpCurrent,
   GuestRsvpHistoryRecord,
   InvitationContentSection,
+  InvitationWorkspaceState,
   InvitationThemeSettings,
   WeddingSettingsRecord,
   WeddingTableAssignmentRecord,
   WeddingTableRecord,
   WeddingVendorRecord,
 } from "@/types/couple";
+
+async function parseJson<T>(response: Response): Promise<T> {
+  const payload = (await response.json().catch(() => ({}))) as T & {
+    message?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(payload.message || "Request failed.");
+  }
+
+  return payload;
+}
 
 function wait(ms = 220) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -110,6 +126,52 @@ function getLatestRsvpsForGuests(
 
 export const coupleService = {
   async getDashboardOverview(): Promise<CoupleOverviewData> {
+    if (isSupabaseConfigured()) {
+      const [weddingSettings, guests, latestRsvps, budgetItems, checklistItems, tableData] =
+        await Promise.all([
+          coupleService.getWeddingSettings(),
+          coupleService.getGuests(),
+          coupleService.getRsvps(),
+          coupleService.getBudgetItems(),
+          coupleService.getChecklistItems(),
+          coupleService.getTables(),
+        ]);
+
+      const confirmedGuests = latestRsvps.filter((item) => item.status === "confirmed");
+      const pendingGuests = latestRsvps.filter((item) => item.status === "pending");
+      const declinedGuests = latestRsvps.filter((item) => item.status === "declined");
+
+      const recentActivity = latestRsvps
+        .filter((item) => item.submittedAt)
+        .sort((left, right) => (right.submittedAt ?? "").localeCompare(left.submittedAt ?? ""))
+        .slice(0, 4)
+        .map((item) => ({
+          id: item.guestId,
+          title: `RSVP updated for ${item.guestName}`,
+          description: `${item.status} · ${item.attendingCount} attending`,
+          timestamp: item.submittedAt ?? nowIso(),
+        }));
+
+      return buildOverviewFromMetrics({
+        guestCount: guests.length,
+        confirmedGuests: confirmedGuests.length,
+        pendingGuests: pendingGuests.length,
+        declinedGuests: declinedGuests.length,
+        attendingHeadcount: confirmedGuests.reduce(
+          (total, item) => total + item.attendingCount,
+          0,
+        ),
+        budgetEstimated: budgetItems.reduce((total, item) => total + item.estimatedAmount, 0),
+        budgetActual: budgetItems.reduce((total, item) => total + item.actualAmount, 0),
+        budgetPaid: budgetItems.reduce((total, item) => total + item.paidAmount, 0),
+        checklistCompleted: checklistItems.filter((item) => item.isCompleted).length,
+        checklistTotal: checklistItems.length,
+        tableCount: tableData.tables.length,
+        countdownLabel: formatCountdownLabel(weddingSettings?.eventDate),
+        recentActivity,
+      });
+    }
+
     await wait();
     const { weddingSettings, guests, rsvpHistory, budgetItems, checklistItems, tables } =
       getWorkspaceData();
@@ -152,11 +214,36 @@ export const coupleService = {
   },
 
   async getWeddingSettings() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/wedding", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ settings: WeddingSettingsRecord }>(response);
+      return data.settings;
+    }
+
     await wait();
     return getWorkspaceData().weddingSettings;
   },
 
   async updateWeddingSettings(payload: WeddingSettingsRecord) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/wedding", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await parseJson<{ settings: WeddingSettingsRecord }>(response);
+      return data.settings;
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getWeddingSettingsMap();
@@ -167,11 +254,33 @@ export const coupleService = {
   },
 
   async getSubscription() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/subscription", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ subscription: CoupleSubscriptionSnapshot }>(response);
+      return data.subscription;
+    }
+
     await wait();
     return getWorkspaceData().subscription;
   },
 
   async getGuests() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/guests", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ guests: GuestRecord[] }>(response);
+      return data.guests.sort((left, right) => left.name.localeCompare(right.name));
+    }
+
     await wait();
     return getWorkspaceData().guests.sort((left, right) =>
       left.name.localeCompare(right.name),
@@ -183,6 +292,27 @@ export const coupleService = {
       id?: string;
     },
   ) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(
+        payload.id ? `/api/v1/couple/guests/${payload.id}` : "/api/v1/couple/guests",
+        {
+          method: payload.id ? "PATCH" : "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      const data = await parseJson<{ guest: GuestRecord }>(response);
+      const guests = await coupleService.getGuests();
+      const withoutCurrent = guests.filter((item) => item.id !== data.guest.id);
+      return [data.guest, ...withoutCurrent].sort((left, right) =>
+        left.name.localeCompare(right.name),
+      );
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getGuestMap();
@@ -237,6 +367,16 @@ export const coupleService = {
   },
 
   async deleteGuest(guestId: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/guests/${guestId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return coupleService.getGuests();
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const guestMap = getGuestMap();
@@ -256,6 +396,16 @@ export const coupleService = {
   },
 
   async sendInvite(guestId: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/guests/${guestId}/send-invite`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      await parseJson<{ inviteToken: string; sentAt: string }>(response);
+      return coupleService.getGuests();
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getGuestMap();
@@ -267,22 +417,54 @@ export const coupleService = {
   },
 
   async getInviteLink(guestId: string) {
+    if (isSupabaseConfigured()) {
+      const guests = await coupleService.getGuests();
+      const guest = guests.find((item) => item.id === guestId);
+      if (!guest) {
+        throw new Error("Invite link could not be generated.");
+      }
+
+      return `${window.location.origin}/w/${guest.weddingSlug}?guest=${guest.inviteToken}`;
+    }
+
     await wait(80);
     const wedding = getStoredWeddingBySlug(getWorkspaceData().weddingSlug);
     const guest = getWorkspaceData().guests.find((item) => item.id === guestId);
     if (!guest || !wedding) {
       throw new Error("Invite link could not be generated.");
     }
-    return `${window.location.origin}/w/${wedding.weddingSlug}?invite=${guest.inviteToken}`;
+    return `${window.location.origin}/w/${wedding.weddingSlug}?guest=${guest.inviteToken}`;
   },
 
   async getRsvps() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/rsvps", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ rsvps: GuestRsvpCurrent[] }>(response);
+      return data.rsvps;
+    }
+
     await wait();
     const { guests, rsvpHistory } = getWorkspaceData();
     return getLatestRsvpsForGuests(guests, rsvpHistory);
   },
 
   async getRsvpHistory(guestId: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/rsvps/${guestId}/history`, {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ history: GuestRsvpHistoryRecord[] }>(response);
+      return data.history;
+    }
+
     await wait();
     return getWorkspaceData()
       .rsvpHistory.filter((item) => item.guestId === guestId)
@@ -293,6 +475,25 @@ export const coupleService = {
     guestId: string,
     payload: Omit<GuestRsvpHistoryRecord, "id" | "weddingSlug" | "guestId" | "submittedAt" | "source">,
   ) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/rsvps/${guestId}/manual`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await parseJson<{ entry: GuestRsvpHistoryRecord }>(response);
+      return [
+        data.entry,
+        ...(await coupleService.getRsvpHistory(guestId)).filter(
+          (item) => item.id !== data.entry.id,
+        ),
+      ];
+    }
+
     await wait();
     const { weddingSlug, guests } = getWorkspaceData();
     const guest = guests.find((item) => item.id === guestId);
@@ -320,11 +521,36 @@ export const coupleService = {
   },
 
   async getInvitationWorkspace() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/invitation", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ workspace: InvitationWorkspaceState }>(response);
+      return data.workspace;
+    }
+
     await wait();
     return getWorkspaceData().invitation;
   },
 
   async updateInvitationSection(section: InvitationContentSection) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/invitation/sections/${section.key}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(section),
+      });
+
+      const data = await parseJson<{ workspace: InvitationWorkspaceState }>(response);
+      return data.workspace;
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getInvitationMap();
@@ -343,6 +569,20 @@ export const coupleService = {
   },
 
   async updateInvitationVisibility(key: string, enabled: boolean) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/invitation/visibility", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ key, enabled }),
+      });
+
+      const data = await parseJson<{ workspace: InvitationWorkspaceState }>(response);
+      return data.workspace;
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getInvitationMap();
@@ -363,6 +603,20 @@ export const coupleService = {
   },
 
   async updateInvitationTheme(theme: InvitationThemeSettings) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/invitation/theme", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(theme),
+      });
+
+      const data = await parseJson<{ workspace: InvitationWorkspaceState }>(response);
+      return data.workspace;
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getInvitationMap();
@@ -381,6 +635,24 @@ export const coupleService = {
   },
 
   async addGalleryAsset(asset: Omit<GalleryAsset, "id" | "weddingSlug" | "sortOrder" | "createdAt" | "isCover">) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/gallery", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: asset.name,
+          imageType: asset.imageType,
+          imageDataUrl: asset.imageUrl,
+        }),
+      });
+
+      const data = await parseJson<{ workspace: InvitationWorkspaceState }>(response);
+      return data.workspace;
+    }
+
     await wait();
     const { weddingSlug, subscription } = getWorkspaceData();
     const map = getInvitationMap();
@@ -410,6 +682,16 @@ export const coupleService = {
   },
 
   async removeGalleryAsset(assetId: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/gallery/${assetId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const data = await parseJson<{ workspace: InvitationWorkspaceState }>(response);
+      return data.workspace;
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getInvitationMap();
@@ -431,6 +713,16 @@ export const coupleService = {
   },
 
   async setGalleryCover(assetId: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/gallery/${assetId}/cover`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const data = await parseJson<{ workspace: InvitationWorkspaceState }>(response);
+      return data.workspace;
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getInvitationMap();
@@ -456,6 +748,20 @@ export const coupleService = {
     mutedByDefault: boolean;
     trackId: string;
   }) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/invitation/music", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await parseJson<{ workspace: InvitationWorkspaceState }>(response);
+      return data.workspace;
+    }
+
     await wait();
     if (!musicTracks.find((item) => item.id === payload.trackId)) {
       throw new Error("Please choose a valid music track.");
@@ -477,6 +783,16 @@ export const coupleService = {
   },
 
   async publishInvitation() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/invitation/publish", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const data = await parseJson<{ workspace: InvitationWorkspaceState }>(response);
+      return data.workspace;
+    }
+
     await wait(320);
     const { weddingSlug } = getWorkspaceData();
     const map = getInvitationMap();
@@ -497,6 +813,17 @@ export const coupleService = {
   },
 
   async getAgenda() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/agenda", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ items: AgendaItemRecord[] }>(response);
+      return data.items;
+    }
+
     await wait();
     return [...getWorkspaceData().agenda].sort((left, right) => left.sortOrder - right.sortOrder);
   },
@@ -504,6 +831,23 @@ export const coupleService = {
   async upsertAgenda(
     payload: Omit<AgendaItemRecord, "id" | "weddingSlug" | "sortOrder"> & { id?: string },
   ) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(
+        payload.id ? `/api/v1/couple/agenda/${payload.id}` : "/api/v1/couple/agenda",
+        {
+          method: payload.id ? "PATCH" : "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      await parseJson<{ item: AgendaItemRecord }>(response);
+      return coupleService.getAgenda();
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getAgendaMap();
@@ -529,6 +873,16 @@ export const coupleService = {
   },
 
   async deleteAgenda(id: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/agenda/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return coupleService.getAgenda();
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getAgendaMap();
@@ -538,6 +892,19 @@ export const coupleService = {
   },
 
   async getTables() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/tables", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      return parseJson<{
+        tables: WeddingTableRecord[];
+        assignments: WeddingTableAssignmentRecord[];
+      }>(response);
+    }
+
     await wait();
     return {
       tables: [...getWorkspaceData().tables].sort((left, right) => left.sortOrder - right.sortOrder),
@@ -548,6 +915,23 @@ export const coupleService = {
   async upsertTable(
     payload: Omit<WeddingTableRecord, "id" | "weddingSlug" | "sortOrder"> & { id?: string },
   ) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(
+        payload.id ? `/api/v1/couple/tables/${payload.id}` : "/api/v1/couple/tables",
+        {
+          method: payload.id ? "PATCH" : "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      await parseJson<{ table: WeddingTableRecord }>(response);
+      return (await coupleService.getTables()).tables;
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getTableMap();
@@ -573,6 +957,16 @@ export const coupleService = {
   },
 
   async deleteTable(id: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/tables/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return coupleService.getTables();
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const tableMap = getTableMap();
@@ -595,6 +989,20 @@ export const coupleService = {
     guestId: string;
     assignedCount: number;
   }) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/tables/assignments", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return (await coupleService.getTables()).assignments;
+    }
+
     await wait();
     const { weddingSlug, tables, guests, rsvpHistory } = getWorkspaceData();
     const table = tables.find((item) => item.id === payload.tableId);
@@ -648,6 +1056,16 @@ export const coupleService = {
   },
 
   async removeTableAssignment(guestId: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/tables/assignments/${guestId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return (await coupleService.getTables()).assignments;
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getAssignmentMap();
@@ -657,6 +1075,17 @@ export const coupleService = {
   },
 
   async getBudgetItems() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/budget/items", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ items: BudgetItemRecord[] }>(response);
+      return data.items;
+    }
+
     await wait();
     return getWorkspaceData().budgetItems;
   },
@@ -664,6 +1093,23 @@ export const coupleService = {
   async upsertBudgetItem(
     payload: Omit<BudgetItemRecord, "id" | "weddingSlug"> & { id?: string },
   ) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(
+        payload.id ? `/api/v1/couple/budget/items/${payload.id}` : "/api/v1/couple/budget/items",
+        {
+          method: payload.id ? "PATCH" : "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      await parseJson<{ item: BudgetItemRecord }>(response);
+      return coupleService.getBudgetItems();
+    }
+
     await wait();
     if (payload.estimatedAmount < 0 || payload.actualAmount < 0 || payload.paidAmount < 0) {
       throw new Error("Budget amounts cannot be negative.");
@@ -693,6 +1139,16 @@ export const coupleService = {
   },
 
   async deleteBudgetItem(id: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/budget/items/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return coupleService.getBudgetItems();
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getBudgetMap();
@@ -702,6 +1158,17 @@ export const coupleService = {
   },
 
   async getChecklistItems() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/checklist/items", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ items: ChecklistItemRecord[] }>(response);
+      return data.items;
+    }
+
     await wait();
     return getWorkspaceData().checklistItems;
   },
@@ -709,6 +1176,25 @@ export const coupleService = {
   async upsertChecklistItem(
     payload: Omit<ChecklistItemRecord, "id" | "weddingSlug"> & { id?: string },
   ) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(
+        payload.id
+          ? `/api/v1/couple/checklist/items/${payload.id}`
+          : "/api/v1/couple/checklist/items",
+        {
+          method: payload.id ? "PATCH" : "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      await parseJson<{ item: ChecklistItemRecord }>(response);
+      return coupleService.getChecklistItems();
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getChecklistMap();
@@ -732,6 +1218,16 @@ export const coupleService = {
   },
 
   async toggleChecklistItem(id: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/checklist/items/${id}/toggle`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      await parseJson<{ isCompleted: boolean }>(response);
+      return coupleService.getChecklistItems();
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getChecklistMap();
@@ -743,6 +1239,16 @@ export const coupleService = {
   },
 
   async deleteChecklistItem(id: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/checklist/items/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return coupleService.getChecklistItems();
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getChecklistMap();
@@ -752,6 +1258,17 @@ export const coupleService = {
   },
 
   async getVendors() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/couple/vendors", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ items: WeddingVendorRecord[] }>(response);
+      return data.items;
+    }
+
     await wait();
     return getWorkspaceData().vendors;
   },
@@ -759,6 +1276,23 @@ export const coupleService = {
   async upsertVendor(
     payload: Omit<WeddingVendorRecord, "id" | "weddingSlug"> & { id?: string },
   ) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(
+        payload.id ? `/api/v1/couple/vendors/${payload.id}` : "/api/v1/couple/vendors",
+        {
+          method: payload.id ? "PATCH" : "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      await parseJson<{ item: WeddingVendorRecord }>(response);
+      return coupleService.getVendors();
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getVendorMap();
@@ -782,6 +1316,16 @@ export const coupleService = {
   },
 
   async deleteVendor(id: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/couple/vendors/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return coupleService.getVendors();
+    }
+
     await wait();
     const { weddingSlug } = getWorkspaceData();
     const map = getVendorMap();
@@ -791,14 +1335,45 @@ export const coupleService = {
   },
 
   async getAccountSettings() {
+    if (isSupabaseConfigured()) {
+      const [subscription, sessionResponse] = await Promise.all([
+        coupleService.getSubscription(),
+        fetch("/api/v1/auth/session", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        }),
+      ]);
+
+      const sessionPayload = await parseJson<{
+        session: { fullName: string; email: string } | null;
+      }>(sessionResponse);
+
+      return {
+        fullName: sessionPayload.session?.fullName ?? "",
+        email: sessionPayload.session?.email ?? "",
+        plan: subscription,
+        supportEmail: coupleSupportEmail,
+      } satisfies CoupleAccountSettings;
+    }
+
     await wait();
     return getCoupleAccountSettings();
   },
 
   async getPreviewLink() {
+    if (isSupabaseConfigured()) {
+      const settings = await coupleService.getWeddingSettings();
+      return `/w/${settings.weddingSlug}`;
+    }
+
     await wait(80);
-    const theme = getWorkspaceData().invitation.theme;
-    return `/demo/${theme.preset}?from=couple-dashboard`;
+    const wedding = getStoredWeddingBySlug(getWorkspaceData().weddingSlug);
+    if (!wedding) {
+      throw new Error("Preview link could not be generated.");
+    }
+
+    return `/w/${wedding.weddingSlug}`;
   },
 
   async getAvailableMusicTracks() {

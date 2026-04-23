@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Field, InlineNotice, SubmitButton } from "@/components/shared/form-controls";
 import { vendorAuthService } from "@/lib/services/vendor-auth-service";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 type VendorLoginFormProps = {
   nextPath?: string;
@@ -14,6 +15,7 @@ export function VendorLoginForm({
   nextPath,
   initialMode = "signin",
 }: VendorLoginFormProps) {
+  const showDemoCredentials = !isSupabaseConfigured();
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">(initialMode);
   const [signinForm, setSigninForm] = useState({ email: "", password: "" });
@@ -117,10 +119,12 @@ export function VendorLoginForm({
                 setSigninForm((current) => ({ ...current, password: event.target.value }))
               }
             />
-            <InlineNotice tone="default">
-              Demo vendor account: <strong>studio@vinyup.com</strong> with password{" "}
-              <strong>Vendor123!</strong>
-            </InlineNotice>
+            {showDemoCredentials ? (
+              <InlineNotice tone="default">
+                Demo vendor account: <strong>studio@vinyup.com</strong> with password{" "}
+                <strong>Vendor123!</strong>
+              </InlineNotice>
+            ) : null}
           </>
         ) : (
           <>

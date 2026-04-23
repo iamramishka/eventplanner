@@ -10,13 +10,74 @@ import {
 import { SessionUser, SigninPayload, SignupPayload } from "@/types/public";
 import { CoupleAccount } from "@/types/auth";
 import { getAuthAccounts, normalizeAuthEmail } from "@/lib/services/shared-auth-store";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import {
+  hydrateCoupleBootstrap,
+  syncCoupleSessionCache,
+} from "@/lib/services/couple-supabase-bridge";
 
 function wait(ms = 500) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function parseJson<T>(response: Response): Promise<T> {
+  const payload = (await response.json().catch(() => ({}))) as T & { message?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.message || "Request failed.");
+  }
+
+  return payload;
+}
+
+async function hydrateCoupleStateIfNeeded(session: SessionUser | null) {
+  syncCoupleSessionCache(session);
+
+  if (!session || !session.hasWedding || !isSupabaseConfigured()) {
+    return;
+  }
+
+  const response = await fetch("/api/v1/couple/bootstrap", {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    return;
+  }
+
+  const payload = (await response.json()) as {
+    bootstrap?: Parameters<typeof hydrateCoupleBootstrap>[0] | null;
+  };
+
+  if (payload.bootstrap) {
+    hydrateCoupleBootstrap(payload.bootstrap);
+  }
+}
+
 export const authService = {
   async register(payload: SignupPayload): Promise<SessionUser> {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/auth/register", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role: "couple",
+          fullName: payload.fullName,
+          email: payload.email,
+          password: payload.password,
+        }),
+      });
+
+      const data = await parseJson<{ session: SessionUser }>(response);
+      await hydrateCoupleStateIfNeeded(data.session);
+      return data.session;
+    }
+
     await wait();
 
     const fullName = payload.fullName.trim();
@@ -57,6 +118,21 @@ export const authService = {
   },
 
   async login(payload: SigninPayload): Promise<SessionUser> {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await parseJson<{ session: SessionUser }>(response);
+      await hydrateCoupleStateIfNeeded(data.session);
+      return data.session;
+    }
+
     await wait();
 
     const email = normalizeAuthEmail(payload.email);
@@ -75,11 +151,42 @@ export const authService = {
   },
 
   async getSession() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/auth/session", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = (await response.json()) as { session: SessionUser | null };
+      await hydrateCoupleStateIfNeeded(data.session);
+      return data.session;
+    }
+
     await wait(120);
     return readSession();
   },
 
   async signOut() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { message?: string };
+        throw new Error(payload.message || "Unable to sign out.");
+      }
+
+      syncCoupleSessionCache(null);
+      return;
+    }
+
     await wait(120);
     saveSession(null);
   },

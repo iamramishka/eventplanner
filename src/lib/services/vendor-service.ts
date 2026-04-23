@@ -1,6 +1,7 @@
 "use client";
 
 import { getVendorCompletion } from "@/lib/vendor-utils";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import {
   getVendorAccountSettingsMap,
   getVendorAccounts,
@@ -27,7 +28,28 @@ import {
   VendorProfileRecord,
   VendorServicePackage,
   VendorServiceRecord,
+  VendorVisibilitySettings,
 } from "@/types/vendor";
+
+const pendingReviewMessage =
+  "Your profile has been submitted and is waiting for admin review.";
+const rereviewMessage =
+  "Your latest changes are pending admin review before your profile can go live again.";
+const publicMessage = "Your profile is approved and currently visible to couples.";
+const hiddenMessage =
+  "Your profile is hidden from public discovery until you turn visibility back on.";
+
+async function parseJson<T>(response: Response): Promise<T> {
+  const payload = (await response.json().catch(() => ({}))) as T & {
+    message?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(payload.message || "Request failed.");
+  }
+
+  return payload;
+}
 
 function wait(ms = 220) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -77,11 +99,105 @@ function validateUrl(value: string, label: string) {
   }
 }
 
+function syncVendorSession(updates: Partial<NonNullable<ReturnType<typeof getVendorSession>>>) {
+  const session = getVendorSession();
+
+  if (!session) {
+    return;
+  }
+
+  saveVendorSession({
+    ...session,
+    ...updates,
+  });
+}
+
+function getLocalCompletionState(vendorId: string) {
+  const profile = getVendorProfiles()[vendorId];
+  const gallery = getVendorGalleryMap()[vendorId] ?? [];
+  const services = getVendorServicesMap()[vendorId] ?? [];
+  const contact = getVendorContacts()[vendorId];
+  return getVendorCompletion(profile, gallery.length, services, contact);
+}
+
+function updateLocalVisibilityForVendor(
+  vendorId: string,
+  options?: { triggerRereview?: boolean },
+) {
+  const visibilityMap = getVendorVisibilityMap();
+  const current = visibilityMap[vendorId];
+
+  if (!current) {
+    return;
+  }
+
+  if (options?.triggerRereview && current.status === "approved") {
+    visibilityMap[vendorId] = {
+      ...current,
+      status: "pending",
+      isPublic: false,
+      canBePublic: false,
+      rejectedReason: undefined,
+      lastSubmittedAt: nowIso(),
+      adminMessage: rereviewMessage,
+    };
+    saveVendorVisibilityMap(visibilityMap);
+    return;
+  }
+
+  const completion = getLocalCompletionState(vendorId);
+  visibilityMap[vendorId] = {
+    ...current,
+    canBePublic: current.status === "approved" && completion.isPublishReady,
+  };
+  saveVendorVisibilityMap(visibilityMap);
+}
+
+function getLocalVisibilityView(vendorId: string) {
+  const visibility = getVendorVisibilityMap()[vendorId];
+  const completion = getLocalCompletionState(vendorId);
+
+  return {
+    ...visibility,
+    canBePublic: visibility.status === "approved" && completion.isPublishReady,
+    completionPercent: completion.completionPercent,
+    missingSteps: completion.missingSteps,
+  };
+}
+
+function replaceVendorAccountRecord(
+  vendorId: string,
+  updates: Partial<ReturnType<typeof getVendorAccounts>[number]>,
+) {
+  saveVendorAccounts(
+    getVendorAccounts().map((item) =>
+      item.vendorId === vendorId
+        ? {
+            ...item,
+            ...updates,
+          }
+        : item,
+    ),
+  );
+}
+
 export const vendorService = {
   async getOverview(): Promise<VendorOverviewData> {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/overview", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ overview: VendorOverviewData }>(response);
+      return data.overview;
+    }
+
     await wait();
-    const { profile, gallery, services, contact, visibility } = getWorkspace();
+    const { vendorId, profile, gallery, services, contact } = getWorkspace();
     const completion = getVendorCompletion(profile, gallery.length, services, contact);
+    const visibility = getLocalVisibilityView(vendorId);
 
     return {
       completionPercent: completion.completionPercent,
@@ -98,11 +214,37 @@ export const vendorService = {
   },
 
   async getProfile() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/profile", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ profile: VendorProfileRecord }>(response);
+      return data.profile;
+    }
+
     await wait();
     return getWorkspace().profile;
   },
 
   async updateProfile(payload: VendorProfileRecord) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/profile", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await parseJson<{ profile: VendorProfileRecord }>(response);
+      syncVendorSession({ businessName: data.profile.businessName });
+      return data.profile;
+    }
+
     await wait();
 
     if (!payload.businessName.trim()) {
@@ -142,27 +284,46 @@ export const vendorService = {
     };
     saveVendorAccountSettingsMap(accountMap);
 
-    const accounts = getVendorAccounts().map((item) =>
-      item.vendorId === vendorId
-        ? { ...item, businessName: profileMap[vendorId].businessName }
-        : item,
-    );
-    saveVendorAccounts(accounts);
-
-    const session = getVendorSession();
-    if (session && session.vendorId === vendorId) {
-      saveVendorSession({ ...session, businessName: profileMap[vendorId].businessName });
-    }
+    replaceVendorAccountRecord(vendorId, {
+      businessName: profileMap[vendorId].businessName,
+    });
+    syncVendorSession({ businessName: profileMap[vendorId].businessName });
+    updateLocalVisibilityForVendor(vendorId, { triggerRereview: true });
 
     return profileMap[vendorId];
   },
 
   async getGallery() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/gallery", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ gallery: VendorGalleryAsset[] }>(response);
+      return data.gallery;
+    }
+
     await wait();
     return [...getWorkspace().gallery].sort((left, right) => left.sortOrder - right.sortOrder);
   },
 
   async addGalleryAsset(payload: { imageUrl: string; altText: string }) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/gallery", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await parseJson<{ gallery: VendorGalleryAsset[] }>(response);
+      return data.gallery;
+    }
+
     await wait();
     const vendorId = getCurrentVendorId();
     const galleryMap = getVendorGalleryMap();
@@ -184,10 +345,21 @@ export const vendorService = {
 
     galleryMap[vendorId] = [...current, nextAsset];
     saveVendorGalleryMap(galleryMap);
+    updateLocalVisibilityForVendor(vendorId, { triggerRereview: true });
     return galleryMap[vendorId];
   },
 
   async removeGalleryAsset(assetId: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/vendor/gallery/${assetId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const data = await parseJson<{ gallery: VendorGalleryAsset[] }>(response);
+      return data.gallery;
+    }
+
     await wait();
     const vendorId = getCurrentVendorId();
     const galleryMap = getVendorGalleryMap();
@@ -205,10 +377,21 @@ export const vendorService = {
 
     galleryMap[vendorId] = remaining;
     saveVendorGalleryMap(galleryMap);
+    updateLocalVisibilityForVendor(vendorId, { triggerRereview: true });
     return galleryMap[vendorId];
   },
 
   async setFeaturedGalleryAsset(assetId: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/vendor/gallery/${assetId}/featured`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const data = await parseJson<{ gallery: VendorGalleryAsset[] }>(response);
+      return data.gallery;
+    }
+
     await wait();
     const vendorId = getCurrentVendorId();
     const galleryMap = getVendorGalleryMap();
@@ -217,10 +400,25 @@ export const vendorService = {
       isFeatured: item.id === assetId,
     }));
     saveVendorGalleryMap(galleryMap);
+    updateLocalVisibilityForVendor(vendorId, { triggerRereview: true });
     return galleryMap[vendorId];
   },
 
   async moveGalleryAsset(assetId: string, direction: "up" | "down") {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/vendor/gallery/${assetId}/move`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ direction }),
+      });
+
+      const data = await parseJson<{ gallery: VendorGalleryAsset[] }>(response);
+      return data.gallery;
+    }
+
     await wait();
     const vendorId = getCurrentVendorId();
     const items = [...(getVendorGalleryMap()[vendorId] ?? [])].sort(
@@ -244,10 +442,22 @@ export const vendorService = {
     const galleryMap = getVendorGalleryMap();
     galleryMap[vendorId] = next;
     saveVendorGalleryMap(galleryMap);
+    updateLocalVisibilityForVendor(vendorId, { triggerRereview: true });
     return next;
   },
 
   async getServices() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/services", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ services: VendorServiceRecord[] }>(response);
+      return data.services;
+    }
+
     await wait();
     return [...getWorkspace().services].sort((left, right) => left.sortOrder - right.sortOrder);
   },
@@ -258,6 +468,23 @@ export const vendorService = {
       packages?: VendorServicePackage[];
     },
   ) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(
+        payload.id ? `/api/v1/vendor/services/${payload.id}` : "/api/v1/vendor/services",
+        {
+          method: payload.id ? "PATCH" : "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      await parseJson<{ service: VendorServiceRecord }>(response);
+      return vendorService.getServices();
+    }
+
     await wait();
 
     if (!payload.title.trim()) {
@@ -273,6 +500,8 @@ export const vendorService = {
           ...(services.find((item) => item.id === payload.id) as VendorServiceRecord),
           ...payload,
           vendorId,
+          title: payload.title.trim(),
+          description: payload.description.trim(),
         }
       : {
           id: buildId("vendor-service"),
@@ -288,10 +517,21 @@ export const vendorService = {
       ? services.map((item) => (item.id === payload.id ? nextRecord : item))
       : [...services, nextRecord];
     saveVendorServicesMap(serviceMap);
+    updateLocalVisibilityForVendor(vendorId, { triggerRereview: true });
     return serviceMap[vendorId];
   },
 
   async deleteService(serviceId: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/vendor/services/${serviceId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return vendorService.getServices();
+    }
+
     await wait();
     const vendorId = getCurrentVendorId();
     const serviceMap = getVendorServicesMap();
@@ -299,6 +539,7 @@ export const vendorService = {
       .filter((item) => item.id !== serviceId)
       .map((item, index) => ({ ...item, sortOrder: index }));
     saveVendorServicesMap(serviceMap);
+    updateLocalVisibilityForVendor(vendorId, { triggerRereview: true });
     return serviceMap[vendorId];
   },
 
@@ -308,6 +549,23 @@ export const vendorService = {
       id?: string;
     },
   ) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(
+        payload.id ? `/api/v1/vendor/packages/${payload.id}` : `/api/v1/vendor/services/${serviceId}/packages`,
+        {
+          method: payload.id ? "PATCH" : "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      await parseJson<{ package: VendorServicePackage }>(response);
+      return vendorService.getServices();
+    }
+
     await wait();
 
     if (!payload.packageName.trim()) {
@@ -328,10 +586,16 @@ export const vendorService = {
         ? {
             ...(packages.find((item) => item.id === payload.id) as VendorServicePackage),
             ...payload,
+            packageName: payload.packageName.trim(),
+            description: payload.description.trim(),
+            priceNote: payload.priceNote.trim(),
           }
         : {
             ...payload,
             id: buildId("vendor-package"),
+            packageName: payload.packageName.trim(),
+            description: payload.description.trim(),
+            priceNote: payload.priceNote.trim(),
             sortOrder: packages.length,
           };
 
@@ -344,10 +608,21 @@ export const vendorService = {
     });
 
     saveVendorServicesMap(serviceMap);
+    updateLocalVisibilityForVendor(vendorId, { triggerRereview: true });
     return serviceMap[vendorId];
   },
 
   async deletePackage(serviceId: string, packageId: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/v1/vendor/packages/${packageId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return vendorService.getServices();
+    }
+
     await wait();
     const vendorId = getCurrentVendorId();
     const serviceMap = getVendorServicesMap();
@@ -362,15 +637,41 @@ export const vendorService = {
         : service,
     );
     saveVendorServicesMap(serviceMap);
+    updateLocalVisibilityForVendor(vendorId, { triggerRereview: true });
     return serviceMap[vendorId];
   },
 
   async getContactInfo() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/contact", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ contact: VendorContactInfoRecord }>(response);
+      return data.contact;
+    }
+
     await wait();
     return getWorkspace().contact;
   },
 
   async updateContactInfo(payload: VendorContactInfoRecord) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/contact", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await parseJson<{ contact: VendorContactInfoRecord }>(response);
+      return data.contact;
+    }
+
     await wait();
 
     validateUrl(payload.website, "Website");
@@ -392,57 +693,87 @@ export const vendorService = {
       mapLink: payload.mapLink.trim(),
     };
     saveVendorContacts(map);
+    updateLocalVisibilityForVendor(vendorId, { triggerRereview: true });
     return map[vendorId];
   },
 
   async getVisibility() {
-    await wait();
-    const { profile, gallery, services, contact, visibility } = getWorkspace();
-    const completion = getVendorCompletion(profile, gallery.length, services, contact);
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/visibility", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
 
-    return {
-      ...visibility,
-      canBePublic: visibility.status === "approved" && completion.isPublishReady,
-      completionPercent: completion.completionPercent,
-      missingSteps: completion.missingSteps,
-    };
+      const data = await parseJson<{
+        visibility: ReturnType<typeof getLocalVisibilityView>;
+      }>(response);
+      return data.visibility;
+    }
+
+    await wait();
+    const { vendorId } = getWorkspace();
+    return getLocalVisibilityView(vendorId);
   },
 
   async toggleVisibility(nextState: boolean) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/visibility", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isPublic: nextState }),
+      });
+
+      const data = await parseJson<{
+        visibility: VendorVisibilitySettings;
+      }>(response);
+      return data.visibility;
+    }
+
     await wait();
     const vendorId = getCurrentVendorId();
-    const { profile, gallery, services, contact } = getWorkspace();
-    const completion = getVendorCompletion(profile, gallery.length, services, contact);
+    const current = getLocalVisibilityView(vendorId);
     const visibilityMap = getVendorVisibilityMap();
-    const current = visibilityMap[vendorId];
 
     if (nextState && current.status !== "approved") {
       throw new Error("Your profile must be approved before it can go public.");
     }
 
-    if (nextState && !completion.isPublishReady) {
+    if (nextState && !current.canBePublic) {
       throw new Error("Finish the required profile sections before going public.");
     }
 
     visibilityMap[vendorId] = {
-      ...current,
+      ...visibilityMap[vendorId],
       isPublic: nextState,
-      canBePublic: current.status === "approved" && completion.isPublishReady,
-      adminMessage: nextState
-        ? "Your profile is approved and currently visible to couples."
-        : "Your profile is hidden from public discovery until you turn visibility back on.",
+      canBePublic: current.canBePublic,
+      adminMessage: nextState ? publicMessage : hiddenMessage,
     };
     saveVendorVisibilityMap(visibilityMap);
     return visibilityMap[vendorId];
   },
 
   async submitForReview() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/visibility/submit", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      const data = await parseJson<{
+        visibility: VendorVisibilitySettings;
+      }>(response);
+      return data.visibility;
+    }
+
     await wait(320);
     const vendorId = getCurrentVendorId();
-    const { profile, gallery, services, contact } = getWorkspace();
-    const completion = getVendorCompletion(profile, gallery.length, services, contact);
+    const current = getLocalVisibilityView(vendorId);
 
-    if (!completion.isPublishReady) {
+    if (!current.canBePublic && current.missingSteps.length) {
       throw new Error("Complete the required profile sections before submitting.");
     }
 
@@ -453,7 +784,7 @@ export const vendorService = {
       isPublic: false,
       canBePublic: false,
       lastSubmittedAt: nowIso(),
-      adminMessage: "Your profile has been submitted and is waiting for admin review.",
+      adminMessage: pendingReviewMessage,
       rejectedReason: undefined,
     };
     saveVendorVisibilityMap(visibilityMap);
@@ -461,11 +792,41 @@ export const vendorService = {
   },
 
   async getAccountSettings() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/settings", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ settings: VendorAccountSettings }>(response);
+      return data.settings;
+    }
+
     await wait();
     return getWorkspace().account;
   },
 
   async updateAccountSettings(payload: VendorAccountSettings) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/settings", {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await parseJson<{ settings: VendorAccountSettings }>(response);
+      syncVendorSession({
+        fullName: data.settings.fullName,
+        email: data.settings.email,
+        businessName: data.settings.businessName,
+      });
+      return data.settings;
+    }
+
     await wait();
 
     if (!payload.fullName.trim()) {
@@ -476,38 +837,57 @@ export const vendorService = {
       throw new Error("A valid email address is required.");
     }
 
+    if (!payload.businessName.trim()) {
+      throw new Error("Business name is required.");
+    }
+
     const vendorId = getCurrentVendorId();
-    const settingsMap = getVendorAccountSettingsMap();
-    settingsMap[vendorId] = {
+    const nextSettings = {
       fullName: payload.fullName.trim(),
       email: payload.email.trim().toLowerCase(),
       businessName: payload.businessName.trim(),
     };
+
+    const currentSettings = getVendorAccountSettingsMap()[vendorId];
+    const shouldTriggerRereview =
+      currentSettings.businessName !== nextSettings.businessName ||
+      currentSettings.email !== nextSettings.email;
+
+    const settingsMap = getVendorAccountSettingsMap();
+    settingsMap[vendorId] = nextSettings;
     saveVendorAccountSettingsMap(settingsMap);
 
-    const accounts = getVendorAccounts().map((item) =>
-      item.vendorId === vendorId
-        ? {
-            ...item,
-            fullName: settingsMap[vendorId].fullName,
-            email: settingsMap[vendorId].email,
-            businessName: settingsMap[vendorId].businessName || item.businessName,
-          }
-        : item,
-    );
-    saveVendorAccounts(accounts);
+    const profileMap = getVendorProfiles();
+    profileMap[vendorId] = {
+      ...profileMap[vendorId],
+      businessName: nextSettings.businessName,
+    };
+    saveVendorProfiles(profileMap);
 
-    const session = getVendorSession();
-    if (session && session.vendorId === vendorId) {
-      saveVendorSession({
-        ...session,
-        fullName: settingsMap[vendorId].fullName,
-        email: settingsMap[vendorId].email,
-        businessName: settingsMap[vendorId].businessName || session.businessName,
-      });
-    }
+    const contactsMap = getVendorContacts();
+    contactsMap[vendorId] = {
+      ...contactsMap[vendorId],
+      email: nextSettings.email,
+    };
+    saveVendorContacts(contactsMap);
 
-    return settingsMap[vendorId];
+    replaceVendorAccountRecord(vendorId, {
+      fullName: nextSettings.fullName,
+      email: nextSettings.email,
+      businessName: nextSettings.businessName,
+    });
+
+    syncVendorSession({
+      fullName: nextSettings.fullName,
+      email: nextSettings.email,
+      businessName: nextSettings.businessName,
+    });
+
+    updateLocalVisibilityForVendor(vendorId, {
+      triggerRereview: shouldTriggerRereview,
+    });
+
+    return nextSettings;
   },
 
   async changePassword(payload: {
@@ -515,6 +895,20 @@ export const vendorService = {
     nextPassword: string;
     confirmPassword: string;
   }) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/v1/vendor/settings/password", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return;
+    }
+
     await wait(260);
 
     if (payload.nextPassword.length < 8) {
