@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin-client";
 import { isSupabaseConfigured, isSupabaseServiceConfigured } from "@/lib/supabase/env";
 import { getVendorRouteContext } from "@/lib/supabase/vendor-route-helpers";
+import { getRateLimitConfig } from "@/lib/server/env";
+import { buildRateLimitKey, enforceRateLimit } from "@/lib/server/rate-limit";
+import { captureServerError } from "@/lib/server/logger";
 import {
   applyVendorPostEditState,
   getVendorPortfolioBucketName,
@@ -55,6 +58,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Image upload is required." }, { status: 400 });
   }
 
+  const throttled = await enforceRateLimit(request, {
+    scope: "vendor-gallery-upload",
+    key: buildRateLimitKey([context.user.id]),
+    max: getRateLimitConfig().upload.max,
+    windowMs: getRateLimitConfig().upload.windowMs,
+    message: "Too many uploads right now. Please wait before uploading again.",
+  });
+
+  if (throttled) {
+    return throttled;
+  }
+
   const storageClient = isSupabaseServiceConfigured()
     ? createSupabaseAdminClient()
     : context.supabase;
@@ -80,6 +95,12 @@ export async function POST(request: Request) {
       imageDataUrl,
     );
   } catch (error) {
+    await captureServerError("vendor-gallery-upload", error, {
+      requestPath: "/api/v1/vendor/gallery",
+      role: "vendor",
+      actorId: context.user.id,
+      vendorId: context.user.id,
+    });
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Unable to upload portfolio asset." },
       { status: 400 },
@@ -98,6 +119,12 @@ export async function POST(request: Request) {
 
   const { error } = await context.supabase.from("vendor_gallery_assets").insert(row);
   if (error) {
+    await captureServerError("vendor-gallery-upload", error, {
+      requestPath: "/api/v1/vendor/gallery",
+      role: "vendor",
+      actorId: context.user.id,
+      vendorId: context.user.id,
+    });
     try {
       await storageClient.storage.from(getVendorPortfolioBucketName()).remove([storagePath]);
     } catch {}

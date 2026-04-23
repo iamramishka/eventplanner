@@ -5,11 +5,13 @@ export type AuthSessionBase = {
   fullName: string;
   email: string;
   role: AppRole;
+  accountStatus?: "active" | "suspended" | "deleted";
 };
 
 export type CoupleSession = AuthSessionBase & {
   role: "couple";
   hasWedding: boolean;
+  subscriptionStatus?: "trial" | "active" | "expired" | "grace" | "suspended";
 };
 
 export type VendorSession = AuthSessionBase & {

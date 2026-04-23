@@ -8,7 +8,7 @@ import {
   MealPreference,
 } from "@/types/couple";
 
-export type InvitationRenderStatus = "ready" | "not-found" | "unpublished";
+export type InvitationRenderStatus = "ready" | "not-found" | "unpublished" | "locked";
 
 export type InvitationGuestContext = {
   guestId: string;
@@ -39,6 +39,8 @@ export type InvitationPageData = {
   venueMapLink?: string;
   contactPhone?: string;
   introMessage?: string;
+  lockedTitle?: string;
+  lockedMessage?: string;
   invitation: InvitationWorkspaceState;
   agenda: AgendaItemRecord[];
   gallery: GalleryAsset[];

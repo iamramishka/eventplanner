@@ -129,6 +129,8 @@ export function toAuthSession(account: AuthAccountRecord): AppSession {
         email: account.email,
         role: "couple",
         hasWedding: account.hasWedding,
+        accountStatus: "active",
+        subscriptionStatus: account.hasWedding ? "trial" : undefined,
       };
     case "vendor":
       return {

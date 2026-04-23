@@ -325,6 +325,20 @@ export function InvitationExperience({
     );
   }
 
+  if (page.status === "locked") {
+    return (
+      <InvitationStateCard
+        title={page.lockedTitle || "This invitation is currently locked"}
+        description={
+          page.lockedMessage ||
+          "The couple's access window has ended, so this invitation is not available right now."
+        }
+        ctaLabel="Back to Home"
+        href="/"
+      />
+    );
+  }
+
   if (entryMode === "table") {
     const tableFinderEnabled = isInvitationSectionVisible("table-finder", page.invitation.visibility);
 

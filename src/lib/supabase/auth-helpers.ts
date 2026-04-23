@@ -105,7 +105,7 @@ export async function buildAppSession(supabase: unknown, user: User): Promise<Ap
 
   const { data: profile, error: profileError } = await queryClient
     .from("profiles")
-    .select("role, full_name")
+    .select("role, full_name, status")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -116,11 +116,16 @@ export async function buildAppSession(supabase: unknown, user: User): Promise<Ap
   const role = normalizeRole(profile?.role ?? fallback.role);
   const fullName =
     (typeof profile?.full_name === "string" && profile.full_name) || fallback.fullName;
+  const accountStatus =
+    (typeof profile?.status === "string" ? profile.status : "active") as
+      | "active"
+      | "suspended"
+      | "deleted";
 
   if (role === "couple") {
     const { data: wedding, error } = await queryClient
       .from("weddings")
-      .select("id")
+      .select("id, wedding_subscriptions(status)")
       .eq("owner_user_id", user.id)
       .maybeSingle();
 
@@ -128,12 +133,38 @@ export async function buildAppSession(supabase: unknown, user: User): Promise<Ap
       throw new Error(`Unable to read wedding: ${error.message}`);
     }
 
+    const weddingSubscriptions =
+      wedding && typeof wedding === "object" && "wedding_subscriptions" in wedding
+        ? (wedding.wedding_subscriptions as
+            | { status?: unknown }
+            | Array<{ status?: unknown }>
+            | undefined)
+        : undefined;
+
+    const subscriptionStatus =
+      (typeof weddingSubscriptions === "object" &&
+      weddingSubscriptions !== null &&
+      !Array.isArray(weddingSubscriptions) &&
+      typeof weddingSubscriptions.status === "string"
+        ? weddingSubscriptions.status
+        : Array.isArray(weddingSubscriptions) && typeof weddingSubscriptions[0]?.status === "string"
+          ? weddingSubscriptions[0].status
+          : undefined) as
+        | "trial"
+        | "active"
+        | "expired"
+        | "grace"
+        | "suspended"
+        | undefined;
+
     return {
       id: user.id,
       fullName,
       email: user.email ?? "",
       role,
       hasWedding: Boolean(wedding),
+      accountStatus,
+      subscriptionStatus,
     };
   }
 
@@ -156,6 +187,7 @@ export async function buildAppSession(supabase: unknown, user: User): Promise<Ap
       fullName,
       email: user.email ?? "",
       role,
+      accountStatus,
       businessName: (vendor?.business_name as string | undefined) ?? "Vendor Studio",
     };
   }
@@ -166,6 +198,7 @@ export async function buildAppSession(supabase: unknown, user: User): Promise<Ap
     fullName,
     email: user.email ?? "",
     role,
+    accountStatus,
     lastLoginAt: new Date().toISOString(),
   };
 }

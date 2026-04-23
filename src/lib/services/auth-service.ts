@@ -33,7 +33,13 @@ async function parseJson<T>(response: Response): Promise<T> {
 async function hydrateCoupleStateIfNeeded(session: SessionUser | null) {
   syncCoupleSessionCache(session);
 
-  if (!session || !session.hasWedding || !isSupabaseConfigured()) {
+  if (
+    !session ||
+    !session.hasWedding ||
+    session.accountStatus !== "active" ||
+    session.subscriptionStatus === "suspended" ||
+    !isSupabaseConfigured()
+  ) {
     return;
   }
 

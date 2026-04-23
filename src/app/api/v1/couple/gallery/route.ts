@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin-client";
 import { isSupabaseConfigured, isSupabaseServiceConfigured } from "@/lib/supabase/env";
 import { getCoupleRouteContext } from "@/lib/supabase/couple-route-helpers";
+import { getRateLimitConfig } from "@/lib/server/env";
+import { buildRateLimitKey, enforceRateLimit } from "@/lib/server/rate-limit";
+import { captureServerError } from "@/lib/server/logger";
 import {
   getInvitationWorkspaceForWedding,
   getSubscriptionSnapshotForWedding,
@@ -77,6 +80,18 @@ export async function POST(request: Request) {
     );
   }
 
+  const throttled = await enforceRateLimit(request, {
+    scope: "couple-gallery-upload",
+    key: buildRateLimitKey([context.user.id]),
+    max: getRateLimitConfig().upload.max,
+    windowMs: getRateLimitConfig().upload.windowMs,
+    message: "Too many uploads right now. Please wait before uploading again.",
+  });
+
+  if (throttled) {
+    return throttled;
+  }
+
   const storageClient = isSupabaseServiceConfigured()
     ? createSupabaseAdminClient()
     : context.supabase;
@@ -114,6 +129,12 @@ export async function POST(request: Request) {
       imageDataUrl,
     );
   } catch (error) {
+    await captureServerError("couple-gallery-upload", error, {
+      requestPath: "/api/v1/couple/gallery",
+      role: "couple",
+      actorId: context.user.id,
+      weddingId: String(context.wedding.id),
+    });
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "Unable to upload image." },
       { status: 400 },
@@ -133,6 +154,12 @@ export async function POST(request: Request) {
 
   const { error } = await context.supabase.from("gallery_assets").insert(row);
   if (error) {
+    await captureServerError("couple-gallery-upload", error, {
+      requestPath: "/api/v1/couple/gallery",
+      role: "couple",
+      actorId: context.user.id,
+      weddingId: String(context.wedding.id),
+    });
     try {
       await storageClient.storage.from(getWeddingGalleryBucketName()).remove([storagePath]);
     } catch {}

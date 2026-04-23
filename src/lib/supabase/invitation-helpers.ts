@@ -13,6 +13,7 @@ import type {
 } from "@/types/invitation";
 import { buildCurrentRsvp, mapGuestRow } from "@/lib/supabase/guest-helpers";
 import { getSignedGalleryUrl } from "@/lib/supabase/couple-planning-helpers";
+import { getWeddingAvailabilityState } from "@/lib/server/trial-lifecycle";
 
 type QueryLike = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -62,6 +63,17 @@ function defaultInvitationPage(status: InvitationPageData["status"], weddingSlug
       confirmedCount: 0,
       names: [],
     },
+  };
+}
+
+function lockedInvitationPage(slug: string): InvitationPageData {
+  const page = defaultInvitationPage("locked", slug);
+  return {
+    ...page,
+    displayTitle: "Invitation temporarily unavailable",
+    lockedTitle: "This invitation is currently locked",
+    lockedMessage:
+      "The couple's access window has ended, so this invitation is not available right now. Please contact the couple or the platform team if you need help.",
   };
 }
 
@@ -116,6 +128,16 @@ export async function buildInvitationPageDataFromSlug(
 
   if (!wedding) {
     return defaultInvitationPage("not-found", slug);
+  }
+
+  const availability = await getWeddingAvailabilityState(
+    queryClient,
+    String(wedding.id),
+    String(wedding.owner_user_id),
+  );
+
+  if (availability.isLocked) {
+    return lockedInvitationPage(slug);
   }
 
   const { data: site, error: siteError } = await queryClient
@@ -424,6 +446,10 @@ export async function submitGuestRsvpByToken(
   const queryClient = asQueryClient(supabase);
   const page = await buildInvitationPageDataFromToken(queryClient, token);
 
+  if (page.status === "locked") {
+    throw new Error(page.lockedMessage ?? "RSVP is not available for this invitation.");
+  }
+
   if (page.status !== "ready" || !page.guestContext) {
     throw new Error("This RSVP link is no longer valid.");
   }
@@ -468,6 +494,13 @@ export async function findTableByTokenFromDb(
   const page = await buildInvitationPageDataFromToken(supabase, token);
 
   if (page.status !== "ready") {
+    if (page.status === "locked") {
+      return {
+        status: "unavailable",
+        message: page.lockedMessage ?? "Table lookup is not available for this invitation.",
+      };
+    }
+
     return {
       status: "not-found",
       message: "We could not find a table assignment for this invitation.",
@@ -504,6 +537,13 @@ export async function findTableByGuestNameFromDb(
   const page = await buildInvitationPageDataFromSlug(supabase, slug);
 
   if (page.status !== "ready") {
+    if (page.status === "locked") {
+      return {
+        status: "unavailable",
+        message: page.lockedMessage ?? "Table lookup is not available for this invitation.",
+      };
+    }
+
     return {
       status: "not-found",
       message: "This invitation is not available.",

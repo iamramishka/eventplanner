@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 import { buildAppSession } from "@/lib/supabase/auth-helpers";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getRateLimitConfig } from "@/lib/server/env";
+import { buildRateLimitKey, enforceRateLimit, getRequestIp } from "@/lib/server/rate-limit";
+import { captureServerError } from "@/lib/server/logger";
 
 export async function POST(request: Request) {
   if (!isSupabaseConfigured()) {
@@ -19,6 +22,18 @@ export async function POST(request: Request) {
     businessName?: string;
   };
 
+  const throttled = await enforceRateLimit(request, {
+    scope: "auth-register",
+    key: buildRateLimitKey([getRequestIp(request)]),
+    max: getRateLimitConfig().register.max,
+    windowMs: getRateLimitConfig().register.windowMs,
+    message: "Too many signup attempts. Please try again later.",
+  });
+
+  if (throttled) {
+    return throttled;
+  }
+
   const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase.auth.signUp({
@@ -34,6 +49,10 @@ export async function POST(request: Request) {
   });
 
   if (error) {
+    await captureServerError("auth-register", error, {
+      requestPath: "/api/v1/auth/register",
+      role: payload.role,
+    });
     return NextResponse.json({ message: error.message }, { status: 400 });
   }
 

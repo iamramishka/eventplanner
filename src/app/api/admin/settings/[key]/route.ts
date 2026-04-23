@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { appendAdminAuditLog } from "@/lib/supabase/admin-helpers";
 import { getAdminRouteContext } from "@/lib/supabase/admin-route-helpers";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getRateLimitConfig } from "@/lib/server/env";
+import { buildRateLimitKey, enforceRateLimit } from "@/lib/server/rate-limit";
 
 export async function PATCH(
   request: Request,
@@ -17,6 +19,18 @@ export async function PATCH(
   const context = await getAdminRouteContext();
   if (!context.ok) {
     return context.response;
+  }
+
+  const throttled = await enforceRateLimit(request, {
+    scope: "admin-mutation",
+    key: buildRateLimitKey([context.user.id]),
+    max: getRateLimitConfig().adminMutation.max,
+    windowMs: getRateLimitConfig().adminMutation.windowMs,
+    message: "Too many admin actions. Please wait before trying again.",
+  });
+
+  if (throttled) {
+    return throttled;
   }
 
   const { key } = await params;
