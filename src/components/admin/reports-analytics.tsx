@@ -32,7 +32,9 @@ export function ReportsAnalytics() {
       <AdminPanel className="p-6">
         <h2 className="text-lg font-semibold text-slate-950">Reporting notes</h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-          In the current implementation these are seeded snapshots representing the reports module. The production-ready next step would be a scheduled aggregation pipeline with exportable date ranges and saved filters.
+          These metrics now read from the live operational dataset. The next production step would
+          be cached aggregations, date filtering, and exportable reporting rather than replacing the
+          current live-derived admin view.
         </p>
       </AdminPanel>
     </div>

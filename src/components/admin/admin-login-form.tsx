@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Field, InlineNotice, SubmitButton } from "@/components/shared/form-controls";
 import { adminCredentials } from "@/data/admin-mock";
 import { adminAuthService } from "@/lib/services/admin-auth-service";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 type AdminLoginFormProps = {
   nextPath?: string;
@@ -12,9 +13,10 @@ type AdminLoginFormProps = {
 
 export function AdminLoginForm({ nextPath }: AdminLoginFormProps) {
   const router = useRouter();
+  const showDemoCredentials = !isSupabaseConfigured();
   const [form, setForm] = useState({
-    email: adminCredentials.email,
-    password: adminCredentials.password,
+    email: showDemoCredentials ? adminCredentials.email : "",
+    password: showDemoCredentials ? adminCredentials.password : "",
   });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -59,9 +61,12 @@ export function AdminLoginForm({ nextPath }: AdminLoginFormProps) {
           setForm((current) => ({ ...current, password: event.target.value }))
         }
       />
-      <InlineNotice tone="default">
-        Demo admin access uses <strong>{adminCredentials.email}</strong> and <strong>{adminCredentials.password}</strong>.
-      </InlineNotice>
+      {showDemoCredentials ? (
+        <InlineNotice tone="default">
+          Demo admin access uses <strong>{adminCredentials.email}</strong> and{" "}
+          <strong>{adminCredentials.password}</strong>.
+        </InlineNotice>
+      ) : null}
       {error ? <InlineNotice tone="error">{error}</InlineNotice> : null}
       <SubmitButton label="Sign In To Admin" pendingLabel="Signing in..." pending={pending} />
     </form>

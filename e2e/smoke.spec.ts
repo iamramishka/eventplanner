@@ -35,6 +35,14 @@ async function signInAsSeededVendor(page: Page) {
   await expect(page).toHaveURL(/\/vendor-dashboard$/);
 }
 
+async function signInAsAdmin(page: Page) {
+  await page.goto("/admin/login");
+  await page.getByLabel("Admin email").fill("ops@vinyup.com");
+  await page.getByLabel("Password").fill("Admin123!");
+  await page.getByRole("button", { name: "Sign In To Admin" }).click();
+  await expect(page).toHaveURL(/\/admin$/);
+}
+
 test("couple signup flows into onboarding and dashboard", async ({ page }) => {
   await page.goto("/auth?tab=signup");
 
@@ -223,14 +231,53 @@ test("vendor settings changes persist and password updates allow sign-in", async
 });
 
 test("admin login lands in the admin dashboard", async ({ page }) => {
-  await page.goto("/admin/login");
-
-  await page.getByRole("button", { name: "Sign In To Admin" }).click();
-
-  await expect(page).toHaveURL(/\/admin$/);
+  await signInAsAdmin(page);
   await expect(
     page.getByRole("heading", { name: "Platform operations at a glance" }),
   ).toBeVisible();
+});
+
+test("admin can suspend and reactivate a couple with persisted state", async ({ page }) => {
+  await signInAsAdmin(page);
+  await page.goto("/admin/couples");
+
+  await page.getByRole("row", { name: /Amaya Perera/i }).click();
+  await page.getByRole("button", { name: "Suspend" }).click();
+  await expect(page.getByText("Amaya Perera suspended.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("row", { name: /Amaya Perera/i })).toContainText("suspended");
+
+  await page.getByRole("row", { name: /Amaya Perera/i }).click();
+  await page.getByRole("button", { name: "Reactivate" }).click();
+  await expect(page.getByText("Amaya Perera reactivated.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("row", { name: /Amaya Perera/i })).toContainText("active");
+});
+
+test("admin can update a plan and resolve a support inquiry", async ({ page }) => {
+  const nextPriceLabel = `LKR 4,900 / wedding ${Date.now()}`;
+
+  await signInAsAdmin(page);
+  await page.goto("/admin/plans");
+
+  await page.getByRole("row", { name: /Basic/i }).click();
+  await page.getByLabel("Price label").fill(nextPriceLabel);
+  await page.getByRole("button", { name: "Save Plan" }).click();
+  await expect(page.getByText("Basic updated.")).toBeVisible();
+  await page.reload();
+  await page.getByRole("row", { name: /Basic/i }).click();
+  await expect(page.getByLabel("Price label")).toHaveValue(nextPriceLabel);
+
+  await page.goto("/admin/logs");
+  await page.getByRole("row", { name: /Need help restoring vendor profile visibility/i }).getByRole(
+    "button",
+    { name: "Resolve" },
+  ).click();
+  await expect(
+    page.getByText("Need help restoring vendor profile visibility marked resolved."),
+  ).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("resolved").first()).toBeVisible();
 });
 
 test("direct table token shows explicit unavailable state when table finder is disabled", async ({

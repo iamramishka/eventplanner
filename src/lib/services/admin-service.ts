@@ -1,5 +1,6 @@
 "use client";
 
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import {
   appendAdminAuditLog,
   getAdminAuditLogs,
@@ -31,6 +32,18 @@ import {
   VendorRecord,
 } from "@/types/admin";
 
+async function parseJson<T>(response: Response): Promise<T> {
+  const payload = (await response.json().catch(() => ({}))) as T & {
+    message?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(payload.message || "Request failed.");
+  }
+
+  return payload;
+}
+
 function wait(ms = 240) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -59,6 +72,17 @@ function formatMetricNumber(value: number) {
 
 export const adminService = {
   async getOverview(): Promise<AdminOverviewData> {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/dashboard", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ overview: AdminOverviewData }>(response);
+      return data.overview;
+    }
+
     await wait();
 
     const couples = getAdminCouples();
@@ -130,11 +154,36 @@ export const adminService = {
   },
 
   async getCouples() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/couples", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ couples: CoupleRecord[] }>(response);
+      return data.couples;
+    }
+
     await wait();
     return getAdminCouples();
   },
 
   async updateCoupleStatus(id: string, status: CoupleRecord["status"], reason: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/admin/couples/${id}/status`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status, reason }),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return adminService.getCouples();
+    }
+
     await wait();
     const couples = getAdminCouples().map((item) =>
       item.id === id ? { ...item, status } : item,
@@ -148,6 +197,20 @@ export const adminService = {
   },
 
   async extendTrial(coupleId: string, extraDays: number, reason: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/admin/couples/${coupleId}/extend-trial`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ extraDays, reason }),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return adminService.getTrials();
+    }
+
     await wait();
     const trials = getAdminTrials().map((item) => {
       if (item.coupleId !== coupleId) {
@@ -185,6 +248,20 @@ export const adminService = {
   },
 
   async deleteCouple(id: string, reason: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/admin/couples/${id}/delete`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return adminService.getCouples();
+    }
+
     await wait();
     const target = getAdminCouples().find((item) => item.id === id);
     const couples = getAdminCouples().map((item) =>
@@ -198,11 +275,36 @@ export const adminService = {
   },
 
   async getVendors() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/vendors", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ vendors: VendorRecord[] }>(response);
+      return data.vendors;
+    }
+
     await wait();
     return getAdminVendors();
   },
 
   async updateVendorStatus(id: string, status: VendorRecord["status"], reason: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/admin/vendors/${id}/status`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status, reason }),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return adminService.getVendors();
+    }
+
     await wait();
     const vendors = getAdminVendors().map((item) =>
       item.id === id ? { ...item, status } : item,
@@ -216,6 +318,20 @@ export const adminService = {
   },
 
   async toggleVendorFeature(id: string, reason: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/admin/vendors/${id}/feature`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return adminService.getVendors();
+    }
+
     await wait();
     const vendors = getAdminVendors().map((item) =>
       item.id === id ? { ...item, featured: !item.featured } : item,
@@ -234,11 +350,36 @@ export const adminService = {
   },
 
   async getPlans() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/plans", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ plans: PlanRecord[] }>(response);
+      return data.plans;
+    }
+
     await wait();
     return getAdminPlans();
   },
 
   async updatePlan(updated: PlanRecord, reason: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/admin/plans/${updated.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ plan: updated, reason }),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return adminService.getPlans();
+    }
+
     await wait();
     const plans = getAdminPlans().map((item) =>
       item.id === updated.id ? { ...updated, updatedAt: isoNow() } : item,
@@ -249,11 +390,36 @@ export const adminService = {
   },
 
   async getTrials() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/trials", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ trials: ReturnType<typeof getAdminTrials> }>(response);
+      return data.trials;
+    }
+
     await wait();
     return getAdminTrials();
   },
 
   async runCleanup(reason: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/trials/cleanup", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return adminService.getTrials();
+    }
+
     await wait(420);
     const trials = getAdminTrials().map((item) =>
       item.status === "expired" ? { ...item, status: "cleaned" as const } : item,
@@ -270,11 +436,36 @@ export const adminService = {
   },
 
   async getTemplates() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/templates", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ templates: ReturnType<typeof getAdminTemplates> }>(response);
+      return data.templates;
+    }
+
     await wait();
     return getAdminTemplates();
   },
 
   async toggleTemplateStatus(id: string, reason: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/admin/templates/${id}/status`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return adminService.getTemplates();
+    }
+
     await wait();
     const templates = getAdminTemplates().map((item) => {
       if (item.id !== id) {
@@ -301,11 +492,36 @@ export const adminService = {
   },
 
   async getCms() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/cms", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ pages: ReturnType<typeof getAdminCms> }>(response);
+      return data.pages;
+    }
+
     await wait();
     return getAdminCms();
   },
 
   async toggleCmsStatus(id: string, reason: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/admin/cms/${id}/status`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return adminService.getCms();
+    }
+
     await wait();
     const pages = getAdminCms().map((item) =>
       item.id === id
@@ -327,16 +543,52 @@ export const adminService = {
   },
 
   async getReports() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/reports", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ reports: ReturnType<typeof getAdminReports> }>(response);
+      return data.reports;
+    }
+
     await wait();
     return getAdminReports();
   },
 
   async getSettings() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/settings", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ settings: ReturnType<typeof getAdminSettings> }>(response);
+      return data.settings;
+    }
+
     await wait();
     return getAdminSettings();
   },
 
   async updateSetting(key: string, value: string, reason: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/admin/settings/${key}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ value, reason }),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return adminService.getSettings();
+    }
+
     await wait();
     const settings = getAdminSettings().map((item) =>
       item.key === key ? { ...item, value } : item,
@@ -350,21 +602,68 @@ export const adminService = {
   },
 
   async getAuditLogs() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/logs/audit", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ logs: ReturnType<typeof getAdminAuditLogs> }>(response);
+      return data.logs;
+    }
+
     await wait();
     return getAdminAuditLogs();
   },
 
   async getSystemLogs() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/logs/system", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ logs: ReturnType<typeof getAdminSystemLogs> }>(response);
+      return data.logs;
+    }
+
     await wait();
     return getAdminSystemLogs();
   },
 
   async getSupportInquiries() {
+    if (isSupabaseConfigured()) {
+      const response = await fetch("/api/admin/support", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await parseJson<{ inquiries: ReturnType<typeof getAdminSupportInquiries> }>(response);
+      return data.inquiries;
+    }
+
     await wait();
     return getAdminSupportInquiries();
   },
 
   async resolveSupportInquiry(id: string, reason: string) {
+    if (isSupabaseConfigured()) {
+      const response = await fetch(`/api/admin/support/${id}/resolve`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      await parseJson<{ ok: boolean }>(response);
+      return adminService.getSupportInquiries();
+    }
+
     await wait();
     const items = getAdminSupportInquiries().map((item) =>
       item.id === id ? { ...item, status: "resolved" as const } : item,
