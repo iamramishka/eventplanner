@@ -1,0 +1,358 @@
+.container {
+  display: flex;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: #faf9f8;
+}
+
+.leftPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: #fdf5f6;
+  padding: 40px;
+  overflow: hidden;
+  max-width: 50%;
+}
+
+.leftPanel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('/wedding_login.png');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.8;
+  z-index: 1;
+}
+
+.leftContent {
+  position: relative;
+  z-index: 2;
+  color: #333;
+}
+
+.logoArea {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.logoW {
+  font-size: 32px;
+  font-weight: bold;
+  color: #c2185b;
+  font-family: serif;
+}
+
+.logoText {
+  display: flex;
+  flex-direction: column;
+}
+
+.logoTitle {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.logoSubtitle {
+  font-size: 12px;
+  color: #666;
+}
+
+.welcomeText {
+  margin-top: 60px;
+  font-size: 48px;
+  line-height: 1.2;
+  font-family: serif;
+}
+
+.highlightText {
+  color: #c2185b;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 30px 0;
+  color: #c2185b;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background-color: #ccc;
+  max-width: 150px;
+}
+
+.dividerIcon {
+  margin: 0 15px;
+}
+
+.subtitleText {
+  font-size: 16px;
+  color: #555;
+  line-height: 1.5;
+  max-width: 300px;
+}
+
+.rightPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  background-color: #fff;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.languageSelector {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid #eee;
+  border-radius: 20px;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 400px;
+}
+
+.title {
+  font-size: 32px;
+  font-family: serif;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 40px;
+  line-height: 1.5;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 12px;
+  color: #c2185b;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: #c2185b;
+}
+
+.togglePassword {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+}
+
+.optionsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.rememberMe {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.forgotPassword {
+  color: #c2185b;
+  text-decoration: none;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 14px;
+  background-color: #c2185b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.submitBtn:hover {
+  background-color: #a0144b;
+}
+
+.submitBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.orDivider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 30px 0;
+  color: #888;
+  font-size: 14px;
+}
+
+.orDivider::before,
+.orDivider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #eee;
+}
+
+.orDivider::before {
+  margin-right: 10px;
+}
+
+.orDivider::after {
+  margin-left: 10px;
+}
+
+.socialBtns {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.socialBtn {
+  width: 100%;
+  padding: 12px;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.2s;
+}
+
+.socialBtn:hover {
+  background-color: #f9f9f9;
+}
+
+.securityNote {
+  margin-top: 30px;
+  padding: 16px;
+  background-color: #fffafb;
+  border-radius: 8px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.securityIcon {
+  color: #c2185b;
+}
+
+.securityTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.securityDesc {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.signupPrompt {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  width: 100%;
+  padding-bottom: 20px;
+}
+
+.signupLink {
+  color: #c2185b;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.errorText {
+  color: red;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+  .container {
+    flex-direction: column;
+  }
+  .leftPanel {
+    max-width: 100%;
+    padding: 30px 20px;
+    min-height: 300px;
+  }
+  .languageSelector {
+    top: 20px;
+    right: 20px;
+  }
+  .welcomeText {
+    margin-top: 30px;
+    font-size: 32px;
+  }
+}
