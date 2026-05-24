@@ -1,4 +1,4 @@
-const base = process.env.BASE_URL || 'http://localhost:3000';
+const base = process.env.BASE_URL || 'http://127.0.0.1:3000';
 const testPngDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR42mP8z8AARLJgwiBqAAA2xQIFZC8qGQAAAABJRU5ErkJggg==';
 
 function assert(condition, message) {

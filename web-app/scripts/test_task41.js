@@ -1,5 +1,5 @@
 const fetch = globalThis.fetch || (async () => { throw new Error('No fetch available') })();
-const base = 'http://localhost:3000';
+const base = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 async function check(path) {
   try {

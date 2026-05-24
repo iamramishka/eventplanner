@@ -15,7 +15,7 @@ const LOG_PATH = path.resolve(process.cwd(), 'web-app', 'logs', 'cleanup.log');
 function appendLog(line: string) {
   try {
     fs.appendFileSync(LOG_PATH, `[${new Date().toISOString()}] ${line}\n`);
-  } catch (e) {
+  } catch {
     // ignore logging failures in dev
   }
 }

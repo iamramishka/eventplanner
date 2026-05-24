@@ -12,19 +12,23 @@ function deleteUploadedGalleryFile(imageUrl: string) {
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 }
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const existing = db.galleryImages.findUnique((image: any) => image.id === id);
+    const existing = db.galleryImages.findUnique(image => image.id === id);
     if (!existing) {
       return NextResponse.json({ ok: false, error: 'Gallery image not found' }, { status: 404 });
     }
 
     const updated = updateGalleryImage(id, { altText: String(body?.altText || '').trim() });
     return NextResponse.json(updated);
-  } catch (error: any) {
-    return NextResponse.json({ ok: false, error: String(error?.message || error) }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });
   }
 }
 

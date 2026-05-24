@@ -23,9 +23,13 @@ function extensionForMime(mimeType: string) {
   return 'jpg';
 }
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function GET(_: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   const { weddingId } = await params;
-  const wedding = db.weddings.findUnique((w: any) => w.id === weddingId);
+  const wedding = db.weddings.findUnique(w => w.id === weddingId);
   if (!wedding) {
     return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
   }
@@ -36,7 +40,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ weddingId:
 export async function POST(request: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   try {
     const { weddingId } = await params;
-    const wedding = db.weddings.findUnique((w: any) => w.id === weddingId);
+    const wedding = db.weddings.findUnique(w => w.id === weddingId);
     if (!wedding) {
       return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
     }
@@ -80,15 +84,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ wed
     });
 
     return NextResponse.json(image, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ ok: false, error: String(error?.message || error) }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });
   }
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   try {
     const { weddingId } = await params;
-    const wedding = db.weddings.findUnique((w: any) => w.id === weddingId);
+    const wedding = db.weddings.findUnique(w => w.id === weddingId);
     if (!wedding) {
       return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
     }
@@ -99,7 +103,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ we
     }
 
     return NextResponse.json(reorderGalleryImages(weddingId, body.orderedIds.map(String)));
-  } catch (error: any) {
-    return NextResponse.json({ ok: false, error: String(error?.message || error) }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });
   }
 }

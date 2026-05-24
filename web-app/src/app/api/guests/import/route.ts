@@ -21,9 +21,10 @@ export async function POST(req: Request) {
   try {
     const text = await req.text();
     const rows = parseCsv(text);
-    const created = importGuests(rows as any);
+    const created = importGuests(rows);
     return NextResponse.json({ ok: true, createdCount: created.length, created });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 400 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
 }

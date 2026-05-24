@@ -3,7 +3,7 @@ import { db, updateWedding } from '@/lib/store';
 
 export async function GET(_: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   const { weddingId } = await params;
-  const wedding = db.weddings.findUnique((w: any) => w.id === weddingId);
+  const wedding = db.weddings.findUnique((w) => w.id === weddingId);
   if (!wedding) {
     return NextResponse.json({ error: 'Wedding not found' }, { status: 404 });
   }

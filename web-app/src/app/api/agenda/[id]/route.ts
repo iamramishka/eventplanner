@@ -41,10 +41,14 @@ function validateAgendaPayload(body: AgendaPayload, fallbackTimezone: string) {
   return '';
 }
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const existing = db.agenda.findMany((event: any) => event.id === id)[0];
+    const existing = db.agenda.findMany(event => event.id === id)[0];
     if (!existing) {
       return NextResponse.json({ ok: false, error: 'Agenda event not found' }, { status: 404 });
     }
@@ -66,8 +70,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     });
 
     return NextResponse.json(updated);
-  } catch (error: any) {
-    return NextResponse.json({ ok: false, error: String(error?.message || error) }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });
   }
 }
 

@@ -1,6 +1,6 @@
 const { spawnSync } = require('child_process');
 
-const base = process.env.BASE_URL || 'http://localhost:3000';
+const base = process.env.BASE_URL || 'http://127.0.0.1:3000';
 const weddingId = 'w_1';
 const token = 'token_g1';
 const guestId = 'g_1';

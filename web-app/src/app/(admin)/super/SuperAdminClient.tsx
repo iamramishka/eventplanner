@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { 
   LayoutDashboard, Users, Briefcase, LayoutTemplate, CreditCard, Trash2, 
-  FileText, BarChart2, Settings, Scroll, ShieldCheck, ShieldOff, PanelLeftClose, User, 
+  Settings, ShieldCheck, ShieldOff, PanelLeftClose, User, 
   Menu, ChevronRight, LogOut, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle, 
-  Bell, UserCheck, Globe, Banknote, Search, Plus, Save, Check, X, Star, Eye
+  Search, Check, X, Star, Eye
 } from 'lucide-react';
 import styles from './admin.module.css';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -138,7 +138,7 @@ function NavItem({ id, icon, label, active, onClick, badge }: any) {
   );
 }
 
-function DashboardModule({ couples, vendors, weddings, loading }: any) {
+function DashboardModule({ couples, vendors, loading }: any) {
   const activeTrials = loading ? null : couples.filter((c: any) => c.plan === 'trial' && new Date(c.trialEnds) >= new Date()).length;
   const expiredTrials = loading ? null : couples.filter((c: any) => c.plan === 'trial' && new Date(c.trialEnds) < new Date()).length;
   
@@ -182,7 +182,7 @@ function DashboardModule({ couples, vendors, weddings, loading }: any) {
             <div className={cn("activity-item")}>
               <div className={cn("activity-dot")} style={{ background: '#F59E0B' }}></div>
               <div className={cn("activity-content")}>
-                <div className={cn("activity-text")}>Vendor "SweetBites" pending approval</div>
+                <div className={cn("activity-text")}>Vendor &quot;SweetBites&quot; pending approval</div>
                 <div className={cn("activity-time")}>2 hours ago</div>
               </div>
             </div>
@@ -368,7 +368,7 @@ function VendorsModule({ vendors: initialVendors }: any) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [vendorsState, setVendorsState] = useState(initialVendors || []);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   let vendors = vendorsState;
   if (filter === 'featured') vendors = vendors.filter((v: any) => v.featured);

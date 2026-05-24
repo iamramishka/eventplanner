@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Listing not found.' }, { status: 404 });
     }
     return NextResponse.json({ listing });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
@@ -51,7 +51,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Maximum 10 gallery images per listing.' }, { status: 400 });
     }
 
-    const patch: Record<string, any> = {};
+    const patch: Record<string, unknown> = {};
     const allowed = [
       'title', 'category', 'subcategory', 'description', 'price', 'currency', 'pricingType',
       'coverImageBase64', 'galleryImages', 'tags', 'seoTitle', 'seoDescription', 'contentMarkdown', 'active',
@@ -66,7 +66,7 @@ export async function PUT(
     const updated = updateListing(lid, patch);
     if (!updated) return NextResponse.json({ error: 'Update failed.' }, { status: 500 });
     return NextResponse.json({ listing: updated });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
@@ -92,7 +92,7 @@ export async function PATCH(
     }
 
     return PUT(req, { params });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
@@ -110,7 +110,7 @@ export async function DELETE(
     }
     const removed = deleteListing(lid);
     return NextResponse.json({ deleted: true, id: removed?.id });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }

@@ -7,12 +7,12 @@ import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, Settings, Users, CheckSquare,
   Menu, Bell, Heart, CheckCircle, UserPlus,
-  Save, Users as UsersIcon, Clock, ArrowRight, ArrowUp, ArrowDown, Sparkles,
-  CalendarDays, Image as ImageIcon, PartyPopper, ClipboardList,
-  Palette, Music, Grid3x3, Wallet, ListChecks, Store,
-  MapPin, Phone, Mail, ExternalLink, TrendingUp,
+  Save, Users as UsersIcon, Clock, ArrowUp, ArrowDown,
+  CalendarDays, Image as ImageIcon, ClipboardList,
+  Palette, Grid3x3, Wallet, ListChecks, Store,
+  MapPin, Mail, TrendingUp,
   ChevronRight, Send, Edit3, Calendar, DollarSign,
-  Eye, AlertCircle, X, Check, Minus, Plus,
+  Eye, AlertCircle, X, Check, Plus,
   UserCircle, LogOut, HelpCircle, Diamond, RefreshCw,
   Home, Upload, Download, Trash2, GripVertical, Printer, Copy, FileText
 } from 'lucide-react';
@@ -2341,7 +2341,7 @@ function SettingsModule({ wedding, setWedding }: any) {
 /* ════════════════════════════════════════
    GUESTS MODULE
 ════════════════════════════════════════ */
-function GuestsModule({ wedding, guests, setGuests, rsvps, onNavigate }: any) {
+function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
   const [filter, setFilter] = useState<'all' | 'bride' | 'groom' | 'confirmed' | 'pending' | 'declined'>('all');
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);

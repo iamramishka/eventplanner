@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/lib/vendorStore.ts
 // In-memory vendor store — Task 8.1 (registration) + Task 8.3 (profile & listings)
 // In production, replace with Prisma/PostgreSQL.

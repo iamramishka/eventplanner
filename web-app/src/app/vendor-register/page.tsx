@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 /* ─────────────────────────── Types ─────────────────────────── */
@@ -616,7 +617,7 @@ export default function VendorRegisterPage() {
 
         <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.8rem', color: '#9ca3af' }}>
           Already have an account?{' '}
-          <a href="/login" style={{ color: '#c45a74', textDecoration: 'underline' }}>Sign in</a>
+          <Link href="/login" style={{ color: '#c45a74', textDecoration: 'underline' }}>Sign in</Link>
         </p>
       </div>
     </main>
