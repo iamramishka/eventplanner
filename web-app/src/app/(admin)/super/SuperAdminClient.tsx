@@ -182,7 +182,7 @@ function DashboardModule({ couples, vendors, loading }: any) {
             <div className={cn("activity-item")}>
               <div className={cn("activity-dot")} style={{ background: '#F59E0B' }}></div>
               <div className={cn("activity-content")}>
-                <div className={cn("activity-text")}>Vendor "SweetBites" pending approval</div>
+                <div className={cn("activity-text")}>Vendor &quot;SweetBites&quot; pending approval</div>
                 <div className={cn("activity-time")}>2 hours ago</div>
               </div>
             </div>

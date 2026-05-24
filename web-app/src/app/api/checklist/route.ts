@@ -18,7 +18,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const created = addChecklistItem(body);
     return NextResponse.json(created, { status: 201 });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 400 });
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ ok: false, error }, { status: 400 });
   }
 }

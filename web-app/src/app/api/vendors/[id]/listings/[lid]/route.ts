@@ -51,7 +51,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Maximum 10 gallery images per listing.' }, { status: 400 });
     }
 
-    const patch: Record<string, any> = {};
+    const patch: Record<string, unknown> = {};
     const allowed = [
       'title', 'category', 'subcategory', 'description', 'price', 'currency', 'pricingType',
       'coverImageBase64', 'galleryImages', 'tags', 'seoTitle', 'seoDescription', 'contentMarkdown', 'active',

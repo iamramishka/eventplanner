@@ -17,7 +17,7 @@ export async function GET(
     }
     const listings = getListingsByVendor(id);
     return NextResponse.json({ listings, total: listings.length });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[GET /api/vendors/[id]/listings]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
@@ -70,7 +70,7 @@ export async function POST(
     });
 
     return NextResponse.json({ listing }, { status: 201 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[POST /api/vendors/[id]/listings]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }

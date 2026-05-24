@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // scripts/test_task81_vendor_onboarding.js
 // Smoke tests for Task 8.1 — Vendor Registration & Onboarding
-// Usage: BASE_URL=http://localhost:3000 node scripts/test_task81_vendor_onboarding.js
+// Usage: BASE_URL=http://127.0.0.1:3000 node scripts/test_task81_vendor_onboarding.js
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 let passed = 0;
 let failed = 0;

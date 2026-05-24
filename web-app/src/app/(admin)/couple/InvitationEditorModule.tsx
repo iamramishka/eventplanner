@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -43,10 +43,6 @@ export default function InvitationEditorModule({ wedding, setWedding }: Props) {
     setError('');
     setDirty(false);
   }, [wedding.id]);
-
-  const messageBlocks = useMemo(() => renderMarkdownBlocks(draft.content.messageMarkdown), [draft.content.messageMarkdown]);
-  const detailsBlocks = useMemo(() => renderMarkdownBlocks(draft.content.detailsMarkdown), [draft.content.detailsMarkdown]);
-  const closingBlocks = useMemo(() => renderMarkdownBlocks(draft.content.closingMarkdown), [draft.content.closingMarkdown]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -226,7 +222,6 @@ export function InvitationPreview({ wedding }: { wedding: any }) {
   const content = wedding.invitationContent || {};
   const theme = normalizeInvitationTheme(wedding.theme);
   const messageBlocks = renderMarkdownBlocks(content.messageMarkdown || '');
-  const detailsBlocks = renderMarkdownBlocks(content.detailsMarkdown || '');
   const closingBlocks = renderMarkdownBlocks(content.closingMarkdown || '');
 
   return (

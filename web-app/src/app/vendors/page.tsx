@@ -35,7 +35,7 @@ export default function VendorsPage() {
         const json = await res.json();
         if (!mounted) return;
         setVendors(json.vendors || []);
-      } catch (e) {
+      } catch {
         if (mounted) setVendors([]);
       } finally {
         if (mounted) setLoading(false);

@@ -6,7 +6,7 @@ import {
   MessageSquare, BarChart2, Banknote, Settings, Menu, Bell,
   Eye, Clock, CheckCircle, Star, LogOut, Plus, Edit2, Trash2,
   ToggleLeft, ToggleRight, Upload, X, Save, AlertCircle,
-  Globe, DollarSign, Image, FileText,
+  Globe, DollarSign, Image as ImageIcon, FileText,
   Search, ImageOff, RefreshCw, Check,
   Info
 } from 'lucide-react';
@@ -148,7 +148,7 @@ function DashboardModule({ vendor, listings, bookings, onNavigate }: any) {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Dashboard</h1>
-          <p className={styles.pageSubtitle}>Welcome back, {vendor.ownerFirstName || vendor.businessName}! Here's an overview.</p>
+          <p className={styles.pageSubtitle}>Welcome back, {vendor.ownerFirstName || vendor.businessName}! Here&apos;s an overview.</p>
         </div>
         <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => onNavigate('listings')}>
           <Plus size={16} /> Add New Listing
@@ -475,7 +475,7 @@ function ProfileModule({ vendor: initialVendor, onVendorSaved }: any) {
       {activeTab === 'media' && (
         <>
           <div className="profCard">
-            <div className="profCardTitle"><Image size={18} style={{ color: 'var(--inv-rose)' }} /> Logo & Cover Image</div>
+            <div className="profCardTitle"><ImageIcon size={18} style={{ color: 'var(--inv-rose)' }} /> Logo & Cover Image</div>
             <div className="profGrid">
               <div className="profField">
                 <label className="profLabel">Business Logo <span className="profHint">(max 3 MB)</span></label>
@@ -509,7 +509,7 @@ function ProfileModule({ vendor: initialVendor, onVendorSaved }: any) {
           </div>
 
           <div className="profCard">
-            <div className="profCardTitle"><Image size={18} style={{ color: 'var(--inv-rose)' }} /> Portfolio Gallery <span className="profHint" style={{ fontWeight: 400, marginLeft: '.5rem' }}>({portfolioPreviews.length}/10 images)</span></div>
+            <div className="profCardTitle"><ImageIcon size={18} style={{ color: 'var(--inv-rose)' }} /> Portfolio Gallery <span className="profHint" style={{ fontWeight: 400, marginLeft: '.5rem' }}>({portfolioPreviews.length}/10 images)</span></div>
             <p className="profHint" style={{ marginBottom: '1rem' }}>Showcase your best work. These photos appear on your public profile.</p>
             <div className="portfolioGrid">
               {portfolioPreviews.map((src, i) => (
@@ -543,7 +543,7 @@ function ProfileModule({ vendor: initialVendor, onVendorSaved }: any) {
                 <span className="seoCharCount">{(vendor.seoTitle || '').length}/60</span>
               </label>
               <input id="prof-seoTitle" className="profInput" maxLength={60} value={vendor.seoTitle || ''} onChange={e => change('seoTitle', e.target.value)} placeholder={`${vendor.businessName} | ${vendor.category} in ${vendor.location}`} />
-              <span className="profHint">Appears as the title in Google search results. If empty, we'll generate one from your business name.</span>
+              <span className="profHint">Appears as the title in Google search results. If empty, we&apos;ll generate one from your business name.</span>
             </div>
             <div className="profField">
               <label className="profLabel">

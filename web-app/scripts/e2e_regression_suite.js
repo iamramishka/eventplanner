@@ -6,7 +6,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3001';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 console.log(`\n🚀 Starting Full E2E Regression Suite for WedInvite\n`);
 

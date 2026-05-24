@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       const filename = `${created.id}.${ext}`;
       const filePath = path.join(uploadsDir, filename);
       fs.writeFileSync(filePath, Buffer.from(b64, 'base64'));
-      (created as any).profileImage = `/uploads/${filename}`;
+      created.profileImage = `/uploads/${filename}`;
     }
 
     // Audit

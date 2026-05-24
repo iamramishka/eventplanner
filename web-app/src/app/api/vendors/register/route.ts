@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addVendorRegistration, getVendorByEmail } from '@/lib/vendorStore';
+import { addVendorRegistration, getVendorByEmail, type VendorPackage } from '@/lib/vendorStore';
+
+function hasPackageName(value: unknown): value is VendorPackage {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'name' in value &&
+    String(value.name).trim().length > 0
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -67,7 +76,7 @@ export async function POST(req: NextRequest) {
       basePrice,
       currency: String(body.currency || 'LKR'),
       pricingNotes: String(body.pricingNotes || '').trim(),
-      packages: Array.isArray(body.packages) ? body.packages.filter((p: any) => p.name?.trim()) : [],
+      packages: Array.isArray(body.packages) ? body.packages.filter(hasPackageName) : [],
     });
 
     // Return safe response (no password or sensitive docs)
@@ -81,7 +90,7 @@ export async function POST(req: NextRequest) {
       createdAt: vendor.createdAt,
     }, { status: 201 });
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[POST /api/vendors/register]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }

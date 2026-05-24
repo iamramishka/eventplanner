@@ -3,6 +3,10 @@ import { findCleanupCandidates, performCleanup, generateConfirmationToken } from
 
 let pendingToken: string | null = null;
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function GET(req: Request) {
   // return dry-run summary and a confirmation token (single-use)
   const url = new URL(req.url);
@@ -37,7 +41,7 @@ export async function POST(req: Request) {
     pendingToken = null;
     const report = performCleanup({ retentionDays, dryRun: false, force: true });
     return NextResponse.json(report);
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
+  } catch (e: unknown) {
+    return NextResponse.json({ ok: false, error: errorMessage(e) }, { status: 500 });
   }
 }

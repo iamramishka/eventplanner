@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // scripts/test_task83_vendor_profile_listings.js
 // Smoke tests for Task 8.3 — Vendor Profile & Service Listing Management
-// Usage: BASE_URL=http://localhost:3001 node scripts/test_task83_vendor_profile_listings.js
+// Usage: BASE_URL=http://127.0.0.1:3000 node scripts/test_task83_vendor_profile_listings.js
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
 const VENDOR_ID = 'vnd_seed_001';
 
 let passed = 0;

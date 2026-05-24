@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // scripts/test_task93_notifications.js
 // Smoke tests for Task 9.3 — Notifications & WhatsApp Invite Integration
-// Usage: BASE_URL=http://localhost:3001 node scripts/test_task93_notifications.js
+// Usage: BASE_URL=http://127.0.0.1:3000 node scripts/test_task93_notifications.js
 
-const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3001';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 let passed = 0;
 let failed = 0;

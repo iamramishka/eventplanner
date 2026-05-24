@@ -2,12 +2,20 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/store';
 import { sendEmailNotification, sendWhatsAppNotification, broadcastToGuests } from '@/lib/notifications';
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function errorStack(error: unknown) {
+  return error instanceof Error ? error.stack : undefined;
+}
+
 export async function GET() {
   try {
     // Setup a mock guest for testing opt-in rules
     const w = db.weddings.findMany()[0];
-    const g1 = db.guests.findMany((g: any) => g.id === 'g_1')[0]; // Nimal Perera
-    const g2 = db.guests.findMany((g: any) => g.id === 'g_2')[0]; // Fernando Family
+    const g1 = db.guests.findMany(g => g.id === 'g_1')[0]; // Nimal Perera
+    const g2 = db.guests.findMany(g => g.id === 'g_2')[0]; // Fernando Family
 
     // Make sure they have emails for testing email notifications
     if (g1) g1.email = 'nimal@test.com';
@@ -51,8 +59,8 @@ export async function GET() {
       waResOptIn,
       broadcastRes
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Test API Error:', error);
-    return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error), stack: errorStack(error) }, { status: 500 });
   }
 }

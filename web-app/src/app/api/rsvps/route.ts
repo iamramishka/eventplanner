@@ -19,7 +19,8 @@ export async function POST(req: Request) {
     });
     await auditLog({ action: 'create-rsvp', targetId: created.id, data: body });
     return NextResponse.json(created, { status: 201 });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 400 });
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ ok: false, error }, { status: 400 });
   }
 }

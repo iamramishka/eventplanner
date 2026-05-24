@@ -356,7 +356,7 @@ export default function RegisterPage() {
             <div>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Groom's First Name</label>
+                  <label className={styles.label}>Groom&apos;s First Name</label>
                   <div className={styles.inputWrapper}>
                     <User size={18} className={styles.inputIcon} />
                     <input
@@ -370,7 +370,7 @@ export default function RegisterPage() {
                   {errors.groomName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.groomName}</div>}
                 </div>
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Bride's First Name</label>
+                  <label className={styles.label}>Bride&apos;s First Name</label>
                   <div className={styles.inputWrapper}>
                     <User size={18} className={styles.inputIcon} />
                     <input

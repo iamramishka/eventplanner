@@ -11,8 +11,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     if (!updated) return NextResponse.json({ ok: false, error: 'not found' }, { status: 404 });
     return NextResponse.json(updated);
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 400 });
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ ok: false, error }, { status: 400 });
   }
 }
 

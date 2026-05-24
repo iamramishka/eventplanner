@@ -1,7 +1,13 @@
 const http = require('http');
+const fs = require('fs');
 
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:3000';
 const baseUrl = new URL(BASE);
+const REQUEST_TIMEOUT_MS = 30000;
+
+function expectedStatuses(route) {
+  return Array.isArray(route.expectedStatus) ? route.expectedStatus : [route.expectedStatus];
+}
 
 // Check routes WITHOUT following redirects
 async function checkRoute(path) {
@@ -17,7 +23,7 @@ async function checkRoute(path) {
       res.resume(); // consume response
     });
     req.on('error', (e) => resolve({ path, status: 'ERROR', error: e.message }));
-    req.setTimeout(5000, () => { req.destroy(); resolve({ path, status: 'TIMEOUT' }); });
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => { req.destroy(); resolve({ path, status: 'TIMEOUT' }); });
     req.end();
   });
 }
@@ -42,17 +48,25 @@ async function checkRoute(path) {
     results.push(r);
   }
 
+  const failures = results.filter((result, index) => !expectedStatuses(routes[index]).includes(result.status));
+  if (failures.length) {
+    console.log('\n=== Smoke Failures ===');
+    failures.forEach(result => {
+      console.log(`  ${result.path} expected ${expectedStatuses(routes[results.indexOf(result)]).join('/')} but got ${result.status}`);
+    });
+    process.exitCode = 1;
+  }
+
   console.log('\n=== Env Check ===');
   const envKeys = ['DATABASE_URL', 'NEXTAUTH_SECRET', 'NEXTAUTH_URL'];
-  const fs = require('fs');
-  const envContent = fs.readFileSync('.env', 'utf8');
+  const envContent = fs.existsSync('.env') ? fs.readFileSync('.env', 'utf8') : '';
   envKeys.forEach(k => {
     const match = envContent.match(new RegExp(`^${k}=(.*)`, 'm'));
-    if (match) {
-      const val = match[1].trim();
+    const value = match?.[1]?.trim() || process.env[k] || '';
+    if (value) {
       // Mask sensitive values
-      const masked = k === 'NEXTAUTH_SECRET' ? val.substring(0, 6) + '...<redacted>' :
-                     k === 'DATABASE_URL' ? val.replace(/:\/\/.+?@/, '://<redacted>@') : val;
+      const masked = k === 'NEXTAUTH_SECRET' ? value.substring(0, 6) + '...<redacted>' :
+                     k === 'DATABASE_URL' ? value.replace(/:\/\/.+?@/, '://<redacted>@') : value;
       console.log(`  ${k}=${masked}`);
     } else {
       console.log(`  ${k}=MISSING!`);

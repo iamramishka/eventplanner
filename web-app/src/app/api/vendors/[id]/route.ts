@@ -19,7 +19,7 @@ export async function GET(
     }
     const progress = getOnboardingProgress(vendor);
     return NextResponse.json({ vendor: toPublicVendor(vendor), onboarding: progress });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[GET /api/vendors/[id]]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
@@ -81,7 +81,7 @@ export async function PUT(
     }
 
     // Only allow whitelisted fields
-    const patch: Record<string, any> = {};
+    const patch: Record<string, unknown> = {};
     for (const key of allowed) {
       if (key in body) patch[key] = body[key];
     }
@@ -95,7 +95,7 @@ export async function PUT(
       vendor: toPublicVendor(updated),
       onboarding: getOnboardingProgress(updated),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[PUT /api/vendors/[id]]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }

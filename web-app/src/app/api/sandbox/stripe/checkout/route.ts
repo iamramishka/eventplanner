@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const customerEmail = body?.customerEmail || null;
     const session = createMockCheckoutSession(priceId, customerEmail);
     return NextResponse.json(session);
-  } catch (e: any) {
+  } catch (e: unknown) {
     return NextResponse.json({ error: String(e) }, { status: 400 });
   }
 }

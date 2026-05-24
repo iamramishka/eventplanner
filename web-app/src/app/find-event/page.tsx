@@ -62,7 +62,7 @@ export default function FindEventPage() {
         <div className={styles.logoW}>W</div>
         <h1 className={styles.title}>Find an Event</h1>
         <p className={styles.subtitle}>
-          Enter the couple's names, event code, or paste the invitation link to find their wedding details and RSVP.
+          Enter the couple&apos;s names, event code, or paste the invitation link to find their wedding details and RSVP.
         </p>
 
         <form onSubmit={handleSearch}>
@@ -91,7 +91,7 @@ export default function FindEventPage() {
 
             {results.length === 0 ? (
               <div className={styles.noResults}>
-                <p>We couldn't find any events matching "{query}".</p>
+                <p>We couldn&apos;t find any events matching &quot;{query}&quot;.</p>
                 <p style={{ marginTop: 8, fontSize: 14 }}>Please check the spelling or ask the couple for their exact event link.</p>
               </div>
             ) : (

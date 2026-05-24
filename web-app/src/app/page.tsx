@@ -221,16 +221,19 @@ export default function LandingPage() {
             <p className="portal-desc">Platform control center for monitoring users and system settings.</p>
           </Link>
 
-          <Link href="/vendor" className="portal-card card-vendor">
+          <div className="portal-card card-vendor">
             <div className="portal-icon-wrapper">
               <ArrowRight size={28} />
             </div>
             <div className="portal-name">Vendor Portal</div>
             <p className="portal-desc">Workspace for wedding vendors to manage listings and bookings.</p>
-            <Link href="/vendor-register" style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#c45a74', fontWeight: 600, textDecoration: 'underline' }} onClick={e => e.stopPropagation()}>
+            <Link href="/vendor" style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#c45a74', fontWeight: 600, textDecoration: 'underline' }}>
+              Open vendor portal →
+            </Link>
+            <Link href="/vendor-register" style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#c45a74', fontWeight: 600, textDecoration: 'underline' }}>
               Register as a vendor →
             </Link>
-          </Link>
+          </div>
         </div>
       </section>
     </main>

@@ -8,7 +8,8 @@ export async function POST(req: Request) {
     if (!body?.templateId) return NextResponse.json({ ok: false, error: 'templateId required' }, { status: 400 });
 
     return NextResponse.json(applyChecklistTemplate(body.weddingId, body.templateId), { status: 201 });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 400 });
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ ok: false, error }, { status: 400 });
   }
 }
