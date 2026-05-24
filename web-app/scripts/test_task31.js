@@ -1,7 +1,6 @@
-const http = require('http');
 const fetch = globalThis.fetch || (async () => { throw new Error('No fetch available in this environment') })();
 
-const base = 'http://localhost:3000';
+const base = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 async function request(method, path, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
@@ -9,7 +8,7 @@ async function request(method, path, body) {
   const res = await fetch(base + path, opts);
   const text = await res.text();
   let json = null;
-  try { json = JSON.parse(text); } catch (e) { json = text; }
+  try { json = JSON.parse(text); } catch { json = text; }
   return { status: res.status, ok: res.ok, body: json };
 }
 

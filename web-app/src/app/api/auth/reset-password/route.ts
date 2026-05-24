@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   let payload: any
   try {
     payload = jwt.verify(token, secret) as any
-  } catch (e) {
+  } catch {
     return NextResponse.json({ ok: false, error: 'invalid or expired token' }, { status: 400 })
   }
 

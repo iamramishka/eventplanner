@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auditLog } from '../../../../lib/audit';
+import { auditLog } from '@/lib/audit';
 
 export async function GET() {
   // Return basic billing config for the client

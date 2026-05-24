@@ -19,7 +19,7 @@ for (const test of tests) {
   try {
     execSync(test.cmd, { stdio: 'inherit' });
     console.log(`✅ ${test.name} passed!\n`);
-  } catch (err) {
+  } catch {
     console.error(`❌ ${test.name} failed!`);
     allPassed = false;
   }

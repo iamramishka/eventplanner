@@ -1,13 +1,14 @@
 const http = require('http');
 
-const BASE = 'http://localhost:3000';
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:3000';
+const baseUrl = new URL(BASE);
 
 // Check routes WITHOUT following redirects
 async function checkRoute(path) {
   return new Promise((resolve) => {
     const options = {
-      hostname: 'localhost',
-      port: 3000,
+      hostname: baseUrl.hostname,
+      port: baseUrl.port || (baseUrl.protocol === 'https:' ? 443 : 80),
       path: path,
       method: 'GET'
     };

@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   LayoutDashboard, User, Package, CalendarCheck, Calendar,
   MessageSquare, BarChart2, Banknote, Settings, Menu, Bell,
   Eye, Clock, CheckCircle, Star, LogOut, Plus, Edit2, Trash2,
   ToggleLeft, ToggleRight, Upload, X, Save, AlertCircle,
-  Tag, Globe, DollarSign, Image, FileText, ChevronDown,
-  ChevronUp, Search, Filter, ImageOff, RefreshCw, Check,
-  ExternalLink, Info
+  Globe, DollarSign, Image, FileText,
+  Search, ImageOff, RefreshCw, Check,
+  Info
 } from 'lucide-react';
 import styles from './vendor.module.css';
 

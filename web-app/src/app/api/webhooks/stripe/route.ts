@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { auditLog } from '../../../../lib/audit';
-import { constructEventFromRequest } from '../../../../lib/stripe';
-import { saveSubscription } from '../../../../lib/billingStore';
+import { auditLog } from '@/lib/audit';
+import { constructEventFromRequest } from '@/lib/stripe';
+import { saveSubscription } from '@/lib/billingStore';
 
 function extractEmail(obj: any) {
   return (

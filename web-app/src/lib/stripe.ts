@@ -4,7 +4,7 @@ import { auditLog } from './audit';
 const secret = process.env.STRIPE_SECRET_KEY || '';
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
-const stripe = new Stripe(secret, { apiVersion: '2023-08-16' });
+const stripe = new Stripe(secret, { apiVersion: '2022-11-15' });
 
 export default stripe;
 
@@ -14,7 +14,7 @@ export async function constructEventFromRequest(req: Request, sigHeader: string)
     try {
       const body = await req.json();
       return body;
-    } catch (e) {
+    } catch {
       throw new Error('Unable to parse webhook body in test mode');
     }
   }

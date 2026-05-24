@@ -51,7 +51,7 @@ export default function FindEventPage() {
     try {
       const d = new Date(ds);
       return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    } catch (e) {
+    } catch {
       return ds;
     }
   }

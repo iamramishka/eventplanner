@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import stripe from '../../../../lib/stripe';
-import { auditLog } from '../../../../lib/audit';
-import { createMockCheckoutSession } from '../../../../lib/sandboxStripe';
+import stripe from '@/lib/stripe';
+import { auditLog } from '@/lib/audit';
+import { createMockCheckoutSession } from '@/lib/sandboxStripe';
 
 export async function POST(req: Request) {
   try {
