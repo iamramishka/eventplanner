@@ -544,19 +544,19 @@ function PlansModule({ initialPlans }: any) {
     } : plan));
   };
 
-  const savePlans = async () => {
+  const savePlans = async (syncStripe = false) => {
     setSaving(true);
     setMessage('');
     try {
       const res = await fetch('/api/admin/plans', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plans }),
+        body: JSON.stringify({ plans, syncStripe }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to save plans');
       setPlans(data.data.plans);
-      setMessage('Plans saved.');
+      setMessage(data.data.stripeSynced ? 'Plans saved and Stripe billing synced.' : 'Plans saved.');
     } catch (e: any) {
       setMessage(e.message || 'Failed to save plans');
     } finally {
@@ -571,9 +571,14 @@ function PlansModule({ initialPlans }: any) {
           <h1 className={cn("module-title")}>Plans & Feature Gating</h1>
           <p className={cn("module-desc")}>Manage feature entitlements and platform pricing.</p>
         </div>
-        <button className={cn("btn", "btn-primary")} onClick={savePlans} disabled={saving}>
-          <Save size={16} /> {saving ? 'Saving...' : 'Save Plans'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className={cn("btn", "btn-ghost")} onClick={() => savePlans(false)} disabled={saving}>
+            <Save size={16} /> {saving ? 'Saving...' : 'Save Plans'}
+          </button>
+          <button className={cn("btn", "btn-primary")} onClick={() => savePlans(true)} disabled={saving}>
+            <CreditCard size={16} /> Save & Sync Billing
+          </button>
+        </div>
       </div>
       {message && <div style={{ marginTop: 12, color: message.includes('Failed') ? 'var(--adm-danger)' : 'var(--adm-success)' }}>{message}</div>}
       
@@ -595,6 +600,22 @@ function PlansModule({ initialPlans }: any) {
               placeholder="Stripe price ID"
               style={{ marginBottom: 10 }}
             />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+              <input
+                className={cn("input")}
+                value={plan.billingCurrency || 'usd'}
+                onChange={e => updatePlan(index, { billingCurrency: e.target.value })}
+                placeholder="Currency"
+              />
+              <select
+                className={cn("input")}
+                value={plan.billingInterval || 'month'}
+                onChange={e => updatePlan(index, { billingInterval: e.target.value })}
+              >
+                <option value="month">Monthly</option>
+                <option value="year">Yearly</option>
+              </select>
+            </div>
             <textarea className={cn("input")} value={plan.description || ''} onChange={e => updatePlan(index, { description: e.target.value })} rows={2} style={{ marginBottom: '1.5rem' }} />
             
             <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--adm-text-muted)', marginBottom: '1rem' }}>

@@ -6,6 +6,8 @@ export type AdminPlan = {
   name: string;
   price: string;
   billingPriceId?: string;
+  billingCurrency?: string;
+  billingInterval?: 'month' | 'year';
   description: string;
   entitlements: {
     maxGuests: number;
@@ -95,6 +97,16 @@ function cleanPositiveInt(value: unknown, fallback: number) {
   return Math.max(0, Math.floor(numeric));
 }
 
+function cleanCurrency(value: unknown, fallback: string) {
+  if (typeof value !== 'string') return fallback;
+  const currency = value.trim().toLowerCase();
+  return /^[a-z]{3}$/.test(currency) ? currency : fallback;
+}
+
+function cleanBillingInterval(value: unknown, fallback: 'month' | 'year') {
+  return value === 'year' ? 'year' : fallback;
+}
+
 function cleanIsoString(value: unknown, fallback: string) {
   if (typeof value !== 'string') return fallback;
   const parsed = new Date(value);
@@ -139,6 +151,8 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettingsState = {
       name: 'Trial',
       price: 'Free',
       billingPriceId: '',
+      billingCurrency: 'usd',
+      billingInterval: 'month',
       description: 'Starter planning controls for small weddings.',
       entitlements: {
         maxGuests: 50,
@@ -151,8 +165,10 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettingsState = {
     {
       id: 'premium',
       name: 'Premium',
-      price: '$49 / one-time',
+      price: '$49 / month',
       billingPriceId: '',
+      billingCurrency: 'usd',
+      billingInterval: 'month',
       description: 'Full planning, invitation, and vendor discovery access.',
       entitlements: {
         maxGuests: 1000,
@@ -312,6 +328,8 @@ export function normalizePlans(plans: AdminPlan[], current: AdminPlan[]) {
       name: cleanString(input.name, existing.name, 80),
       price: cleanString(input.price, existing.price, 80),
       billingPriceId: cleanOptionalString(input.billingPriceId, existing.billingPriceId || '', 120),
+      billingCurrency: cleanCurrency(input.billingCurrency, existing.billingCurrency || 'usd'),
+      billingInterval: cleanBillingInterval(input.billingInterval, existing.billingInterval || 'month'),
       description: cleanString(input.description, existing.description, 240),
       entitlements: {
         maxGuests: cleanPositiveInt(entitlements.maxGuests, existing.entitlements.maxGuests),

@@ -48,6 +48,8 @@
       "name": "Trial",
       "price": "Free",
       "billingPriceId": "",
+      "billingCurrency": "usd",
+      "billingInterval": "month",
       "description": "Starter planning controls for small weddings.",
       "entitlements": {
         "maxGuests": 50,
@@ -60,8 +62,10 @@
     {
       "id": "premium",
       "name": "Premium",
-      "price": "$49 / one-time",
+      "price": "$49 / month",
       "billingPriceId": "",
+      "billingCurrency": "usd",
+      "billingInterval": "month",
       "description": "Full planning, invitation, and vendor discovery access.",
       "entitlements": {
         "maxGuests": 1000,
