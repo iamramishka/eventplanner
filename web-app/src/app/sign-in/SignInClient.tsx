@@ -11,7 +11,6 @@ export default function SignInClient() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO: wire auth
     console.log({ email, password, remember });
   }
 

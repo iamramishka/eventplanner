@@ -1,6 +1,9 @@
 // src/lib/vendorStore.ts
-// In-memory vendor store — Task 8.1 (registration) + Task 8.3 (profile & listings)
+// JSON-backed vendor store — Task 8.1 (registration) + Task 8.3 (profile & listings)
 // In production, replace with Prisma/PostgreSQL.
+
+import fs from 'fs';
+import path from 'path';
 
 export type VendorStatus = 'pending_review' | 'approved' | 'rejected' | 'suspended';
 
@@ -88,6 +91,7 @@ export type VendorRegistration = {
   verificationNotes: string;
   reviewedBy: string | null;
   reviewedAt: string | null;
+  featured?: boolean;
   // Timestamps
   createdAt: string;
   updatedAt: string;
@@ -99,7 +103,12 @@ type VendorStoreShape = {
   listings: VendorListing[];
 };
 
+const DATA_FILE = path.join(process.cwd(), 'data', 'vendors.json');
+
 const globalStore = globalThis as typeof globalThis & { __wedInviteVendorStore?: VendorStoreShape };
+const VENDOR_STATUSES: VendorStatus[] = ['pending_review', 'approved', 'rejected', 'suspended'];
+const ONBOARDING_STEPS: OnboardingStep[] = ['submitted', 'under_review', 'documents_verified', 'profile_complete', 'live'];
+const PRICING_TYPES: PricingType[] = ['fixed', 'from', 'per_person', 'on_request'];
 
 const vendorStore = globalStore.__wedInviteVendorStore ||= {
   vendors: [],
@@ -111,8 +120,245 @@ if (!vendorStore.listings) {
   vendorStore.listings = [];
 }
 
+function ensureDataDir() {
+  const dir = path.dirname(DATA_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+function loadPersistedVendorStore() {
+  if (!fs.existsSync(DATA_FILE)) return false;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')) as Partial<VendorStoreShape>;
+    const seenVendors = new Set<string>();
+    vendorStore.vendors = (Array.isArray(parsed.vendors) ? parsed.vendors : [])
+      .map((vendor, index) => cleanVendorRecord(vendor, index))
+      .filter((vendor) => {
+        if (seenVendors.has(vendor.id)) return false;
+        seenVendors.add(vendor.id);
+        return true;
+      });
+
+    const vendorIds = new Set(vendorStore.vendors.map((vendor) => vendor.id));
+    const seenListings = new Set<string>();
+    vendorStore.listings = (Array.isArray(parsed.listings) ? parsed.listings : [])
+      .map((listing, index) => cleanListingRecord(listing, index))
+      .filter((listing) => {
+        if (!vendorIds.has(listing.vendorId) || seenListings.has(listing.id)) return false;
+        seenListings.add(listing.id);
+        return true;
+      });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function persistVendorStore() {
+  ensureDataDir();
+  fs.writeFileSync(DATA_FILE, JSON.stringify({
+    vendors: vendorStore.vendors,
+    listings: vendorStore.listings,
+  }, null, 2));
+}
+
+function cleanString(value: unknown, fallback = '', maxLength = 1000) {
+  if (typeof value !== 'string') return fallback;
+  return value.trim().slice(0, maxLength);
+}
+
+function cleanId(value: unknown, fallback: string) {
+  const cleaned = cleanString(value, fallback, 120).replace(/[^a-z0-9_-]/gi, '-');
+  return cleaned || fallback;
+}
+
+function cleanEmail(value: unknown, fallback: string) {
+  const email = cleanString(value, fallback, 180).toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : fallback;
+}
+
+function cleanIsoString(value: unknown, fallback: string) {
+  if (typeof value !== 'string') return fallback;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString();
+}
+
+function cleanNullableString(value: unknown, fallback: string | null = null, maxLength = 1000) {
+  if (value === null) return null;
+  if (typeof value !== 'string') return fallback;
+  const cleaned = value.trim().slice(0, maxLength);
+  return cleaned || fallback;
+}
+
+function cleanNonNegativeNumber(value: unknown, fallback: number) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0 ? numeric : fallback;
+}
+
+function cleanOptionalNonNegativeNumber(value: unknown, fallback: number | null) {
+  if (value === null || value === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0 ? numeric : fallback;
+}
+
+function cleanStringArray(value: unknown, fallback: string[], maxItems: number, maxLength = 300) {
+  if (!Array.isArray(value)) return fallback;
+  return value
+    .map((item) => cleanString(item, '', maxLength))
+    .filter(Boolean)
+    .slice(0, maxItems);
+}
+
+function cleanPackages(value: unknown, fallback: VendorPackage[]) {
+  if (!Array.isArray(value)) return fallback;
+  return value
+    .map((item) => {
+      const record = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+      return {
+        name: cleanString(record.name, '', 120),
+        price: cleanNonNegativeNumber(record.price, 0),
+        description: cleanString(record.description, '', 300),
+      };
+    })
+    .filter((item) => item.name)
+    .slice(0, 10);
+}
+
+function cleanVendorRecord(value: unknown, index: number): VendorRegistration {
+  const input = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+  const now = new Date(0).toISOString();
+  const base: VendorRegistration = {
+    id: cleanId(input.id, `vnd_import_${index + 1}`),
+    ownerFirstName: 'Vendor',
+    ownerLastName: 'Owner',
+    email: cleanEmail(input.email, `vendor-${index + 1}@example.invalid`),
+    phone: '',
+    passwordHash: cleanString(input.passwordHash, '[imported]', 240),
+    businessName: `Vendor ${index + 1}`,
+    category: 'General',
+    subcategory: '',
+    description: 'Imported vendor profile.',
+    yearsInBusiness: null,
+    website: '',
+    location: '',
+    serviceArea: '',
+    logoBase64: null,
+    portfolioImages: [],
+    businessRegNumber: '',
+    taxIdNumber: '',
+    businessRegDocBase64: null,
+    basePrice: 0,
+    currency: 'LKR',
+    pricingNotes: '',
+    packages: [],
+    status: 'pending_review',
+    onboardingStep: 'submitted',
+    verificationNotes: '',
+    reviewedBy: null,
+    reviewedAt: null,
+    featured: false,
+    createdAt: cleanIsoString(input.createdAt, now),
+    updatedAt: cleanIsoString(input.updatedAt, now),
+  };
+  const cleaned = cleanVendorPatch(base, input as Partial<Omit<VendorRegistration, 'id' | 'createdAt'>>);
+  cleaned.id = base.id;
+  cleaned.email = base.email;
+  cleaned.passwordHash = base.passwordHash;
+  cleaned.createdAt = base.createdAt;
+  cleaned.updatedAt = cleanIsoString(input.updatedAt, base.updatedAt);
+  return cleaned;
+}
+
+function cleanListingRecord(value: unknown, index: number): VendorListing {
+  const input = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+  const now = new Date(0).toISOString();
+  const base: VendorListing = {
+    id: cleanId(input.id, `lst_import_${index + 1}`),
+    vendorId: cleanId(input.vendorId, ''),
+    title: `Listing ${index + 1}`,
+    category: 'General',
+    subcategory: '',
+    description: '',
+    price: 0,
+    currency: 'LKR',
+    pricingType: 'fixed',
+    coverImageBase64: null,
+    galleryImages: [],
+    seoTitle: '',
+    seoDescription: '',
+    tags: [],
+    contentMarkdown: '',
+    active: true,
+    createdAt: cleanIsoString(input.createdAt, now),
+    updatedAt: cleanIsoString(input.updatedAt, now),
+  };
+  const cleaned = cleanListingPatch(base, input as Partial<Omit<VendorListing, 'id' | 'vendorId' | 'createdAt'>>);
+  cleaned.id = base.id;
+  cleaned.vendorId = base.vendorId;
+  cleaned.createdAt = base.createdAt;
+  cleaned.updatedAt = cleanIsoString(input.updatedAt, base.updatedAt);
+  return cleaned;
+}
+
+function cleanVendorPatch(current: VendorRegistration, data: Partial<Omit<VendorRegistration, 'id' | 'createdAt'>>) {
+  const updated = { ...current };
+  if ('ownerFirstName' in data) updated.ownerFirstName = cleanString(data.ownerFirstName, current.ownerFirstName, 80);
+  if ('ownerLastName' in data) updated.ownerLastName = cleanString(data.ownerLastName, current.ownerLastName, 80);
+  if ('phone' in data) updated.phone = cleanString(data.phone, current.phone, 40);
+  if ('businessName' in data) updated.businessName = cleanString(data.businessName, current.businessName, 180);
+  if ('category' in data) updated.category = cleanString(data.category, current.category, 120);
+  if ('subcategory' in data) updated.subcategory = cleanString(data.subcategory, current.subcategory, 120);
+  if ('description' in data) updated.description = cleanString(data.description, current.description, 1000);
+  if ('yearsInBusiness' in data) updated.yearsInBusiness = cleanOptionalNonNegativeNumber(data.yearsInBusiness, current.yearsInBusiness);
+  if ('website' in data) updated.website = cleanString(data.website, current.website, 300);
+  if ('location' in data) updated.location = cleanString(data.location, current.location, 180);
+  if ('serviceArea' in data) updated.serviceArea = cleanString(data.serviceArea, current.serviceArea, 180);
+  if ('logoBase64' in data) updated.logoBase64 = cleanNullableString(data.logoBase64, current.logoBase64, 250000);
+  if ('coverImageBase64' in data) updated.coverImageBase64 = cleanNullableString(data.coverImageBase64, current.coverImageBase64 || null, 250000);
+  if ('portfolioImages' in data) updated.portfolioImages = cleanStringArray(data.portfolioImages, current.portfolioImages, 10, 250000);
+  if ('businessRegNumber' in data) updated.businessRegNumber = cleanString(data.businessRegNumber, current.businessRegNumber, 120);
+  if ('taxIdNumber' in data) updated.taxIdNumber = cleanString(data.taxIdNumber, current.taxIdNumber, 120);
+  if ('businessRegDocBase64' in data) updated.businessRegDocBase64 = cleanNullableString(data.businessRegDocBase64, current.businessRegDocBase64, 250000);
+  if ('basePrice' in data) updated.basePrice = cleanNonNegativeNumber(data.basePrice, current.basePrice);
+  if ('currency' in data) updated.currency = cleanString(data.currency, current.currency, 12);
+  if ('pricingNotes' in data) updated.pricingNotes = cleanString(data.pricingNotes, current.pricingNotes, 500);
+  if ('packages' in data) updated.packages = cleanPackages(data.packages, current.packages);
+  if ('seoTitle' in data) updated.seoTitle = cleanString(data.seoTitle, current.seoTitle || '', 160);
+  if ('seoDescription' in data) updated.seoDescription = cleanString(data.seoDescription, current.seoDescription || '', 300);
+  if ('seoKeywords' in data) updated.seoKeywords = cleanString(data.seoKeywords, current.seoKeywords || '', 240);
+  if ('aboutMarkdown' in data) updated.aboutMarkdown = cleanString(data.aboutMarkdown, current.aboutMarkdown || '', 10000);
+  if ('faqMarkdown' in data) updated.faqMarkdown = cleanString(data.faqMarkdown, current.faqMarkdown || '', 10000);
+  if ('status' in data && VENDOR_STATUSES.includes(data.status as VendorStatus)) updated.status = data.status as VendorStatus;
+  if ('onboardingStep' in data && ONBOARDING_STEPS.includes(data.onboardingStep as OnboardingStep)) updated.onboardingStep = data.onboardingStep as OnboardingStep;
+  if ('verificationNotes' in data) updated.verificationNotes = cleanString(data.verificationNotes, current.verificationNotes, 1000);
+  if ('reviewedBy' in data) updated.reviewedBy = cleanNullableString(data.reviewedBy, current.reviewedBy, 120);
+  if ('reviewedAt' in data) updated.reviewedAt = cleanNullableString(data.reviewedAt, current.reviewedAt, 80);
+  if ('featured' in data) updated.featured = Boolean(data.featured);
+  return updated;
+}
+
+function cleanListingPatch(current: VendorListing, data: Partial<Omit<VendorListing, 'id' | 'vendorId' | 'createdAt'>>) {
+  const updated = { ...current };
+  if ('title' in data) updated.title = cleanString(data.title, current.title, 180);
+  if ('category' in data) updated.category = cleanString(data.category, current.category, 120);
+  if ('subcategory' in data) updated.subcategory = cleanString(data.subcategory, current.subcategory, 120);
+  if ('description' in data) updated.description = cleanString(data.description, current.description, 1000);
+  if ('price' in data) updated.price = cleanNonNegativeNumber(data.price, current.price);
+  if ('currency' in data) updated.currency = cleanString(data.currency, current.currency, 12);
+  if ('pricingType' in data && PRICING_TYPES.includes(data.pricingType as PricingType)) updated.pricingType = data.pricingType as PricingType;
+  if ('coverImageBase64' in data) updated.coverImageBase64 = cleanNullableString(data.coverImageBase64, current.coverImageBase64, 250000);
+  if ('galleryImages' in data) updated.galleryImages = cleanStringArray(data.galleryImages, current.galleryImages, 10, 250000);
+  if ('tags' in data) updated.tags = cleanStringArray(data.tags, current.tags, 20, 80);
+  if ('seoTitle' in data) updated.seoTitle = cleanString(data.seoTitle, current.seoTitle, 160);
+  if ('seoDescription' in data) updated.seoDescription = cleanString(data.seoDescription, current.seoDescription, 300);
+  if ('contentMarkdown' in data) updated.contentMarkdown = cleanString(data.contentMarkdown, current.contentMarkdown, 10000);
+  if ('active' in data) updated.active = data.active !== false;
+  return updated;
+}
+
 // Seed one demo vendor so the portal has data to show
 function initVendorStore() {
+  if (loadPersistedVendorStore()) return;
+
   if (vendorStore.vendors.length === 0) {
     vendorStore.vendors.push({
       id: 'vnd_seed_001',
@@ -146,9 +392,10 @@ function initVendorStore() {
       onboardingStep: 'live',
       verificationNotes: 'Documents verified. Business registration confirmed.',
       reviewedBy: 'admin',
-      reviewedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-      createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
-      updatedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+      reviewedAt: '2026-05-17T10:00:00.000Z',
+      featured: true,
+      createdAt: '2026-05-14T10:00:00.000Z',
+      updatedAt: '2026-05-17T10:00:00.000Z',
     });
   }
 
@@ -172,8 +419,8 @@ function initVendorStore() {
         seoDescription: 'Professional full-day wedding photography in Colombo, Sri Lanka. 500+ edited images, cinematic style, island-wide coverage.',
         contentMarkdown: `## What\'s Included\n\n- 10 hours of coverage\n- 2 photographers\n- 500+ hand-edited images\n- Online gallery\n- High-resolution downloads\n\n## Timeline\n\nDelivery within 4–6 weeks of your wedding date.\n\n## Why Choose Us\n\nWith 5+ years of experience, we specialise in natural, emotional storytelling photography.`,
         active: true,
-        createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+        createdAt: '2026-05-16T10:00:00.000Z',
+        updatedAt: '2026-05-21T10:00:00.000Z',
       },
       {
         id: 'lst_seed_002',
@@ -192,8 +439,8 @@ function initVendorStore() {
         seoDescription: 'Affordable pre-wedding photography packages in Sri Lanka. Outdoor and studio shoots available island-wide.',
         contentMarkdown: `## Session Details\n\n- 3 hours of shooting\n- 2 outfit changes\n- 100+ edited images\n- Location scouting assistance\n\n## Popular Locations\n\nGalle Fort, Negombo Beach, Botanical Gardens, Custom locations on request.`,
         active: true,
-        createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+        createdAt: '2026-05-17T10:00:00.000Z',
+        updatedAt: '2026-05-22T10:00:00.000Z',
       },
       {
         id: 'lst_seed_003',
@@ -212,11 +459,13 @@ function initVendorStore() {
         seoDescription: 'Cinematic wedding films shot in 4K with drone footage. Island-wide coverage, 5–8 min highlight reels.',
         contentMarkdown: `## Film Details\n\n- 5–8 minute highlight film\n- Full ceremony edit\n- 4K resolution\n- Drone footage (where permitted)\n- Delivered within 6–8 weeks`,
         active: false,
-        createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+        createdAt: '2026-05-19T10:00:00.000Z',
+        updatedAt: '2026-05-23T10:00:00.000Z',
       }
     );
   }
+
+  persistVendorStore();
 }
 
 initVendorStore();
@@ -262,6 +511,7 @@ export function addVendorRegistration(
   };
 
   vendorStore.vendors.push(vendor);
+  persistVendorStore();
   return vendor;
 }
 
@@ -272,11 +522,11 @@ export function updateVendor(
   const idx = vendorStore.vendors.findIndex(v => v.id === id);
   if (idx === -1) return null;
   const updated: VendorRegistration = {
-    ...vendorStore.vendors[idx],
-    ...data,
+    ...cleanVendorPatch(vendorStore.vendors[idx], data),
     updatedAt: new Date().toISOString(),
   };
   vendorStore.vendors[idx] = updated;
+  persistVendorStore();
   return updated;
 }
 
@@ -311,6 +561,8 @@ export function deleteVendor(id: string): VendorRegistration | null {
   const idx = vendorStore.vendors.findIndex(v => v.id === id);
   if (idx === -1) return null;
   const [removed] = vendorStore.vendors.splice(idx, 1);
+  vendorStore.listings = vendorStore.listings.filter(l => l.vendorId !== id);
+  persistVendorStore();
   return removed;
 }
 
@@ -333,6 +585,7 @@ export function toPublicVendor(v: VendorRegistration) {
     packages: v.packages,
     status: v.status,
     onboardingStep: v.onboardingStep,
+    featured: Boolean(v.featured),
     createdAt: v.createdAt,
   };
 }
@@ -410,6 +663,7 @@ export function addListing(
   };
 
   vendorStore.listings.push(listing);
+  persistVendorStore();
   return listing;
 }
 
@@ -420,14 +674,14 @@ export function updateListing(
   const idx = vendorStore.listings.findIndex(l => l.id === id);
   if (idx === -1) return null;
   const updated: VendorListing = {
-    ...vendorStore.listings[idx],
-    ...data,
+    ...cleanListingPatch(vendorStore.listings[idx], data),
     updatedAt: new Date().toISOString(),
   };
   if (Array.isArray(updated.galleryImages) && updated.galleryImages.length > 10) {
     throw new Error('maximum 10 gallery images allowed');
   }
   vendorStore.listings[idx] = updated;
+  persistVendorStore();
   return updated;
 }
 
@@ -444,6 +698,7 @@ export function deleteListing(id: string): VendorListing | null {
   const idx = vendorStore.listings.findIndex(l => l.id === id);
   if (idx === -1) return null;
   const [removed] = vendorStore.listings.splice(idx, 1);
+  persistVendorStore();
   return removed;
 }
 
