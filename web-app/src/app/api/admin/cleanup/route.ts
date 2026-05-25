@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { findCleanupCandidates, performCleanup, generateConfirmationToken } from '@/lib/cleanup';
+import { requireSuperAdmin } from '@/lib/rbac';
 
 let pendingToken: string | null = null;
 
@@ -8,6 +9,8 @@ function errorMessage(error: unknown) {
 }
 
 export async function GET(req: Request) {
+  const access = await requireSuperAdmin();
+  if (access.response) return access.response;
   // return dry-run summary and a confirmation token (single-use)
   const url = new URL(req.url);
   const days = Number(url.searchParams.get('retentionDays') || '30');
@@ -19,6 +22,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const body = await req.json();
     const action = body?.action || 'dry-run';
     const retentionDays = Number(body?.retentionDays || 30);

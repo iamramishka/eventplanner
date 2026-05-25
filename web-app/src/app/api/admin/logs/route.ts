@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { requireSuperAdmin } from '@/lib/rbac';
 
 export async function GET(req: Request) {
   try {
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const url = new URL(req.url);
     const lines = Number(url.searchParams.get('lines') || '20');
     const file = path.join(process.cwd(), 'logs', 'audit.log');

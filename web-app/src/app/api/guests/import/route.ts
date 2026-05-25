@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
 import { importGuests } from '@/lib/store';
+import { requireWeddingAccess } from '@/lib/rbac';
+
+type GuestImportRows = Parameters<typeof importGuests>[0];
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
 
 function parseCsv(text: string) {
   const lines = text.split(/\r?\n/).filter(Boolean);
@@ -21,10 +28,13 @@ export async function POST(req: Request) {
   try {
     const text = await req.text();
     const rows = parseCsv(text);
-    const created = importGuests(rows);
+    const weddingId = rows[0]?.weddingId || rows[0]?.weddingid || rows[0]?.wedding || '';
+    if (!weddingId) return NextResponse.json({ ok: false, error: 'weddingId required' }, { status: 400 });
+    const access = await requireWeddingAccess(String(weddingId));
+    if (access.response) return access.response;
+    const created = importGuests(rows as GuestImportRows);
     return NextResponse.json({ ok: true, createdCount: created.length, created });
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ ok: false, error: message }, { status: 400 });
+    return NextResponse.json({ ok: false, error: errorMessage(e) }, { status: 400 });
   }
 }

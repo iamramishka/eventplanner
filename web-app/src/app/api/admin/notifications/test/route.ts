@@ -1,21 +1,28 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/store';
 import { sendEmailNotification, sendWhatsAppNotification, broadcastToGuests } from '@/lib/notifications';
+import { requireSuperAdmin } from '@/lib/rbac';
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
-}
+type GuestRow = {
+  id?: string;
+  email?: string;
+  whatsapp?: string;
+  whatsappOptIn?: boolean;
+};
 
-function errorStack(error: unknown) {
-  return error instanceof Error ? error.stack : undefined;
+function errorPayload(error: unknown) {
+  if (error instanceof Error) return { error: error.message, stack: error.stack };
+  return { error: String(error) };
 }
 
 export async function GET() {
   try {
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     // Setup a mock guest for testing opt-in rules
     const w = db.weddings.findMany()[0];
-    const g1 = db.guests.findMany(g => g.id === 'g_1')[0]; // Nimal Perera
-    const g2 = db.guests.findMany(g => g.id === 'g_2')[0]; // Fernando Family
+    const g1 = db.guests.findMany((g: GuestRow) => g.id === 'g_1')[0] as GuestRow | undefined; // Nimal Perera
+    const g2 = db.guests.findMany((g: GuestRow) => g.id === 'g_2')[0] as GuestRow | undefined; // Fernando Family
 
     // Make sure they have emails for testing email notifications
     if (g1) g1.email = 'nimal@test.com';
@@ -61,6 +68,6 @@ export async function GET() {
     });
   } catch (error: unknown) {
     console.error('Test API Error:', error);
-    return NextResponse.json({ error: errorMessage(error), stack: errorStack(error) }, { status: 500 });
+    return NextResponse.json(errorPayload(error), { status: 500 });
   }
 }

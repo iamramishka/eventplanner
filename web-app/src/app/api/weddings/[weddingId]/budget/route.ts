@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 import { addBudgetItem, db, getBudgetResponse } from '@/lib/store';
+import { requireWeddingAccess } from '@/lib/rbac';
+
+type StoreRow = {
+  id?: unknown;
+};
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
@@ -7,6 +12,8 @@ function errorMessage(error: unknown) {
 
 export async function GET(_: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   const { weddingId } = await params;
+  const access = await requireWeddingAccess(weddingId);
+  if (access.response) return access.response;
   const budget = getBudgetResponse(weddingId);
   if (!budget) {
     return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
@@ -18,7 +25,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ weddingId:
 export async function POST(request: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   try {
     const { weddingId } = await params;
-    const wedding = db.weddings.findUnique(w => w.id === weddingId);
+    const access = await requireWeddingAccess(weddingId);
+    if (access.response) return access.response;
+    const wedding = db.weddings.findUnique((w: StoreRow) => w.id === weddingId);
     if (!wedding) {
       return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
     }

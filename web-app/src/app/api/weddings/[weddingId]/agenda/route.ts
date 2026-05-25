@@ -5,6 +5,7 @@ import {
   getAgendaEventsByWedding,
   reorderAgendaEvents,
 } from '@/lib/store';
+import { requireWeddingAccess } from '@/lib/rbac';
 
 type AgendaPayload = {
   title?: string;
@@ -15,6 +16,30 @@ type AgendaPayload = {
   description?: string;
   icon?: string;
 };
+
+type WeddingRow = {
+  id?: unknown;
+  weddingTitle?: string;
+  brideName?: string;
+  groomName?: string;
+  date?: string;
+  timezone?: string;
+  venueName?: string;
+  slug?: string;
+};
+
+type AgendaRow = {
+  startTime?: string;
+  endTime?: string;
+  title?: string;
+  location?: string;
+  description?: string;
+  timezone?: string;
+};
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -46,14 +71,7 @@ function validateAgendaPayload(body: AgendaPayload, fallbackTimezone: string) {
   return '';
 }
 
-function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
-}
-
-type WeddingRecord = NonNullable<ReturnType<typeof db.weddings.findUnique>>;
-type AgendaEventRecord = ReturnType<typeof getAgendaEventsByWedding>[number];
-
-function buildScheduleExport(wedding: WeddingRecord, events: AgendaEventRecord[]) {
+function buildScheduleExport(wedding: WeddingRow, events: AgendaRow[]) {
   const title = wedding.weddingTitle || `${wedding.brideName || 'Wedding'} & ${wedding.groomName || 'Celebration'}`;
   const lines = [
     `# ${title} Schedule`,
@@ -73,7 +91,9 @@ function buildScheduleExport(wedding: WeddingRecord, events: AgendaEventRecord[]
 
 export async function GET(request: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   const { weddingId } = await params;
-  const wedding = db.weddings.findUnique(w => w.id === weddingId);
+  const access = await requireWeddingAccess(weddingId);
+  if (access.response) return access.response;
+  const wedding = db.weddings.findUnique((w: WeddingRow) => w.id === weddingId) as WeddingRow | null;
   if (!wedding) {
     return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
   }
@@ -95,13 +115,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ wedd
 export async function POST(request: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   try {
     const { weddingId } = await params;
-    const wedding = db.weddings.findUnique(w => w.id === weddingId);
+    const access = await requireWeddingAccess(weddingId);
+    if (access.response) return access.response;
+    const wedding = db.weddings.findUnique((w: WeddingRow) => w.id === weddingId) as WeddingRow | null;
     if (!wedding) {
       return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
     }
 
-    const body = await request.json();
-    const validationError = validateAgendaPayload(body, wedding.timezone);
+    const body = await request.json() as AgendaPayload;
+    const validationError = validateAgendaPayload(body, wedding.timezone || '');
     if (validationError) {
       return NextResponse.json({ ok: false, error: validationError }, { status: 400 });
     }
@@ -111,7 +133,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ wed
       title: String(body.title).trim(),
       startTime: String(body.startTime).trim(),
       endTime: String(body.endTime).trim(),
-      timezone: String(body.timezone || wedding.timezone).trim(),
+      timezone: String(body.timezone || wedding.timezone || '').trim(),
       location: String(body.location || '').trim(),
       description: String(body.description || '').trim(),
       icon: String(body.icon || 'CalendarDays').trim(),
@@ -126,7 +148,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ wed
 export async function PATCH(request: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   try {
     const { weddingId } = await params;
-    const wedding = db.weddings.findUnique(w => w.id === weddingId);
+    const access = await requireWeddingAccess(weddingId);
+    if (access.response) return access.response;
+    const wedding = db.weddings.findUnique((w: WeddingRow) => w.id === weddingId) as WeddingRow | null;
     if (!wedding) {
       return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
     }

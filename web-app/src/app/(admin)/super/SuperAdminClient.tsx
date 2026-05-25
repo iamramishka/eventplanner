@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { 
   LayoutDashboard, Users, Briefcase, LayoutTemplate, CreditCard, Trash2, 
-  Settings, ShieldCheck, ShieldOff, PanelLeftClose, User, 
+  Settings, ShieldCheck, ShieldOff, PanelLeftClose, User,
   Menu, ChevronRight, LogOut, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle, 
   Search, Check, X, Star, Eye
 } from 'lucide-react';

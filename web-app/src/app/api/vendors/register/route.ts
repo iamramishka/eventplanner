@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addVendorRegistration, getVendorByEmail, type VendorPackage } from '@/lib/vendorStore';
+import { addVendorRegistration, getVendorByEmail } from '@/lib/vendorStore';
+import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcrypt';
 
-function hasPackageName(value: unknown): value is VendorPackage {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'name' in value &&
-    String(value.name).trim().length > 0
-  );
-}
+type VendorPackageInput = {
+  name?: unknown;
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,8 +27,10 @@ export async function POST(req: NextRequest) {
     }
 
     // --- Duplicate email check ---
-    const existing = getVendorByEmail(String(body.email));
-    if (existing) {
+    const normalizedEmail = String(body.email).trim().toLowerCase();
+    const existing = getVendorByEmail(normalizedEmail);
+    const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (existing || existingUser) {
       return NextResponse.json({ error: 'A vendor with this email already exists.' }, { status: 409 });
     }
 
@@ -52,32 +51,48 @@ export async function POST(req: NextRequest) {
     }
 
     // --- Create vendor registration ---
-    const vendor = addVendorRegistration({
-      ownerFirstName: String(body.ownerFirstName).trim(),
-      ownerLastName: String(body.ownerLastName).trim(),
-      email: String(body.email).trim().toLowerCase(),
-      phone: String(body.phone).trim(),
-      // NOTE: In production, hash the password before storing. 
-      // Here we store a placeholder for demo purposes.
-      passwordHash: `[hashed:${String(body.password).length}chars]`,
-      businessName: String(body.businessName).trim(),
-      category: String(body.category).trim(),
-      subcategory: String(body.subcategory || '').trim(),
-      description: String(body.description).trim(),
-      yearsInBusiness: body.yearsInBusiness ? Number(body.yearsInBusiness) : null,
-      website: String(body.website || '').trim(),
-      location: String(body.location).trim(),
-      serviceArea: String(body.serviceArea || '').trim(),
-      logoBase64: body.logoBase64 || null,
-      portfolioImages: Array.isArray(body.portfolioImages) ? body.portfolioImages : [],
-      businessRegNumber: String(body.businessRegNumber).trim(),
-      taxIdNumber: String(body.taxIdNumber || '').trim(),
-      businessRegDocBase64: body.businessRegDocBase64 || null,
-      basePrice,
-      currency: String(body.currency || 'LKR'),
-      pricingNotes: String(body.pricingNotes || '').trim(),
-      packages: Array.isArray(body.packages) ? body.packages.filter(hasPackageName) : [],
+    const passwordHash = await bcrypt.hash(String(body.password), 10);
+    const createdUser = await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        password: passwordHash,
+        name: `${String(body.ownerFirstName).trim()} ${String(body.ownerLastName).trim()}`.trim(),
+        role: 'VENDOR',
+      },
     });
+
+    let vendor;
+    try {
+      vendor = addVendorRegistration({
+        ownerFirstName: String(body.ownerFirstName).trim(),
+        ownerLastName: String(body.ownerLastName).trim(),
+        email: normalizedEmail,
+        phone: String(body.phone).trim(),
+        passwordHash,
+        businessName: String(body.businessName).trim(),
+        category: String(body.category).trim(),
+        subcategory: String(body.subcategory || '').trim(),
+        description: String(body.description).trim(),
+        yearsInBusiness: body.yearsInBusiness ? Number(body.yearsInBusiness) : null,
+        website: String(body.website || '').trim(),
+        location: String(body.location).trim(),
+        serviceArea: String(body.serviceArea || '').trim(),
+        logoBase64: body.logoBase64 || null,
+        portfolioImages: Array.isArray(body.portfolioImages) ? body.portfolioImages : [],
+        businessRegNumber: String(body.businessRegNumber).trim(),
+        taxIdNumber: String(body.taxIdNumber || '').trim(),
+        businessRegDocBase64: body.businessRegDocBase64 || null,
+        basePrice,
+        currency: String(body.currency || 'LKR'),
+        pricingNotes: String(body.pricingNotes || '').trim(),
+        packages: Array.isArray(body.packages)
+          ? body.packages.filter((p: VendorPackageInput) => String(p.name || '').trim())
+          : [],
+      });
+    } catch (storeError) {
+      await prisma.user.delete({ where: { id: createdUser.id } }).catch(() => {});
+      throw storeError;
+    }
 
     // Return safe response (no password or sensitive docs)
     return NextResponse.json({

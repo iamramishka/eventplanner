@@ -4,6 +4,7 @@ import {
   getListingsByVendor,
   addListing,
 } from '@/lib/vendorStore';
+import { requireVendorAccess } from '@/lib/rbac';
 
 // ─── GET /api/vendors/[id]/listings ─────────────────────────
 export async function GET(
@@ -30,6 +31,8 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
+    const access = await requireVendorAccess(id);
+    if (access.response) return access.response;
     if (!getVendorById(id)) {
       return NextResponse.json({ error: 'Vendor not found.' }, { status: 404 });
     }
