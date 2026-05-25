@@ -14,7 +14,7 @@ export async function constructEventFromRequest(req: Request, sigHeader: string)
     try {
       const body = await req.json();
       return body;
-    } catch (e) {
+    } catch {
       throw new Error('Unable to parse webhook body in test mode');
     }
   }
@@ -22,7 +22,7 @@ export async function constructEventFromRequest(req: Request, sigHeader: string)
   const buf = Buffer.from(await req.arrayBuffer());
   try {
     return stripe.webhooks.constructEvent(buf, sigHeader, webhookSecret);
-  } catch (e: any) {
+  } catch (e: unknown) {
     await auditLog({ event: 'stripe.webhook.verify_failed', error: String(e) });
     throw e;
   }

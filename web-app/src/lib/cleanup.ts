@@ -16,7 +16,7 @@ function appendLog(line: string) {
   try {
     fs.mkdirSync(path.dirname(LOG_PATH), { recursive: true });
     fs.appendFileSync(LOG_PATH, `[${new Date().toISOString()}] ${line}\n`);
-  } catch (e) {
+  } catch {
     // ignore logging failures in dev
   }
 }

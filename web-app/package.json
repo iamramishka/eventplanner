@@ -9,7 +9,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:seed": "node prisma/seed.js",
-    "build": "next build --webpack",
+    "build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "test:invitation-smoke": "node scripts/test_task45_invitation_smoke.js",
@@ -31,6 +31,7 @@
     "test:vendor-browse": "node scripts/test_task84_vendor_browse_and_shortlist.js",
     "test:sprint8-qa": "node scripts/test_task85_sprint8_qa.js",
     "test:billing-smoke": "node scripts/test_task91_billing_smoke.js",
+    "test:data-auth-rbac": "node scripts/test_data_auth_rbac.mjs",
     "test:sprint10-qa": "node scripts/test_task106_sprint10_qa.js"
   },
   "dependencies": {

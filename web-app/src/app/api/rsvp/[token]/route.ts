@@ -53,7 +53,11 @@ function sanitizeContext(token: string) {
   };
 }
 
-function validatePayload(body: any, maxMembers: number) {
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function validatePayload(body: Record<string, unknown>, maxMembers: number) {
   if (body?.website || body?.company || body?.honeypot) {
     return 'Spam check failed.';
   }
@@ -107,7 +111,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
     }
 
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({})) as Record<string, unknown>;
     const maxMembers = Number(guest.maxMembers) || 1;
     const validationError = validatePayload(body, maxMembers);
     if (validationError) {
@@ -141,7 +145,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
         updatedAt: saved?.updatedAt,
       },
     });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 400 });
+  } catch (e: unknown) {
+    return NextResponse.json({ ok: false, error: errorMessage(e) }, { status: 400 });
   }
 }

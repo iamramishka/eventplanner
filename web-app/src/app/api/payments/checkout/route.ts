@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import stripe from '../../../../lib/stripe';
-import { auditLog } from '../../../../lib/audit';
-import { createMockCheckoutSession } from '../../../../lib/sandboxStripe';
-import { getAdminSettings } from '../../../../lib/adminSettings';
+import stripe from '@/lib/stripe';
+import { auditLog } from '@/lib/audit';
+import { createMockCheckoutSession } from '@/lib/sandboxStripe';
+import { getAdminSettings } from '@/lib/adminSettings';
 
 export async function POST(req: Request) {
   try {
@@ -15,7 +15,6 @@ export async function POST(req: Request) {
     const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY);
 
     if (!stripeConfigured) {
-      // Use internal sandbox helper when Stripe is not configured
       session = createMockCheckoutSession(priceId || null, customerEmail);
       await auditLog({ event: 'checkout.session.sandbox_created', sessionId: session.id, customerEmail });
     } else {
@@ -34,7 +33,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ url: session.url, id: session.id });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('checkout error', e);
     await auditLog({ event: 'checkout.session.error', error: String(e) });
     return NextResponse.json({ error: String(e) }, { status: 500 });

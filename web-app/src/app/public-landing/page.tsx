@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import './styles.css';
 import { getAdminSettings } from '@/lib/adminSettings';
 
@@ -37,11 +38,11 @@ export default function PublicLanding() {
         <header className="header">
           <div className="brand">{brand}</div>
           <nav className="nav" aria-label="Primary navigation">
-            <a href="/vendors">Vendors</a>
-            <a href="/features">Features</a>
-            <a href="/pricing">Pricing</a>
-            <a href="/login" className="btn btn-ghost">Login</a>
-            <a href={publicSite.ctaHref} className="btn btn-primary">{publicSite.ctaLabel}</a>
+            <Link href="/vendors">Vendors</Link>
+            <Link href="/features">Features</Link>
+            <Link href="/pricing">Pricing</Link>
+            <Link href="/login" className="btn btn-ghost">Login</Link>
+            <Link href={publicSite.ctaHref} className="btn btn-primary">{publicSite.ctaLabel}</Link>
           </nav>
         </header>
 
@@ -50,7 +51,7 @@ export default function PublicLanding() {
             <h1>{publicSite.heroTitle}</h1>
             <p>{publicSite.heroSubtitle}</p>
             <div style={{display:'flex',gap:'12px'}}>
-              <a href={publicSite.ctaHref} className="btn btn-primary">{publicSite.ctaLabel}</a>
+              <Link href={publicSite.ctaHref} className="btn btn-primary">{publicSite.ctaLabel}</Link>
               <a href="#features" className="btn btn-ghost">See Features</a>
             </div>
           </div>
@@ -96,8 +97,8 @@ export default function PublicLanding() {
           <section style={{marginTop:40}}>
             <h2>Testimonials</h2>
             <div className="testimonials">
-              <div className="testimonial"><div className="testimonial-quote">"WedPlan made our day simple—guests RSVP'd in minutes."</div><div className="testimonial-author">— Priya & Kasun</div></div>
-              <div className="testimonial"><div className="testimonial-quote">"Loved the vendor discovery—found our photographer locally."</div><div className="testimonial-author">— Maya & Sam</div></div>
+              <div className="testimonial"><div className="testimonial-quote">&quot;WedPlan made our day simple—guests RSVP&apos;d in minutes.&quot;</div><div className="testimonial-author">— Priya & Kasun</div></div>
+              <div className="testimonial"><div className="testimonial-quote">&quot;Loved the vendor discovery—found our photographer locally.&quot;</div><div className="testimonial-author">— Maya & Sam</div></div>
             </div>
           </section>
 
@@ -115,8 +116,8 @@ export default function PublicLanding() {
             <div className="final-cta">
               <h2>Start planning your wedding today</h2>
               <div style={{display:'flex',gap:12}}>
-                <a href={publicSite.ctaHref} className="btn btn-primary">{publicSite.ctaLabel}</a>
-                <a href="/pricing" className="btn btn-ghost">See Pricing</a>
+                <Link href={publicSite.ctaHref} className="btn btn-primary">{publicSite.ctaLabel}</Link>
+                <Link href="/pricing" className="btn btn-ghost">See Pricing</Link>
               </div>
             </div>
           </section>
@@ -137,7 +138,7 @@ export default function PublicLanding() {
 
             <div style={{marginTop:24,borderTop:'1px solid rgba(0,0,0,0.06)',paddingTop:16,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div>© {new Date().getFullYear()} WedPlan</div>
-              <div><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></div>
+              <div><Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link></div>
             </div>
           </footer>
         </div>

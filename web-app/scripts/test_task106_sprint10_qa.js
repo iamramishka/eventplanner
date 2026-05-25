@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const http = require('http');
 
 async function checkFileExists(filePath) {
   const fullPath = path.join(__dirname, '..', filePath);

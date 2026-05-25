@@ -5,6 +5,9 @@ import {
   getOnboardingProgress,
   toPublicVendor,
 } from '@/lib/vendorStore';
+import { requireVendorAccess } from '@/lib/rbac';
+
+type VendorPatch = Parameters<typeof updateVendor>[1];
 
 // ─── GET /api/vendors/[id] ───────────────────────────────────
 export async function GET(
@@ -19,7 +22,7 @@ export async function GET(
     }
     const progress = getOnboardingProgress(vendor);
     return NextResponse.json({ vendor: toPublicVendor(vendor), onboarding: progress });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[GET /api/vendors/[id]]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
@@ -32,12 +35,14 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    const access = await requireVendorAccess(id);
+    if (access.response) return access.response;
     const vendor = getVendorById(id);
     if (!vendor) {
       return NextResponse.json({ error: 'Vendor not found.' }, { status: 404 });
     }
 
-    const body = await req.json();
+    const body = await req.json() as Record<string, unknown>;
     const allowed = [
       // Business profile
       'businessName', 'category', 'subcategory', 'description',
@@ -81,12 +86,12 @@ export async function PUT(
     }
 
     // Only allow whitelisted fields
-    const patch: Record<string, any> = {};
+    const patch: Record<string, unknown> = {};
     for (const key of allowed) {
       if (key in body) patch[key] = body[key];
     }
 
-    const updated = updateVendor(id, patch);
+    const updated = updateVendor(id, patch as VendorPatch);
     if (!updated) {
       return NextResponse.json({ error: 'Update failed.' }, { status: 500 });
     }
@@ -95,7 +100,7 @@ export async function PUT(
       vendor: toPublicVendor(updated),
       onboarding: getOnboardingProgress(updated),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[PUT /api/vendors/[id]]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }

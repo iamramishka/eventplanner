@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { db, getTablesByWedding } from '@/lib/store';
+import { requireWeddingAccess } from '@/lib/rbac';
 
 function csvCell(value: unknown) {
   return `"${String(value ?? '').replace(/"/g, '""')}"`;
@@ -9,6 +10,8 @@ function csvCell(value: unknown) {
 
 export async function GET(_: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   const { weddingId } = await params;
+  const access = await requireWeddingAccess(weddingId);
+  if (access.response) return access.response;
   const wedding = db.weddings.findUnique((w: any) => w.id === weddingId);
   if (!wedding) {
     return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });

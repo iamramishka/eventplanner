@@ -1,5 +1,3 @@
-@import "../../../../src/shared/design-tokens.css";
-
 .public-landing {
   background: var(--inv-ivory);
   color: var(--inv-text-dark);

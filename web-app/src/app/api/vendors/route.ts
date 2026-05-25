@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       vendors: vendors.map(toPublicVendor),
       total: vendors.length,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[GET /api/vendors]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }

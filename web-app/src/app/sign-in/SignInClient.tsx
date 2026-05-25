@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export default function SignInClient() {
   const [email, setEmail] = useState("");
@@ -10,7 +11,6 @@ export default function SignInClient() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO: wire auth
     console.log({ email, password, remember });
   }
 
@@ -27,7 +27,7 @@ export default function SignInClient() {
         <div className="auth-box">
           <div className="auth-header">
             <h1>Sign in to WedPlan</h1>
-            <a className="small-link" href="/register">Create an account</a>
+            <Link className="small-link" href="/register">Create an account</Link>
           </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
@@ -46,7 +46,7 @@ export default function SignInClient() {
 
             <div className="form-row between">
               <label className="inline"><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} /> Remember me</label>
-              <a className="small-link" href="/forgot-password">Forgot?</a>
+              <Link className="small-link" href="/forgot-password">Forgot?</Link>
             </div>
 
             <button className="btn primary" type="submit">Sign in</button>
@@ -54,11 +54,11 @@ export default function SignInClient() {
             <div className="divider"><span>or</span></div>
 
             <div className="socials">
-              <a className="btn social google" href="/api/auth/google">Continue with Google</a>
-              <a className="btn social apple" href="/api/auth/apple">Continue with Apple</a>
+              <Link className="btn social google" href="/api/auth/google">Continue with Google</Link>
+              <Link className="btn social apple" href="/api/auth/apple">Continue with Apple</Link>
             </div>
 
-            <p className="security-note">We encrypt your data and never share your password. By signing in you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy</a>.</p>
+            <p className="security-note">We encrypt your data and never share your password. By signing in you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy</Link>.</p>
           </form>
         </div>
       </main>

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // scripts/test_task83_vendor_profile_listings.js
 // Smoke tests for Task 8.3 — Vendor Profile & Service Listing Management
-// Usage: BASE_URL=http://localhost:3001 node scripts/test_task83_vendor_profile_listings.js
+// Usage: BASE_URL=http://127.0.0.1:3000 node scripts/test_task83_vendor_profile_listings.js
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
 const VENDOR_ID = 'vnd_seed_001';
 
 let passed = 0;
@@ -85,21 +85,21 @@ async function run() {
   // ── PUT — short description ─────────────────────────────────
   console.log('\n🚫 PUT — short description rejected');
   {
-    const { status, data } = await hit('PUT', `/api/vendors/${VENDOR_ID}`, { description: 'Too short.' });
+    const { status } = await hit('PUT', `/api/vendors/${VENDOR_ID}`, { description: 'Too short.' });
     ok('Short description returns 400', status === 400, `got ${status}`);
   }
 
   // ── PUT — negative price ────────────────────────────────────
   console.log('\n🚫 PUT — negative price rejected');
   {
-    const { status, data } = await hit('PUT', `/api/vendors/${VENDOR_ID}`, { basePrice: -1000 });
+    const { status } = await hit('PUT', `/api/vendors/${VENDOR_ID}`, { basePrice: -1000 });
     ok('Negative price returns 400', status === 400, `got ${status}`);
   }
 
   // ── PUT — too many portfolio images ─────────────────────────
   console.log('\n🚫 PUT — too many portfolio images rejected');
   {
-    const { status, data } = await hit('PUT', `/api/vendors/${VENDOR_ID}`, {
+    const { status } = await hit('PUT', `/api/vendors/${VENDOR_ID}`, {
       portfolioImages: Array(11).fill('data:image/jpeg;base64,/9j/4AAQ'),
     });
     ok('Too many portfolioImages returns 400', status === 400, `got ${status}`);
@@ -108,7 +108,7 @@ async function run() {
   // ── PATCH partial update ────────────────────────────────────
   console.log('\n✏️  PATCH /api/vendors/:id — partial update (website only)');
   {
-    const { status, data } = await hit('PATCH', `/api/vendors/${VENDOR_ID}`, {
+    const { status } = await hit('PATCH', `/api/vendors/${VENDOR_ID}`, {
       website: 'https://luminapro.lk',
     });
     ok('Partial PATCH returns 200', status === 200, `got ${status}`);
@@ -136,7 +136,7 @@ async function run() {
   // ── POST /api/vendors/:id/listings — create listing ────────
   console.log('\n✅ POST — create new listing');
   {
-    const { status, data } = await hit('POST', `/api/vendors/${VENDOR_ID}/listings`, {
+    const { status } = await hit('POST', `/api/vendors/${VENDOR_ID}/listings`, {
       title: 'Engagement Party Photography',
       category: 'Photography',
       subcategory: 'Engagement Shoots',
@@ -164,7 +164,7 @@ async function run() {
   // ── POST — missing title ────────────────────────────────────
   console.log('\n🚫 POST — missing title rejected');
   {
-    const { status, data } = await hit('POST', `/api/vendors/${VENDOR_ID}/listings`, {
+    const { status } = await hit('POST', `/api/vendors/${VENDOR_ID}/listings`, {
       title: '', category: 'Photography', price: 10000,
     });
     ok('Missing title returns 400', status === 400, `got ${status}`);
@@ -174,7 +174,7 @@ async function run() {
   // ── POST — missing category ─────────────────────────────────
   console.log('\n🚫 POST — missing category rejected');
   {
-    const { status, data } = await hit('POST', `/api/vendors/${VENDOR_ID}/listings`, {
+    const { status } = await hit('POST', `/api/vendors/${VENDOR_ID}/listings`, {
       title: 'Test Listing', price: 10000,
     });
     ok('Missing category returns 400', status === 400, `got ${status}`);
@@ -183,7 +183,7 @@ async function run() {
   // ── POST — negative price ───────────────────────────────────
   console.log('\n🚫 POST — negative price rejected');
   {
-    const { status, data } = await hit('POST', `/api/vendors/${VENDOR_ID}/listings`, {
+    const { status } = await hit('POST', `/api/vendors/${VENDOR_ID}/listings`, {
       title: 'Bad Price Listing', category: 'Photography', price: -500,
     });
     ok('Negative price returns 400', status === 400, `got ${status}`);

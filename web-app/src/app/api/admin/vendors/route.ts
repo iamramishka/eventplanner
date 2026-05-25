@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAllVendors, addVendorRegistration, deleteVendor, getVendorByEmail, toPublicVendor } from '@/lib/vendorStore';
 import { auditLog } from '@/lib/audit';
-import { requireSuperAdmin } from '@/lib/adminAuth';
+import { requireSuperAdmin } from '@/lib/rbac';
 
 function cleanString(value: unknown, maxLength = 300) {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
@@ -14,8 +14,8 @@ function cleanNumber(value: unknown, fallback = 0) {
 
 export async function GET() {
   try {
-    const forbidden = await requireSuperAdmin();
-    if (forbidden) return forbidden;
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const all = getAllVendors().map(toPublicVendor);
     return NextResponse.json({ ok: true, data: { vendors: all } });
   } catch (e) {
@@ -25,8 +25,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const forbidden = await requireSuperAdmin();
-    if (forbidden) return forbidden;
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const body = await req.json();
     const email = cleanString(body?.email, 180).toLowerCase();
     const businessName = cleanString(body?.businessName, 180);
@@ -83,9 +83,8 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const forbidden = await requireSuperAdmin();
-    if (forbidden) return forbidden;
-    // Expect query param ?id=...
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const url = new URL(req.url);
     const id = url.searchParams.get('id');
     if (!id) return NextResponse.json({ ok: false, error: 'missing id' }, { status: 400 });

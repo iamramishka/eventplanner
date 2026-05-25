@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createMockCustomer } from '../../../../../lib/sandboxStripe';
+import { createMockCustomer } from '@/lib/sandboxStripe';
 
 export async function POST(req: Request) {
   try {
@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const email = body?.email || null;
     const customer = createMockCustomer(email);
     return NextResponse.json(customer);
-  } catch (e: any) {
+  } catch (e: unknown) {
     return NextResponse.json({ error: String(e) }, { status: 400 });
   }
 }

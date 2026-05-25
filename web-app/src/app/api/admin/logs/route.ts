@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { requireSuperAdmin } from '@/lib/adminAuth';
+import { requireSuperAdmin } from '@/lib/rbac';
 
 function clampLines(value: string | null) {
   const numeric = Number(value || '20');
@@ -11,8 +11,8 @@ function clampLines(value: string | null) {
 
 export async function GET(req: Request) {
   try {
-    const forbidden = await requireSuperAdmin();
-    if (forbidden) return forbidden;
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const url = new URL(req.url);
     const lines = clampLines(url.searchParams.get('lines'));
     const file = path.join(process.cwd(), 'logs', 'audit.log');

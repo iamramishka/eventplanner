@@ -1,4 +1,4 @@
-const base = process.env.BASE_URL || 'http://localhost:3000';
+const base = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -72,7 +72,7 @@ async function run() {
   } finally {
     // cleanup created vendors
     for (const id of created) {
-      try { await request('DELETE', `/api/admin/vendors?id=${id}`); } catch (e) {}
+      try { await request('DELETE', `/api/admin/vendors?id=${id}`); } catch {}
     }
     console.log('6. Cleaned up test vendors');
   }

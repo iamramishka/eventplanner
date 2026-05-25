@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
 import { getAdminSettings, saveAdminSettings } from '@/lib/adminSettings';
 import { auditLog } from '@/lib/audit';
-import { requireSuperAdmin } from '@/lib/adminAuth';
+import { requireSuperAdmin } from '@/lib/rbac';
 
 export async function GET() {
-  const forbidden = await requireSuperAdmin();
-  if (forbidden) return forbidden;
+  const access = await requireSuperAdmin();
+  if (access.response) return access.response;
   return NextResponse.json({ ok: true, data: getAdminSettings() });
 }
 
 export async function PUT(req: Request) {
   try {
-    const forbidden = await requireSuperAdmin();
-    if (forbidden) return forbidden;
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const body = await req.json();
     const patch = body?.settings && typeof body.settings === 'object' ? body.settings : body && typeof body === 'object' ? body : {};
     const updated = saveAdminSettings(patch);

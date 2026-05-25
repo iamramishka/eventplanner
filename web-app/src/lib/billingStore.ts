@@ -9,7 +9,7 @@ function ensureFile() {
   if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, JSON.stringify({}), 'utf-8');
 }
 
-export function saveSubscription(email: string, record: Record<string, any>) {
+export function saveSubscription(email: string, record: Record<string, unknown>) {
   ensureFile();
   const data = JSON.parse(fs.readFileSync(filePath, 'utf-8') || '{}');
   data[email] = { ...(data[email] || {}), ...record, updatedAt: new Date().toISOString() };

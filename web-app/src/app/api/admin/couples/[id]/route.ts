@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { auditLog } from '@/lib/audit';
 import { deleteAdminCouple, updateAdminCouple } from '@/lib/adminCouples';
-import { requireSuperAdmin } from '@/lib/adminAuth';
+import { requireSuperAdmin } from '@/lib/rbac';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const forbidden = await requireSuperAdmin();
-    if (forbidden) return forbidden;
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const { id } = await params;
     const body = await req.json();
     const updated = updateAdminCouple(id, body);
@@ -32,8 +32,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const forbidden = await requireSuperAdmin();
-    if (forbidden) return forbidden;
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const { id } = await params;
     const removed = deleteAdminCouple(id);
     if (!removed) return NextResponse.json({ ok: false, error: 'couple not found' }, { status: 404 });

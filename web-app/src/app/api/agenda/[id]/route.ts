@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
 import { db, deleteAgendaEvent, updateAgendaEvent } from '@/lib/store';
+import { requireAgendaAccess } from '@/lib/rbac';
+
+type AgendaRow = AgendaPayload & {
+  id?: unknown;
+};
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
 
 type AgendaPayload = {
   title?: string;
@@ -44,13 +53,15 @@ function validateAgendaPayload(body: AgendaPayload, fallbackTimezone: string) {
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const existing = db.agenda.findMany((event: any) => event.id === id)[0];
+    const access = await requireAgendaAccess(id);
+    if (access.response) return access.response;
+    const existing = db.agenda.findMany((event: AgendaRow) => event.id === id)[0] as AgendaRow | undefined;
     if (!existing) {
       return NextResponse.json({ ok: false, error: 'Agenda event not found' }, { status: 404 });
     }
 
-    const body = await request.json();
-    const validationError = validateAgendaPayload({ ...existing, ...body }, existing.timezone);
+    const body = await request.json() as AgendaPayload;
+    const validationError = validateAgendaPayload({ ...existing, ...body }, existing.timezone || '');
     if (validationError) {
       return NextResponse.json({ ok: false, error: validationError }, { status: 400 });
     }
@@ -66,13 +77,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     });
 
     return NextResponse.json(updated);
-  } catch (error: any) {
-    return NextResponse.json({ ok: false, error: String(error?.message || error) }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });
   }
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const access = await requireAgendaAccess(id);
+  if (access.response) return access.response;
   const removed = deleteAgendaEvent(id);
   if (!removed) {
     return NextResponse.json({ ok: false, error: 'Agenda event not found' }, { status: 404 });

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { saveSubscription } from '../../../../../lib/billingStore';
-import { auditLog } from '../../../../../lib/audit';
+import { saveSubscription } from '@/lib/billingStore';
+import { auditLog } from '@/lib/audit';
 
 export async function POST(req: Request) {
   try {
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const rec = saveSubscription(email, { customerId, subscriptionId, status });
     await auditLog({ event: 'billing.attach', email, customerId, subscriptionId, status });
     return NextResponse.json(rec);
-  } catch (e: any) {
+  } catch (e: unknown) {
     await auditLog({ event: 'billing.attach.error', error: String(e) });
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }

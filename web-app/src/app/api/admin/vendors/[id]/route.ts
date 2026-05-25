@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { deleteVendor, getVendorById, toPublicVendor, updateVendor } from '@/lib/vendorStore';
 import { auditLog } from '@/lib/audit';
-import { requireSuperAdmin } from '@/lib/adminAuth';
+import { requireSuperAdmin } from '@/lib/rbac';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const forbidden = await requireSuperAdmin();
-    if (forbidden) return forbidden;
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const { id } = await params;
     const body = await req.json();
     const existing = getVendorById(id);
@@ -34,8 +34,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const forbidden = await requireSuperAdmin();
-    if (forbidden) return forbidden;
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const { id } = await params;
     const removed = deleteVendor(id);
     if (!removed) return NextResponse.json({ ok: false, error: 'vendor not found' }, { status: 404 });

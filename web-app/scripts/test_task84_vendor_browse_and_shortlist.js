@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // scripts/test_task84_vendor_browse_and_shortlist.js
-// Usage: BASE_URL=http://localhost:3001 node scripts/test_task84_vendor_browse_and_shortlist.js
+// Usage: BASE_URL=http://127.0.0.1:3000 node scripts/test_task84_vendor_browse_and_shortlist.js
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 let passed = 0;
 let failed = 0;
