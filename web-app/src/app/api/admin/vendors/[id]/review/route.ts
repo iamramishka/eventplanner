@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { approveVendor, rejectVendor, getVendorById, toPublicVendor } from '@/lib/vendorStore';
 import { auditLog } from '@/lib/audit';
+import { requireSuperAdmin } from '@/lib/rbac';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const body = await req.json();
     const { action, notes, reviewedBy } = body as { action: string; notes?: string; reviewedBy?: string };
 

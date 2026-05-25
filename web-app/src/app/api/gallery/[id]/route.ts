@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { db, deleteGalleryImage, updateGalleryImage } from '@/lib/store';
+import { requireGalleryAccess } from '@/lib/rbac';
+
+type GalleryRow = {
+  id?: unknown;
+};
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
 
 function deleteUploadedGalleryFile(imageUrl: string) {
   if (!imageUrl.startsWith('/uploads/gallery/')) return;
@@ -15,21 +24,25 @@ function deleteUploadedGalleryFile(imageUrl: string) {
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const body = await request.json();
-    const existing = db.galleryImages.findUnique((image: any) => image.id === id);
+    const access = await requireGalleryAccess(id);
+    if (access.response) return access.response;
+    const body = await request.json() as Record<string, unknown>;
+    const existing = db.galleryImages.findUnique((image: GalleryRow) => image.id === id);
     if (!existing) {
       return NextResponse.json({ ok: false, error: 'Gallery image not found' }, { status: 404 });
     }
 
     const updated = updateGalleryImage(id, { altText: String(body?.altText || '').trim() });
     return NextResponse.json(updated);
-  } catch (error: any) {
-    return NextResponse.json({ ok: false, error: String(error?.message || error) }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });
   }
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const access = await requireGalleryAccess(id);
+  if (access.response) return access.response;
   const removed = deleteGalleryImage(id);
   if (!removed) {
     return NextResponse.json({ ok: false, error: 'Gallery image not found' }, { status: 404 });

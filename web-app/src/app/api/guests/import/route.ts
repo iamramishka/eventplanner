@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { importGuests } from '@/lib/store';
+import { requireWeddingAccess } from '@/lib/rbac';
 
 function parseCsv(text: string) {
   const lines = text.split(/\r?\n/).filter(Boolean);
@@ -21,6 +22,10 @@ export async function POST(req: Request) {
   try {
     const text = await req.text();
     const rows = parseCsv(text);
+    const weddingId = rows[0]?.weddingId || rows[0]?.weddingid || rows[0]?.wedding || '';
+    if (!weddingId) return NextResponse.json({ ok: false, error: 'weddingId required' }, { status: 400 });
+    const access = await requireWeddingAccess(String(weddingId));
+    if (access.response) return access.response;
     const created = importGuests(rows as any);
     return NextResponse.json({ ok: true, createdCount: created.length, created });
   } catch (e: any) {

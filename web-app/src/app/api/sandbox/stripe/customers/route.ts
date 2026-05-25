@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createMockCustomer } from '../../../../lib/sandboxStripe';
+import { createMockCustomer } from '../../../../../lib/sandboxStripe';
 
 export async function POST(req: Request) {
   try {

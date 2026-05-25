@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getAllVendors, addVendorRegistration, deleteVendor, toPublicVendor } from '@/lib/vendorStore';
 import { auditLog } from '@/lib/audit';
+import { requireSuperAdmin } from '@/lib/rbac';
 
 export async function GET() {
   try {
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const all = getAllVendors().map(toPublicVendor);
     return NextResponse.json({ ok: true, data: { vendors: all } });
   } catch (e) {
@@ -14,6 +17,8 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const created = addVendorRegistration(body);
     await auditLog({ action: 'vendor-create', targetId: created.id, data: { businessName: created.businessName } });
     return NextResponse.json({ ok: true, status: 201, data: { vendor: toPublicVendor(created) } }, { status: 201 });
@@ -26,6 +31,8 @@ export async function DELETE(req: Request) {
   try {
     // Expect query param ?id=...
     const url = new URL(req.url);
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const id = url.searchParams.get('id');
     if (!id) return NextResponse.json({ ok: false, error: 'missing id' }, { status: 400 });
     const removed = deleteVendor(id);

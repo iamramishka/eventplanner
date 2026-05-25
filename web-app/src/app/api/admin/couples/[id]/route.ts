@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { auditLog } from '@/lib/audit';
+import { requireSuperAdmin } from '@/lib/rbac';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     const body = await req.json();
     // For MVP we don't have a persistent couples store server-side; record audit and return body back
     await auditLog({ action: 'patch-couple', targetId: id, data: body });
@@ -16,6 +19,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const access = await requireSuperAdmin();
+    if (access.response) return access.response;
     await auditLog({ action: 'delete-couple', targetId: id });
     return NextResponse.json({ ok: true });
   } catch (e) {
