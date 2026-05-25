@@ -10,10 +10,11 @@ type CleanupOptions = {
 };
 
 const DEFAULT_RETENTION = 30;
-const LOG_PATH = path.resolve(process.cwd(), 'web-app', 'logs', 'cleanup.log');
+const LOG_PATH = path.join(process.cwd(), 'logs', 'cleanup.log');
 
 function appendLog(line: string) {
   try {
+    fs.mkdirSync(path.dirname(LOG_PATH), { recursive: true });
     fs.appendFileSync(LOG_PATH, `[${new Date().toISOString()}] ${line}\n`);
   } catch (e) {
     // ignore logging failures in dev

@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server';
 import stripe from '../../../../lib/stripe';
 import { auditLog } from '../../../../lib/audit';
 import { createMockCheckoutSession } from '../../../../lib/sandboxStripe';
+import { getAdminSettings } from '../../../../lib/adminSettings';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const priceId = body?.priceId || process.env.BILLING_DEFAULT_PRICE_ID;
+    const premiumPlan = getAdminSettings().plans.find((plan) => plan.id === 'premium');
+    const priceId = body?.priceId || premiumPlan?.billingPriceId || process.env.BILLING_DEFAULT_PRICE_ID;
     const customerEmail = body?.customerEmail || null;
 
     let session;

@@ -1,0 +1,75 @@
+{
+  "updatedAt": "1970-01-01T00:00:00.000Z",
+  "settings": {
+    "branding": {
+      "siteName": "WedInvite",
+      "logoUrl": "",
+      "primaryColor": "#E24B6D",
+      "publicTagline": "Beautiful digital wedding invitations and planning tools."
+    },
+    "contact": {
+      "phone": "+94 77 123 4567",
+      "whatsapp": "+94 77 123 4567",
+      "supportEmail": "support@wedinvite.test"
+    },
+    "publicSite": {
+      "heroTitle": "Create wedding websites, manage guests, and plan together",
+      "heroSubtitle": "Beautiful invitation templates, RSVP management, vendor discovery, and collaborative planning tools in one place.",
+      "ctaLabel": "Start Free Trial",
+      "ctaHref": "/register",
+      "maintenanceMode": false
+    },
+    "cmsBlocks": {
+      "featuresIntro": "Invitation templates, guest management, vendor discovery, and collaborative planning tools.",
+      "templatesIntro": "Elegant, responsive invitation designs couples can customize for their celebration.",
+      "footerNote": "Trusted by couples and vendors worldwide."
+    },
+    "templates": [
+      {
+        "id": "classic",
+        "name": "Classic",
+        "status": "active"
+      },
+      {
+        "id": "modern",
+        "name": "Modern",
+        "status": "active"
+      },
+      {
+        "id": "romantic",
+        "name": "Romantic",
+        "status": "active"
+      }
+    ]
+  },
+  "plans": [
+    {
+      "id": "trial",
+      "name": "Trial",
+      "price": "Free",
+      "billingPriceId": "",
+      "description": "Starter planning controls for small weddings.",
+      "entitlements": {
+        "maxGuests": 50,
+        "digitalInvitations": false,
+        "customDomain": false,
+        "vendorShortlist": true,
+        "premiumTemplates": false
+      }
+    },
+    {
+      "id": "premium",
+      "name": "Premium",
+      "price": "$49 / one-time",
+      "billingPriceId": "",
+      "description": "Full planning, invitation, and vendor discovery access.",
+      "entitlements": {
+        "maxGuests": 1000,
+        "digitalInvitations": true,
+        "customDomain": true,
+        "vendorShortlist": true,
+        "premiumTemplates": true
+      }
+    }
+  ]
+}

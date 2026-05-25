@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/store';
 import { sendEmailNotification, sendWhatsAppNotification, broadcastToGuests } from '@/lib/notifications';
+import { requireSuperAdmin } from '@/lib/adminAuth';
+import { auditLog } from '@/lib/audit';
 
 export async function GET() {
   try {
+    const forbidden = await requireSuperAdmin();
+    if (forbidden) return forbidden;
     // Setup a mock guest for testing opt-in rules
     const w = db.weddings.findMany()[0];
     const g1 = db.guests.findMany((g: any) => g.id === 'g_1')[0]; // Nimal Perera
@@ -44,6 +48,18 @@ export async function GET() {
 
     // Test 4: Broadcast Reminder (Simulating trigger point)
     const broadcastRes = await broadcastToGuests(w.id, 'reminder', 'email');
+
+    await auditLog({
+      action: 'admin-notification-test',
+      targetId: w.id,
+      data: {
+        emailSuccess: Boolean(emailRes?.success),
+        whatsappOptOutSuccess: Boolean(waResOptOut?.success),
+        whatsappOptInSuccess: Boolean(waResOptIn?.success),
+        broadcastSuccessCount: broadcastRes.filter((result) => result.success).length,
+        broadcastTotal: broadcastRes.length,
+      },
+    });
 
     return NextResponse.json({
       emailRes,
