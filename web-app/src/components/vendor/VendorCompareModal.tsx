@@ -17,7 +17,7 @@ export default function VendorCompareModal({ open, onClose, ids }: any) {
           return json.vendor;
         }));
         setVendors(fetched.filter(Boolean));
-      } catch (e) { setVendors([]); }
+      } catch { setVendors([]); }
     })();
   }, [open, ids]);
 

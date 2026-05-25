@@ -11,7 +11,7 @@ export default async function FindTablePage({
 }) {
   const { slug } = await params;
   const resolvedSearchParams = await searchParams;
-  const wedding = db.weddings.findUnique((item: any) => item.slug === slug);
+  const wedding = db.weddings.findUnique((item) => item.slug === slug);
   const tokenParam = Array.isArray(resolvedSearchParams?.token) ? resolvedSearchParams?.token[0] : resolvedSearchParams?.token;
 
   if (!wedding) {

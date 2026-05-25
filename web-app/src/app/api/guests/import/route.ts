@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 import { importGuests } from '@/lib/store';
 import { requireWeddingAccess } from '@/lib/rbac';
 
+type GuestImportRows = Parameters<typeof importGuests>[0];
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function parseCsv(text: string) {
   const lines = text.split(/\r?\n/).filter(Boolean);
   if (!lines.length) return [];
@@ -26,9 +32,9 @@ export async function POST(req: Request) {
     if (!weddingId) return NextResponse.json({ ok: false, error: 'weddingId required' }, { status: 400 });
     const access = await requireWeddingAccess(String(weddingId));
     if (access.response) return access.response;
-    const created = importGuests(rows as any);
+    const created = importGuests(rows as GuestImportRows);
     return NextResponse.json({ ok: true, createdCount: created.length, created });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 400 });
+  } catch (e: unknown) {
+    return NextResponse.json({ ok: false, error: errorMessage(e) }, { status: 400 });
   }
 }

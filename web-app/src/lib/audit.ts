@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-export async function auditLog(entry: Record<string, any>) {
+export async function auditLog(entry: Record<string, unknown>) {
   try {
     const logsDir = path.join(process.cwd(), 'logs');
     if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });

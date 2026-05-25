@@ -20,7 +20,7 @@ export default function SignInClient() {
       <aside className="auth-panel">
         <div className="brand">WedPlan</div>
         <h2 className="panel-title">Plan your perfect day</h2>
-        <p className="panel-copy">Join couples worldwide using WedPlan to organise invitations, guests and vendors - beautifully.</p>
+        <p className="panel-copy">Join couples worldwide using WedPlan to organise invitations, guests and vendors — beautifully.</p>
         <div className="panel-illus" aria-hidden />
       </aside>
 
@@ -34,23 +34,19 @@ export default function SignInClient() {
           <form className="auth-form" onSubmit={handleSubmit}>
             <label className="field">
               <span className="label">Email</span>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@domain.com" />
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@domain.com" />
             </label>
 
             <label className="field">
               <span className="label">Password</span>
               <div className="password-row">
-                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Enter your password" />
-                <button type="button" className="toggle" onClick={() => setShowPassword((v) => !v)} aria-pressed={showPassword}>
-                  {showPassword ? "Hide" : "Show"}
-                </button>
+                <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required placeholder="Enter your password" />
+                <button type="button" className="toggle" onClick={() => setShowPassword(v => !v)} aria-pressed={showPassword}>{showPassword ? "Hide" : "Show"}</button>
               </div>
             </label>
 
             <div className="form-row between">
-              <label className="inline">
-                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember me
-              </label>
+              <label className="inline"><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} /> Remember me</label>
               <Link className="small-link" href="/forgot-password">Forgot?</Link>
             </div>
 
@@ -63,9 +59,7 @@ export default function SignInClient() {
               <Link className="btn social apple" href="/api/auth/apple">Continue with Apple</Link>
             </div>
 
-            <p className="security-note">
-              We encrypt your data and never share your password. By signing in you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy</Link>.
-            </p>
+            <p className="security-note">We encrypt your data and never share your password. By signing in you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy</Link>.</p>
           </form>
         </div>
       </main>

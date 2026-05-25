@@ -12,7 +12,7 @@ type Props = { params: { slug: string } };
 
 export default async function TwitterImage({ params }: Props) {
   const resolvedParams = (await params) as { slug: string };
-  const wedding = db.weddings.findUnique((w: any) => w.slug === resolvedParams.slug);
+  const wedding = db.weddings.findUnique((w) => w.slug === resolvedParams.slug);
 
   if (!wedding) {
     return new ImageResponse(

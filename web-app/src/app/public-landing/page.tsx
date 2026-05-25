@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import './styles.css';
 
 export const metadata = {
@@ -13,11 +14,11 @@ export default function PublicLanding() {
         <header className="header">
           <div className="brand">WedPlan</div>
           <nav className="nav" aria-label="Primary navigation">
-            <a href="/vendors">Vendors</a>
-            <a href="/features">Features</a>
-            <a href="/pricing">Pricing</a>
-            <a href="/login" className="btn btn-ghost">Login</a>
-            <a href="/register" className="btn btn-primary">Start Free Trial</a>
+            <Link href="/vendors">Vendors</Link>
+            <Link href="/features">Features</Link>
+            <Link href="/pricing">Pricing</Link>
+            <Link href="/login" className="btn btn-ghost">Login</Link>
+            <Link href="/register" className="btn btn-primary">Start Free Trial</Link>
           </nav>
         </header>
 
@@ -26,7 +27,7 @@ export default function PublicLanding() {
             <h1>Create wedding websites, manage guests, and plan together</h1>
             <p>Beautiful invitation templates, RSVP management, vendor discovery, and collaborative planning tools — all in one place.</p>
             <div style={{display:'flex',gap:'12px'}}>
-              <a href="/register" className="btn btn-primary">Start Free Trial</a>
+              <Link href="/register" className="btn btn-primary">Start Free Trial</Link>
               <a href="#features" className="btn btn-ghost">See Features</a>
             </div>
           </div>
@@ -75,8 +76,8 @@ export default function PublicLanding() {
                   </ul>
                 </div>
                 <div className="template-actions">
-                  <a href="/templates/modern" className="btn btn-ghost">Preview</a>
-                  <a href="/register?template=modern" className="btn btn-primary">Use Template</a>
+                  <Link href="/templates/modern" className="btn btn-ghost">Preview</Link>
+                  <Link href="/register?template=modern" className="btn btn-primary">Use Template</Link>
                 </div>
               </div>
 
@@ -90,8 +91,8 @@ export default function PublicLanding() {
           <section style={{marginTop:40}}>
             <h2>Testimonials</h2>
             <div className="testimonials">
-              <div className="testimonial"><div className="testimonial-quote">"WedPlan made our day simple—guests RSVP'd in minutes."</div><div className="testimonial-author">— Priya & Kasun</div></div>
-              <div className="testimonial"><div className="testimonial-quote">"Loved the vendor discovery—found our photographer locally."</div><div className="testimonial-author">— Maya & Sam</div></div>
+              <div className="testimonial"><div className="testimonial-quote">&quot;WedPlan made our day simple—guests RSVP&apos;d in minutes.&quot;</div><div className="testimonial-author">— Priya & Kasun</div></div>
+              <div className="testimonial"><div className="testimonial-quote">&quot;Loved the vendor discovery—found our photographer locally.&quot;</div><div className="testimonial-author">— Maya & Sam</div></div>
             </div>
           </section>
 
@@ -109,8 +110,8 @@ export default function PublicLanding() {
             <div className="final-cta">
               <h2>Start planning your wedding today</h2>
               <div style={{display:'flex',gap:12}}>
-                <a href="/register" className="btn btn-primary">Start Free Trial</a>
-                <a href="/pricing" className="btn btn-ghost">See Pricing</a>
+                <Link href="/register" className="btn btn-primary">Start Free Trial</Link>
+                <Link href="/pricing" className="btn btn-ghost">See Pricing</Link>
               </div>
             </div>
           </section>
@@ -131,7 +132,7 @@ export default function PublicLanding() {
 
             <div style={{marginTop:24,borderTop:'1px solid rgba(0,0,0,0.06)',paddingTop:16,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div>© {new Date().getFullYear()} WedPlan</div>
-              <div><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></div>
+              <div><Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link></div>
             </div>
           </footer>
         </div>

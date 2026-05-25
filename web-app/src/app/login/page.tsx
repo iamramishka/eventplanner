@@ -56,7 +56,7 @@ export default function LoginPage() {
           
           <div className={styles.welcomeText}>
             Welcome back,<br />
-            <span className={styles.highlightText}>Let's continue your<br />wedding journey</span>
+            <span className={styles.highlightText}>Let&apos;s continue your<br />wedding journey</span>
           </div>
 
           <div className={styles.divider}>
@@ -157,7 +157,7 @@ export default function LoginPage() {
         </div>
         
         <div className={styles.signupPrompt}>
-          Don't have an account? <Link href="/register" className={styles.signupLink}>Sign Up</Link>
+          Don&apos;t have an account? <Link href="/register" className={styles.signupLink}>Sign Up</Link>
         </div>
       </div>
     </div>

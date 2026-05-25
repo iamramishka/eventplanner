@@ -1,14 +1,26 @@
 import { NextResponse } from 'next/server';
-import { auditLog } from '../../../../lib/audit';
-import { constructEventFromRequest } from '../../../../lib/stripe';
-import { saveSubscription } from '../../../../lib/billingStore';
+import { auditLog } from '@/lib/audit';
+import { constructEventFromRequest } from '@/lib/stripe';
+import { saveSubscription } from '@/lib/billingStore';
 
-function extractEmail(obj: any) {
+function objectValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? value as Record<string, unknown> : {};
+}
+
+function nestedString(value: unknown, path: string[]) {
+  let current: unknown = value;
+  for (const key of path) {
+    current = objectValue(current)[key];
+  }
+  return typeof current === 'string' ? current : null;
+}
+
+function extractEmail(obj: unknown) {
   return (
-    obj?.customer_details?.email ||
-    obj?.customer_email ||
-    obj?.billing_details?.email ||
-    obj?.metadata?.email ||
+    nestedString(obj, ['customer_details', 'email']) ||
+    nestedString(obj, ['customer_email']) ||
+    nestedString(obj, ['billing_details', 'email']) ||
+    nestedString(obj, ['metadata', 'email']) ||
     null
   );
 }
@@ -87,7 +99,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('webhook handler error', e);
     await auditLog({ event: 'stripe.webhook.error', error: String(e) });
     return NextResponse.json({ error: String(e) }, { status: 400 });

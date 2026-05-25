@@ -4,8 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import VendorCard from '@/components/vendor/VendorCard';
 import VendorCompareModal from '@/components/vendor/VendorCompareModal';
 import useShortlist from '@/lib/useShortlist';
-import { Search, MapPin, SlidersHorizontal, Heart, X, ChevronDown, Filter } from 'lucide-react';
-import Link from 'next/link';
+import { Search, Heart, X, Filter } from 'lucide-react';
 
 export default function VendorsPage() {
   const [q, setQ] = useState('');
@@ -36,7 +35,7 @@ export default function VendorsPage() {
         const json = await res.json();
         if (!mounted) return;
         setVendors(json.vendors || []);
-      } catch (e) {
+      } catch {
         if (mounted) setVendors([]);
       } finally {
         if (mounted) setLoading(false);
