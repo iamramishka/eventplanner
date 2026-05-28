@@ -1,4 +1,3 @@
-import "./styles.css";
 import SignInClient from "./SignInClient";
 
 export const metadata = {

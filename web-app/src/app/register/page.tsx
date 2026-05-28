@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Eye, EyeOff, User, Users, CheckCircle2, ShieldCheck, MailOpen, CalendarCheck, MapPin } from 'lucide-react';
@@ -122,7 +123,7 @@ export default function RegisterPage() {
       }
       setLoading(false);
       router.push('/couple');
-    } catch (e: any) {
+    } catch (e: unknown) {
       setSubmitError(String(e));
       setLoading(false);
     }
@@ -189,7 +190,7 @@ export default function RegisterPage() {
         </div>
 
         <div className={styles.illustration}>
-          <img src="/wedding_login.png" alt="Wedding couple" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <Image src="/public-site/wedding-couple.png" alt="Wedding couple" fill sizes="(max-width: 900px) 100vw, 42vw" className={styles.illustrationImage} />
         </div>
       </div>
 
@@ -335,10 +336,10 @@ export default function RegisterPage() {
 
               <div className={styles.socialBtns}>
                 <button type="button" className={styles.socialBtn}>
-                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="20" height="20" /> Google
+                  <Image src="/public-site/google-mark.svg" alt="Google" width={20} height={20} /> Google
                 </button>
                 <button type="button" className={styles.socialBtn}>
-                  <img src="https://www.svgrepo.com/show/511330/apple-173.svg" alt="Apple" width="20" height="20" /> Apple
+                  <Image src="/public-site/apple-mark.svg" alt="Apple" width={20} height={20} /> Apple
                 </button>
               </div>
 

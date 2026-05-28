@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import "./styles.css";
 
 export default function SignInClient() {
   const [email, setEmail] = useState("");
@@ -11,56 +13,55 @@ export default function SignInClient() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    console.log({ email, password, remember });
   }
 
   return (
-    <div className="auth-shell">
-      <aside className="auth-panel">
-        <div className="brand">WedPlan</div>
-        <h2 className="panel-title">Plan your perfect day</h2>
-        <p className="panel-copy">Join couples worldwide using WedPlan to organise invitations, guests and vendors — beautifully.</p>
-        <div className="panel-illus" aria-hidden />
+    <div className="signInShell">
+      <aside className="signInPanel">
+        <div className="signInBrand">
+          <span className="brandMark">W</span>
+          <span>
+            <strong>WedPlan</strong>
+            <small>Plan Beautiful. Celebrate Forever.</small>
+          </span>
+        </div>
+        <h1>Welcome back,<br /><span>Let&apos;s continue your wedding journey</span></h1>
+        <div className="panelRule"><span /></div>
+        <p>Sign in to access your dashboard and manage every beautiful detail.</p>
+        <Image src="/public-site/wedding-couple.png" alt="Wedding couple" width={1024} height={1024} />
       </aside>
 
-      <main className="auth-form-wrap">
-        <div className="auth-box">
-          <div className="auth-header">
-            <h1>Sign in to WedPlan</h1>
-            <Link className="small-link" href="/register">Create an account</Link>
+      <main className="signInFormPane">
+        <div className="languagePill">English</div>
+        <form className="signInCard" onSubmit={handleSubmit}>
+          <h2>Sign in to your account</h2>
+          <p>Enter your email and password<br />to access your dashboard.</p>
+
+          <label>
+            <span>Email address</span>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" />
+          </label>
+
+          <label>
+            <span>Password</span>
+            <div className="passwordField">
+              <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Enter your password" />
+              <button type="button" onClick={() => setShowPassword((value) => !value)} aria-pressed={showPassword}>{showPassword ? "Hide" : "Show"}</button>
+            </div>
+          </label>
+
+          <div className="signInOptions">
+            <label><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember me</label>
+            <Link href="/forgot-password">Forgot password?</Link>
           </div>
 
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <label className="field">
-              <span className="label">Email</span>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@domain.com" />
-            </label>
-
-            <label className="field">
-              <span className="label">Password</span>
-              <div className="password-row">
-                <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required placeholder="Enter your password" />
-                <button type="button" className="toggle" onClick={() => setShowPassword(v => !v)} aria-pressed={showPassword}>{showPassword ? "Hide" : "Show"}</button>
-              </div>
-            </label>
-
-            <div className="form-row between">
-              <label className="inline"><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} /> Remember me</label>
-              <Link className="small-link" href="/forgot-password">Forgot?</Link>
-            </div>
-
-            <button className="btn primary" type="submit">Sign in</button>
-
-            <div className="divider"><span>or</span></div>
-
-            <div className="socials">
-              <Link className="btn social google" href="/api/auth/google">Continue with Google</Link>
-              <Link className="btn social apple" href="/api/auth/apple">Continue with Apple</Link>
-            </div>
-
-            <p className="security-note">We encrypt your data and never share your password. By signing in you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy</Link>.</p>
-          </form>
-        </div>
+          <button className="primaryAction" type="submit">Sign In</button>
+          <div className="orDivider">or continue with</div>
+          <Link className="socialAction" href="/api/auth/google">Continue with Google</Link>
+          <Link className="socialAction" href="/api/auth/apple">Continue with Apple</Link>
+          <div className="secureNote"><strong>Your data is secure with us.</strong><span>We use enterprise-grade security to keep your information safe.</span></div>
+        </form>
+        <div className="authSwitch">Don&apos;t have an account? <Link href="/register">Sign Up</Link></div>
       </main>
     </div>
   );

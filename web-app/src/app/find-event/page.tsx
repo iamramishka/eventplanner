@@ -38,8 +38,7 @@ export default function FindEventPage() {
       } else {
         setResults([]);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       setResults([]);
     } finally {
       setLoading(false);
@@ -91,7 +90,7 @@ export default function FindEventPage() {
 
             {results.length === 0 ? (
               <div className={styles.noResults}>
-                <p>We couldn&apos;t find any events matching &quot;{query}&quot;.</p>
+                <p>We couldn&apos;t find any events matching {`"${query}"`}.</p>
                 <p style={{ marginTop: 8, fontSize: 14 }}>Please check the spelling or ask the couple for their exact event link.</p>
               </div>
             ) : (
@@ -99,6 +98,7 @@ export default function FindEventPage() {
                 {results.map((ev) => (
                   <div key={ev.id} className={styles.eventCard}>
                     {ev.profileImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- event avatars may be remote or data URLs from existing event data.
                       <img src={ev.profileImage} alt={ev.weddingTitle || `${ev.brideName} & ${ev.groomName}`} className={styles.eventAvatar} />
                     ) : (
                       <div className={styles.eventAvatar}>
