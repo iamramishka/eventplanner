@@ -5,13 +5,13 @@ import {
   CheckCircle2,
   ChevronDown,
   ClipboardList,
-  Headphones,
+  HelpCircle,
   Heart,
   Mail,
   Palette,
-  MonitorSmartphone,
-  PiggyBank,
-  Play,
+  Phone,
+  Wallet,
+  Eye,
   ShieldCheck,
   Store,
   Users,
@@ -26,9 +26,9 @@ export const metadata = {
 const features = [
   { icon: Users, title: 'Guest Management', copy: 'Easily add guests, send invitations and track responses.' },
   { icon: Mail, title: 'Digital Invitations', copy: 'Beautiful invitation websites with your own domain.' },
-  { icon: MonitorSmartphone, title: 'Seating & Tables', copy: 'Smart table planning and guest arrangement.' },
+  { icon: Phone, title: 'Seating & Tables', copy: 'Smart table planning and guest arrangement.' },
   { icon: ClipboardList, title: 'Checklist & Tasks', copy: 'Stay organized with smart checklists and reminders.' },
-  { icon: PiggyBank, title: 'Budget Planner', copy: 'Track expenses and manage your budget.' },
+  { icon: Wallet, title: 'Budget Planner', copy: 'Track expenses and manage your budget.' },
   { icon: Store, title: 'Vendor Management', copy: 'Find, manage and collaborate with vendors.' },
 ];
 
@@ -37,8 +37,8 @@ const advantages = [
   { icon: Bell, title: 'Real-time Updates', copy: 'Instant RSVP updates and live guest tracking.' },
   { icon: Palette, title: 'Customizable', copy: 'Personalize every detail to match your style.' },
   { icon: ShieldCheck, title: 'Secure & Reliable', copy: 'Your data is safe with enterprise-grade security.' },
-  { icon: MonitorSmartphone, title: 'Mobile Friendly', copy: 'Access and manage your wedding on the go.' },
-  { icon: Headphones, title: 'Dedicated Support', copy: "We're here to help you at every step." },
+  { icon: Phone, title: 'Mobile Friendly', copy: 'Access and manage your wedding on the go.' },
+  { icon: HelpCircle, title: 'Dedicated Support', copy: "We're here to help you at every step." },
 ];
 
 const stats = [
@@ -98,7 +98,7 @@ export default function PublicLanding() {
           <p>WedPlan helps couples manage everything in one place: guests, RSVPs, websites, seating, vendors, checklist, and more. Beautiful planning. Stress-free celebration.</p>
           <div className="heroActions">
             <Link className="trialBtn heroBtn" href="/register"><Heart size={15} /> Start Free Trial</Link>
-            <a className="demoBtn" href="#how-it-works"><Play size={15} /> View Demo</a>
+            <a className="demoBtn" href="#how-it-works"><Eye size={15} /> View Demo</a>
           </div>
           <div className="trustRow">
             <span><CheckCircle2 size={14} /> No credit card required</span>

@@ -7,7 +7,7 @@ import {
   Eye, Clock, CheckCircle, Star, LogOut, Plus, Edit2, Trash2,
   ToggleLeft, ToggleRight, Upload, X, Save, AlertCircle,
   Globe, DollarSign, Image as ImageIcon, FileText,
-  Search, ImageOff, RefreshCw, Check,
+  Search, ImageOff, RefreshCw, Check, Filter,
   Info
 } from 'lucide-react';
 import styles from './vendor.module.css';
