@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WedInvite — Couple Dashboard</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Design Tokens -->
+  <link rel="stylesheet" href="../shared/design-tokens.css" />
+
+  <!-- Dashboard CSS -->
+  <link rel="stylesheet" href="dashboard.css" />
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ LOGIN MODAL ══ -->
+<div id="loginOverlay" class="login-overlay" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-logo">
+        <i data-lucide="heart" style="color:#C45A74;width:28px;height:28px;"></i>
+      </div>
+      <h1 id="loginTitle" class="login-title">WedInvite</h1>
+      <p class="login-subtitle">Couple Portal — Sign In</p>
+    </div>
+
+    <div class="login-demo-hint">
+      <i data-lucide="info" style="width:14px;height:14px;"></i>
+      Demo credentials: <strong>couple@test.com</strong> / <strong>couple123</strong>
+    </div>
+
+    <form id="loginForm" class="login-form" novalidate>
+      <div class="form-group">
+        <label for="loginEmail" class="form-label">Email Address</label>
+        <div class="input-with-icon">
+          <i data-lucide="mail" class="input-icon"></i>
+          <input type="email" id="loginEmail" class="form-input" placeholder="couple@test.com" value="couple@test.com" autocomplete="email" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="loginPassword" class="form-label">Password</label>
+        <div class="input-with-icon">
+          <i data-lucide="lock" class="input-icon"></i>
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" value="couple123" autocomplete="current-password" required />
+          <button type="button" id="togglePassword" class="input-icon-right" aria-label="Toggle password visibility">
+            <i data-lucide="eye"></i>
+          </button>
+        </div>
+      </div>
+      <div id="loginError" class="login-error hidden" role="alert"></div>
+      <button type="submit" id="loginBtn" class="btn btn-primary btn-full">
+        <i data-lucide="log-in"></i> Sign In to Dashboard
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ TOAST AREA ══ -->
+<div id="toastArea" class="toast-area" role="log" aria-live="polite" aria-label="Notifications"></div>
+
+<!-- ════════════════════════════════════════════════════ CONFIRM DIALOG ══ -->
+<div id="confirmModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+  <div class="modal-card confirm-card">
+    <div class="confirm-icon"><i data-lucide="alert-triangle"></i></div>
+    <h3 id="confirmTitle" class="confirm-title">Are you sure?</h3>
+    <p id="confirmMessage" class="confirm-message"></p>
+    <div class="confirm-actions">
+      <button id="confirmCancel" class="btn btn-outline">Cancel</button>
+      <button id="confirmOk" class="btn btn-danger">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ APP SHELL ══ -->
+<div id="app" class="app-shell hidden">
+
+  <!-- ─── SIDEBAR ──────────────────────────────────────────────────────────── -->
+  <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <i data-lucide="heart" style="color:#C45A74;width:20px;height:20px;flex-shrink:0;"></i>
+        <span class="brand-name">WedInvite</span>
+      </div>
+      <button id="sidebarClose" class="sidebar-close" aria-label="Close sidebar">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <div class="sidebar-wedding-info">
+      <div class="wedding-avatar" id="sidebarAvatar">P&K</div>
+      <div class="wedding-names" id="sidebarWeddingNames">Priya & Kasun</div>
+      <div class="wedding-date" id="sidebarWeddingDate">August 15, 2026</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul>
+        <li><a href="#" class="nav-item active" data-module="overview" id="nav-overview">
+          <i data-lucide="layout-dashboard"></i><span>Overview</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="settings" id="nav-settings">
+          <i data-lucide="settings"></i><span>Wedding Settings</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="guests" id="nav-guests">
+          <i data-lucide="users"></i><span>Guests</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="rsvps" id="nav-rsvps">
+          <i data-lucide="check-square"></i><span>RSVPs</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="invitation" id="nav-invitation">
+          <i data-lucide="edit-3"></i><span>Invitation Editor</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="visibility" id="nav-visibility">
+          <i data-lucide="eye"></i><span>Visibility</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="theme" id="nav-theme">
+          <i data-lucide="palette"></i><span>Theme & Design</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="gallery" id="nav-gallery">
+          <i data-lucide="image"></i><span>Gallery</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="music" id="nav-music">
+          <i data-lucide="music"></i><span>Music</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="agenda" id="nav-agenda">
+          <i data-lucide="clock"></i><span>Agenda</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="tables" id="nav-tables">
+          <i data-lucide="table-2"></i><span>Tables</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="budget" id="nav-budget">
+          <i data-lucide="wallet"></i><span>Budget</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="checklist" id="nav-checklist">
+          <i data-lucide="list-checks"></i><span>Checklist</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="vendors" id="nav-vendors">
+          <i data-lucide="briefcase"></i><span>Vendors</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-module="account" id="nav-account">
+          <i data-lucide="user-circle"></i><span>Account</span>
+        </a></li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-trial" id="sidebarTrial">
+        <i data-lucide="zap" style="width:14px;height:14px;"></i>
+        <span id="sidebarTrialText">Trial: 12 days left</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── SIDEBAR OVERLAY (mobile) ─────────────────────────────────────────── -->
+  <div id="sidebarOverlay" class="sidebar-overlay hidden"></div>
+
+  <!-- ─── MAIN CONTENT ──────────────────────────────────────────────────────── -->
+  <main class="main-content" id="mainContent">
+
+    <!-- TOP BAR -->
+    <header class="top-bar" id="topBar">
+      <div class="top-bar-left">
+        <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">
+          <i data-lucide="menu"></i>
+        </button>
+        <div class="top-bar-wedding">
+          <h2 class="top-bar-title" id="topBarTitle">The Wedding of Priya & Kasun</h2>
+          <span class="trial-badge" id="trialBadge">Trial · 12 days left</span>
+        </div>
+      </div>
+      <div class="top-bar-right">
+        <a id="previewInvitationBtn" href="../invitation/index.html" target="_blank" class="btn btn-outline btn-sm">
+          <i data-lucide="external-link"></i>
+          <span class="hide-xs">Preview Invitation</span>
+        </a>
+        <button class="icon-btn" id="notifBtn" aria-label="Notifications">
+          <i data-lucide="bell"></i>
+          <span class="notif-dot"></span>
+        </button>
+        <div class="user-dropdown-wrap" id="userDropdownWrap">
+          <button class="user-avatar-btn" id="userAvatarBtn" aria-label="User menu" aria-expanded="false">
+            <div class="user-avatar" id="userAvatarInitials">PK</div>
+          </button>
+          <div class="user-dropdown hidden" id="userDropdown">
+            <div class="user-dropdown-header">
+              <div class="user-dropdown-name" id="dropdownUserName">Priya & Kasun</div>
+              <div class="user-dropdown-email" id="dropdownUserEmail">couple@test.com</div>
+            </div>
+            <div class="user-dropdown-divider"></div>
+            <button class="user-dropdown-item" onclick="navigateTo('account')">
+              <i data-lucide="user-circle"></i> Account Settings
+            </button>
+            <button class="user-dropdown-item danger" id="logoutBtn">
+              <i data-lucide="log-out"></i> Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <div class="page-content" id="pageContent">
+
+      <!-- ══════════════════════════════════════ MODULE 1: OVERVIEW ══ -->
+      <section class="module" id="module-overview">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Dashboard Overview</h1>
+            <p class="module-subtitle">Everything at a glance for your big day</p>
+          </div>
+        </div>
+
+        <!-- KPI GRID -->
+        <div class="kpi-grid" id="kpiGrid">
+          <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i data-lucide="users"></i></div>
+            <div class="kpi-info">
+              <div class="kpi-value" id="kpi-totalGuests">0</div>
+              <div class="kpi-label">Total Guests</div>
+            </div>
+          </div>
+          <div class="kpi-card kpi-green">
+            <div class="kpi-icon"><i data-lucide="check-circle"></i></div>
+            <div class="kpi-info">
+              <div class="kpi-value" id="kpi-confirmed">0</div>
+              <div class="kpi-label">Confirmed</div>
+            </div>
+          </div>
+          <div class="kpi-card kpi-amber">
+            <div class="kpi-icon"><i data-lucide="clock"></i></div>
+            <div class="kpi-info">
+              <div class="kpi-value" id="kpi-pending">0</div>
+              <div class="kpi-label">Pending RSVPs</div>
+            </div>
+          </div>
+          <div class="kpi-card kpi-red">
+            <div class="kpi-icon"><i data-lucide="x-circle"></i></div>
+            <div class="kpi-info">
+              <div class="kpi-value" id="kpi-declined">0</div>
+              <div class="kpi-label">Declined</div>
+            </div>
+          </div>
+          <div class="kpi-card kpi-purple">
+            <div class="kpi-icon"><i data-lucide="user-check"></i></div>
+            <div class="kpi-info">
+              <div class="kpi-value" id="kpi-attending">0</div>
+              <div class="kpi-label">Total Attending</div>
+            </div>
+          </div>
+          <div class="kpi-card kpi-indigo">
+            <div class="kpi-icon"><i data-lucide="wallet"></i></div>
+            <div class="kpi-info">
+              <div class="kpi-value" id="kpi-budgetPct">0%</div>
+              <div class="kpi-label">Budget Used</div>
+            </div>
+          </div>
+          <div class="kpi-card kpi-teal">
+            <div class="kpi-icon"><i data-lucide="list-checks"></i></div>
+            <div class="kpi-info">
+              <div class="kpi-value" id="kpi-checklistPct">0%</div>
+              <div class="kpi-label">Checklist Done</div>
+              <div class="kpi-progress"><div class="kpi-progress-bar" id="kpi-checklistBar"></div></div>
+            </div>
+          </div>
+          <div class="kpi-card kpi-slate">
+            <div class="kpi-icon"><i data-lucide="layout-grid"></i></div>
+            <div class="kpi-info">
+              <div class="kpi-value" id="kpi-tables">0</div>
+              <div class="kpi-label">Tables Created</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COUNTDOWN -->
+        <div class="countdown-card" id="countdownCard">
+          <div class="countdown-label">Counting down to your wedding day ✨</div>
+          <div class="countdown-date" id="countdownWeddingDate">August 15, 2026</div>
+          <div class="countdown-timer" id="countdownTimer">
+            <div class="countdown-unit"><div class="countdown-num" id="cd-days">00</div><div class="countdown-unit-label">Days</div></div>
+            <div class="countdown-sep">:</div>
+            <div class="countdown-unit"><div class="countdown-num" id="cd-hours">00</div><div class="countdown-unit-label">Hours</div></div>
+            <div class="countdown-sep">:</div>
+            <div class="countdown-unit"><div class="countdown-num" id="cd-mins">00</div><div class="countdown-unit-label">Mins</div></div>
+            <div class="countdown-sep">:</div>
+            <div class="countdown-unit"><div class="countdown-num" id="cd-secs">00</div><div class="countdown-unit-label">Secs</div></div>
+          </div>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="section-header"><h2 class="section-title">Quick Actions</h2></div>
+        <div class="quick-actions">
+          <button class="quick-action-btn" onclick="openGuestModal()">
+            <i data-lucide="user-plus"></i> Add Guest
+          </button>
+          <button class="quick-action-btn" onclick="navigateTo('invitation')">
+            <i data-lucide="edit-3"></i> Edit Invitation
+          </button>
+          <button class="quick-action-btn" onclick="openAgendaModalDirect()">
+            <i data-lucide="clock"></i> Add Agenda Event
+          </button>
+          <button class="quick-action-btn" onclick="openBudgetModalDirect()">
+            <i data-lucide="wallet"></i> Add Budget Item
+          </button>
+          <button class="quick-action-btn primary" id="qaPreviewBtn" onclick="previewInvitation()">
+            <i data-lucide="external-link"></i> Preview Invitation
+          </button>
+        </div>
+
+        <!-- RECENT ACTIVITY -->
+        <div class="section-header" style="margin-top:2rem;">
+          <h2 class="section-title">Recent RSVP Activity</h2>
+        </div>
+        <div class="card">
+          <div id="recentActivity" class="recent-activity-list">
+            <div class="empty-state-sm"><i data-lucide="inbox"></i> No RSVP activity yet</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════ MODULE 2: WEDDING SETTINGS ══ -->
+      <section class="module hidden" id="module-settings">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Wedding Settings</h1>
+            <p class="module-subtitle">Configure your wedding details and public profile</p>
+          </div>
+          <button class="btn btn-primary" onclick="saveWeddingSettings()">
+            <i data-lucide="save"></i> Save Changes
+          </button>
+        </div>
+
+        <form id="weddingSettingsForm" novalidate>
+          <!-- Basic Info -->
+          <div class="card settings-card">
+            <div class="settings-section-header">
+              <i data-lucide="heart"></i>
+              <h3>Basic Info</h3>
+            </div>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label class="form-label">Groom's Name <span class="required">*</span></label>
+                <input type="text" id="ws-groomName" class="form-input" placeholder="e.g. Kasun" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bride's Name <span class="required">*</span></label>
+                <input type="text" id="ws-brideName" class="form-input" placeholder="e.g. Priya" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Wedding Title</label>
+                <input type="text" id="ws-title" class="form-input" placeholder="The Wedding of Priya & Kasun" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Event Details -->
+          <div class="card settings-card">
+            <div class="settings-section-header">
+              <i data-lucide="calendar"></i>
+              <h3>Event Details</h3>
+            </div>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label class="form-label">Wedding Date <span class="required">*</span></label>
+                <input type="date" id="ws-date" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Time</label>
+                <input type="time" id="ws-time" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Timezone</label>
+                <select id="ws-timezone" class="form-select">
+                  <option value="Asia/Colombo">Asia/Colombo (UTC+5:30)</option>
+                  <option value="Asia/Kolkata">Asia/Kolkata (UTC+5:30)</option>
+                  <option value="UTC">UTC</option>
+                  <option value="America/New_York">America/New_York</option>
+                  <option value="Europe/London">Europe/London</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Venue Name</label>
+                <input type="text" id="ws-venueName" class="form-input" placeholder="e.g. Cinnamon Grand" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Venue Address</label>
+                <input type="text" id="ws-venueAddress" class="form-input" placeholder="Street, City" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">RSVP Deadline</label>
+                <input type="date" id="ws-rsvpDeadline" class="form-input" />
+              </div>
+              <div class="form-group form-col-full">
+                <label class="form-label">Venue Map Link</label>
+                <input type="url" id="ws-venueMapLink" class="form-input" placeholder="https://maps.google.com/..." />
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact & Slug -->
+          <div class="card settings-card">
+            <div class="settings-section-header">
+              <i data-lucide="link"></i>
+              <h3>Contact & Public URL</h3>
+            </div>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label class="form-label">Contact Email</label>
+                <input type="email" id="ws-contactEmail" class="form-input" placeholder="your@email.com" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">WhatsApp Number</label>
+                <input type="tel" id="ws-contactWhatsApp" class="form-input" placeholder="+94771234567" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">URL Slug</label>
+                <input type="text" id="ws-slug" class="form-input" placeholder="priya-and-kasun" />
+              </div>
+              <div class="form-group form-col-full">
+                <label class="form-label">Public Invitation URL</label>
+                <div class="url-display" id="ws-publicUrl">
+                  <i data-lucide="link-2"></i>
+                  <span id="ws-publicUrlText"></span>
+                  <button type="button" class="btn-copy-url" onclick="copyPublicUrl()" aria-label="Copy URL">
+                    <i data-lucide="copy"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Couple Story -->
+          <div class="card settings-card">
+            <div class="settings-section-header">
+              <i data-lucide="book-open"></i>
+              <h3>Our Story</h3>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Love Story</label>
+              <textarea id="ws-story" class="form-textarea" rows="5" placeholder="Tell your unique love story..."></textarea>
+              <div class="char-counter"><span id="ws-storyCount">0</span> characters</div>
+            </div>
+          </div>
+        </form>
+
+        <div class="form-actions-bottom">
+          <button class="btn btn-primary btn-lg" onclick="saveWeddingSettings()">
+            <i data-lucide="save"></i> Save All Changes
+          </button>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════ MODULE 3: GUEST MANAGEMENT ══ -->
+      <section class="module hidden" id="module-guests">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Guest Management</h1>
+            <p class="module-subtitle">Manage your wedding guest list</p>
+          </div>
+          <button class="btn btn-primary" onclick="openGuestModal()">
+            <i data-lucide="user-plus"></i> Add Guest
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar">
+          <div class="filter-tabs" id="guestSideTabs">
+            <button class="filter-tab active" data-side="all">All <span class="tab-badge" id="guestCountAll">0</span></button>
+            <button class="filter-tab" data-side="bride">Bride Side</button>
+            <button class="filter-tab" data-side="groom">Groom Side</button>
+          </div>
+          <div class="filter-chips" id="guestStatusChips">
+            <button class="chip active" data-status="all">All</button>
+            <button class="chip chip-green" data-status="confirmed">Confirmed</button>
+            <button class="chip chip-amber" data-status="pending">Pending</button>
+            <button class="chip chip-red" data-status="declined">Declined</button>
+          </div>
+          <div class="search-wrap">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="search" id="guestSearch" class="search-input" placeholder="Search guests..." />
+          </div>
+        </div>
+
+        <!-- Guest Table -->
+        <div class="card table-card">
+          <div class="table-wrapper">
+            <table class="data-table" id="guestTable">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Side</th>
+                  <th>WhatsApp</th>
+                  <th>Type</th>
+                  <th>Max</th>
+                  <th>RSVP</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="guestTableBody"></tbody>
+            </table>
+          </div>
+          <div id="guestEmptyState" class="empty-state hidden">
+            <div class="empty-icon"><i data-lucide="users"></i></div>
+            <h3>No guests yet</h3>
+            <p>Start building your guest list by adding your first guest.</p>
+            <button class="btn btn-primary" onclick="openGuestModal()">
+              <i data-lucide="user-plus"></i> Add Your First Guest
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════ MODULE 4: RSVP MANAGEMENT ══ -->
+      <section class="module hidden" id="module-rsvps">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">RSVP Management</h1>
+            <p class="module-subtitle">Track and manage guest responses</p>
+          </div>
+        </div>
+
+        <!-- Summary Bar -->
+        <div class="rsvp-summary-bar" id="rsvpSummaryBar">
+          <div class="rsvp-chip rsvp-chip-green"><i data-lucide="check-circle"></i> Attending: <strong id="rs-attending">0</strong></div>
+          <div class="rsvp-chip rsvp-chip-purple"><i data-lucide="user-check"></i> People: <strong id="rs-people">0</strong></div>
+          <div class="rsvp-chip rsvp-chip-amber"><i data-lucide="clock"></i> Pending: <strong id="rs-pending">0</strong></div>
+          <div class="rsvp-chip rsvp-chip-red"><i data-lucide="x-circle"></i> Declined: <strong id="rs-declined">0</strong></div>
+          <div class="rsvp-chip rsvp-chip-indigo"><i data-lucide="wine"></i> Liquor Yes: <strong id="rs-liquor">0</strong></div>
+        </div>
+
+        <!-- RSVP Rate -->
+        <div class="card rsvp-rate-card">
+          <div class="rsvp-rate-header">
+            <span>RSVP Response Rate</span>
+            <span id="rsvpRateText">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="rsvpRateBar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="filter-bar">
+          <div class="filter-tabs" id="rsvpStatusTabs">
+            <button class="filter-tab active" data-status="all">All</button>
+            <button class="filter-tab" data-status="confirmed">Confirmed</button>
+            <button class="filter-tab" data-status="pending">Pending</button>
+            <button class="filter-tab" data-status="declined">Declined</button>
+          </div>
+        </div>
+
+        <!-- RSVP Table -->
+        <div class="card table-card">
+          <div class="table-wrapper">
+            <table class="data-table" id="rsvpTable">
+              <thead>
+                <tr>
+                  <th>Guest Name</th>
+                  <th>Side</th>
+                  <th>Status</th>
+                  <th>Count</th>
+                  <th>Meal</th>
+                  <th>Liquor</th>
+                  <th>Notes</th>
+                  <th>Last Updated</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="rsvpTableBody"></tbody>
+            </table>
+          </div>
+          <div id="rsvpEmptyState" class="empty-state hidden">
+            <div class="empty-icon"><i data-lucide="check-square"></i></div>
+            <h3>No RSVPs yet</h3>
+            <p>RSVPs will appear here once guests respond to your invitation.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ MODULE 5: INVITATION EDITOR ══ -->
+      <section class="module hidden" id="module-invitation">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Invitation Editor</h1>
+            <p class="module-subtitle">Customize your invitation content</p>
+          </div>
+          <button class="btn btn-primary" onclick="saveInvitationContent()">
+            <i data-lucide="save"></i> Save & Preview
+          </button>
+        </div>
+
+        <div class="invitation-editor-layout">
+          <!-- Editor Panel -->
+          <div class="editor-panel">
+            <div class="card editor-card">
+              <h3 class="editor-section-title"><i data-lucide="type"></i> Content Blocks</h3>
+
+              <div class="form-group">
+                <label class="form-label">Hero Title</label>
+                <input type="text" id="inv-heroTitle" class="form-input" placeholder="Together with our families..." />
+                <div class="char-counter"><span id="inv-heroTitleCount">0</span>/120</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Couple Names <small class="muted">(from Wedding Settings)</small></label>
+                <input type="text" id="inv-coupleNames" class="form-input" readonly style="background:var(--adm-bg-alt);" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Invitation Message</label>
+                <textarea id="inv-heroMessage" class="form-textarea" rows="4" placeholder="Your invitation message..."></textarea>
+                <div class="char-counter"><span id="inv-heroMessageCount">0</span>/500</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">RSVP Section Title</label>
+                <input type="text" id="inv-rsvpTitle" class="form-input" placeholder="Will You Join Us?" />
+                <div class="char-counter"><span id="inv-rsvpTitleCount">0</span>/80</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Special Message to Guests</label>
+                <textarea id="inv-specialMessage" class="form-textarea" rows="3" placeholder="A heartfelt note to your guests..."></textarea>
+                <div class="char-counter"><span id="inv-specialMessageCount">0</span>/300</div>
+              </div>
+
+              <button class="btn btn-primary btn-full" onclick="saveInvitationContent()">
+                <i data-lucide="save"></i> Save Changes
+              </button>
+            </div>
+          </div>
+
+          <!-- Preview Panel -->
+          <div class="preview-panel">
+            <div class="preview-header">
+              <h3><i data-lucide="monitor"></i> Live Preview</h3>
+              <button class="btn btn-outline btn-sm" onclick="reloadPreviewIframe()">
+                <i data-lucide="refresh-cw"></i> Reload
+              </button>
+            </div>
+            <div class="preview-frame-wrap">
+              <iframe id="invitationPreviewIframe" class="preview-iframe" title="Invitation Preview" sandbox="allow-same-origin allow-scripts">
+              </iframe>
+            </div>
+            <div class="preview-mobile-tab hidden" id="previewMobileTab">
+              <button class="filter-tab active" onclick="showEditorPanel()">Edit</button>
+              <button class="filter-tab" onclick="showPreviewPanel()">Preview</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ MODULE 6: SECTION VISIBILITY ══ -->
+      <section class="module hidden" id="module-visibility">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Section Visibility</h1>
+            <p class="module-subtitle">Control which sections appear on your invitation website</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="visibility-list" id="visibilityList">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ MODULE 7: THEME & DESIGN ══ -->
+      <section class="module hidden" id="module-theme">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Theme & Design</h1>
+            <p class="module-subtitle">Customize the look and feel of your invitation</p>
+          </div>
+          <button class="btn btn-primary" onclick="applyTheme()">
+            <i data-lucide="check"></i> Apply Theme
+          </button>
+        </div>
+
+        <!-- Theme Presets -->
+        <div class="card settings-card">
+          <div class="settings-section-header"><i data-lucide="sparkles"></i><h3>Theme Presets</h3></div>
+          <div class="theme-presets" id="themePresets">
+            <div class="theme-preset" data-theme="ivory-rose" onclick="selectTheme(this)">
+              <div class="theme-swatches">
+                <div class="swatch" style="background:#C45A74;"></div>
+                <div class="swatch" style="background:#C9A574;"></div>
+                <div class="swatch" style="background:#FCF8F6;"></div>
+              </div>
+              <div class="theme-name">Ivory Rose</div>
+              <div class="theme-desc">Romantic rose & gold</div>
+            </div>
+            <div class="theme-preset" data-theme="blush-gold" onclick="selectTheme(this)">
+              <div class="theme-swatches">
+                <div class="swatch" style="background:#E8A4A4;"></div>
+                <div class="swatch" style="background:#D4AF37;"></div>
+                <div class="swatch" style="background:#FFF5F5;"></div>
+              </div>
+              <div class="theme-name">Blush Gold</div>
+              <div class="theme-desc">Soft blush & champagne</div>
+            </div>
+            <div class="theme-preset" data-theme="lavender-bloom" onclick="selectTheme(this)">
+              <div class="theme-swatches">
+                <div class="swatch" style="background:#9B7EC8;"></div>
+                <div class="swatch" style="background:#C0C0C0;"></div>
+                <div class="swatch" style="background:#F8F6FF;"></div>
+              </div>
+              <div class="theme-name">Lavender Bloom</div>
+              <div class="theme-desc">Lavender & silver</div>
+            </div>
+            <div class="theme-preset" data-theme="sage-elegance" onclick="selectTheme(this)">
+              <div class="theme-swatches">
+                <div class="swatch" style="background:#8FA98F;"></div>
+                <div class="swatch" style="background:#C9B99A;"></div>
+                <div class="swatch" style="background:#F5F2EE;"></div>
+              </div>
+              <div class="theme-name">Sage Elegance</div>
+              <div class="theme-desc">Sage green & warm cream</div>
+            </div>
+            <div class="theme-preset" data-theme="midnight-classic" onclick="selectTheme(this)">
+              <div class="theme-swatches">
+                <div class="swatch" style="background:#1E293B;"></div>
+                <div class="swatch" style="background:#C9A574;"></div>
+                <div class="swatch" style="background:#F8FAFC;"></div>
+              </div>
+              <div class="theme-name">Midnight Classic</div>
+              <div class="theme-desc">Dark navy & gold</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Colors -->
+        <div class="card settings-card">
+          <div class="settings-section-header"><i data-lucide="droplets"></i><h3>Custom Colors</h3></div>
+          <div class="color-pickers-grid">
+            <div class="color-picker-item">
+              <label class="form-label">Primary Color</label>
+              <div class="color-input-wrap">
+                <input type="color" id="theme-primaryColor" class="color-input" value="#C45A74" />
+                <span class="color-hex" id="theme-primaryHex">#C45A74</span>
+              </div>
+            </div>
+            <div class="color-picker-item">
+              <label class="form-label">Secondary Color</label>
+              <div class="color-input-wrap">
+                <input type="color" id="theme-secondaryColor" class="color-input" value="#C9A574" />
+                <span class="color-hex" id="theme-secondaryHex">#C9A574</span>
+              </div>
+            </div>
+            <div class="color-picker-item">
+              <label class="form-label">Accent Color</label>
+              <div class="color-input-wrap">
+                <input type="color" id="theme-accentColor" class="color-input" value="#8FA98F" />
+                <span class="color-hex" id="theme-accentHex">#8FA98F</span>
+              </div>
+            </div>
+            <div class="color-picker-item">
+              <label class="form-label">Surface Color</label>
+              <div class="color-input-wrap">
+                <input type="color" id="theme-surfaceColor" class="color-input" value="#FCF8F6" />
+                <span class="color-hex" id="theme-surfaceHex">#FCF8F6</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Font Style -->
+        <div class="card settings-card">
+          <div class="settings-section-header"><i data-lucide="type"></i><h3>Font Style</h3></div>
+          <div class="form-group" style="max-width:360px;">
+            <label class="form-label">Typography Style</label>
+            <select id="theme-fontStyle" class="form-select">
+              <option value="elegant-serif">Elegant Serif (Playfair Display)</option>
+              <option value="classic-modern">Classic Modern (Inter)</option>
+              <option value="romantic-script">Romantic Script (Cormorant)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions-bottom">
+          <button class="btn btn-primary btn-lg" onclick="applyTheme()">
+            <i data-lucide="check"></i> Apply Theme & Save
+          </button>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ MODULE 8: GALLERY MANAGER ══ -->
+      <section class="module hidden" id="module-gallery">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Gallery Manager</h1>
+            <p class="module-subtitle">Upload and manage your wedding photos</p>
+          </div>
+        </div>
+
+        <div class="filter-tabs" id="galleryTypeTabs" style="margin-bottom:1.5rem;">
+          <button class="filter-tab active" data-type="hero">Hero Image</button>
+          <button class="filter-tab" data-type="banner">Banner</button>
+          <button class="filter-tab" data-type="gallery">Gallery</button>
+          <button class="filter-tab" data-type="story">Story</button>
+        </div>
+
+        <div id="galleryTabContent">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ MODULE 9: MUSIC SETTINGS ══ -->
+      <section class="module hidden" id="module-music">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Music Settings</h1>
+            <p class="module-subtitle">Set the ambiance for your invitation</p>
+          </div>
+        </div>
+
+        <div class="card settings-card" style="max-width:600px;">
+          <div class="settings-section-header"><i data-lucide="music"></i><h3>Background Music</h3></div>
+
+          <div class="toggle-row" style="margin-bottom:1.5rem;">
+            <div>
+              <div class="toggle-label">Enable Background Music</div>
+              <div class="toggle-desc">Music plays after guests open your invitation</div>
+            </div>
+            <label class="toggle-switch" aria-label="Enable music">
+              <input type="checkbox" id="music-enabled" onchange="toggleMusicSettings()" />
+              <span class="toggle-thumb"></span>
+            </label>
+          </div>
+
+          <div id="musicSettings" class="hidden">
+            <div class="form-group">
+              <label class="form-label">Track Selection</label>
+              <select id="music-track" class="form-select">
+                <option value="canon-in-d">Canon in D — Pachelbel</option>
+                <option value="river-flows">River Flows in You — Yiruma</option>
+                <option value="thousand-years">A Thousand Years — Christina Perri</option>
+                <option value="perfect">Perfect — Ed Sheeran</option>
+                <option value="thinking-out-loud">Thinking Out Loud — Ed Sheeran</option>
+              </select>
+            </div>
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Mute by Default</div>
+                <div class="toggle-desc">Music starts muted; guests can unmute</div>
+              </div>
+              <label class="toggle-switch" aria-label="Mute by default">
+                <input type="checkbox" id="music-muteDefault" />
+                <span class="toggle-thumb"></span>
+              </label>
+            </div>
+            <div class="info-banner" style="margin-top:1rem;">
+              <i data-lucide="info"></i> Music plays after the guest clicks "Open Invitation"
+            </div>
+          </div>
+
+          <div class="form-actions-bottom" style="padding:0;margin-top:1.5rem;">
+            <button class="btn btn-primary" onclick="saveMusicSettings()">
+              <i data-lucide="save"></i> Save Music Settings
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ MODULE 10: AGENDA / TIMELINE ══ -->
+      <section class="module hidden" id="module-agenda">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Agenda & Timeline</h1>
+            <p class="module-subtitle">Plan your wedding day schedule</p>
+          </div>
+          <button class="btn btn-primary" onclick="openAgendaModal()">
+            <i data-lucide="plus"></i> Add Event
+          </button>
+        </div>
+
+        <div id="agendaList" class="agenda-list">
+          <!-- Populated by JS -->
+        </div>
+
+        <div id="agendaEmptyState" class="empty-state hidden">
+          <div class="empty-icon"><i data-lucide="clock"></i></div>
+          <h3>No agenda events yet</h3>
+          <p>Build your wedding day timeline by adding events.</p>
+          <button class="btn btn-primary" onclick="openAgendaModal()">
+            <i data-lucide="plus"></i> Add First Event
+          </button>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ MODULE 11: TABLE ASSIGNMENT ══ -->
+      <section class="module hidden" id="module-tables">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Table Assignment</h1>
+            <p class="module-subtitle" id="tableSubtitle">0 tables · 0 assigned · 0 unassigned</p>
+          </div>
+          <button class="btn btn-primary" onclick="openTableModal()">
+            <i data-lucide="plus"></i> Create Table
+          </button>
+        </div>
+
+        <div class="tables-layout">
+          <!-- Tables List -->
+          <div>
+            <h3 class="section-title" style="margin-bottom:1rem;">Tables</h3>
+            <div id="tablesList"><!-- Populated by JS --></div>
+            <div id="tablesEmptyState" class="empty-state hidden">
+              <div class="empty-icon"><i data-lucide="layout-grid"></i></div>
+              <h3>No tables created</h3>
+              <p>Create seating tables to assign your guests.</p>
+            </div>
+          </div>
+          <!-- Unassigned Guests -->
+          <div>
+            <h3 class="section-title" style="margin-bottom:1rem;">Unassigned Confirmed Guests</h3>
+            <div class="card unassigned-panel">
+              <div id="unassignedList"><!-- Populated by JS --></div>
+              <div id="unassignedEmptyState" class="empty-state-sm hidden">
+                <i data-lucide="check-circle" style="color:var(--adm-success)"></i> All confirmed guests are assigned!
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ MODULE 12: BUDGET PLANNER ══ -->
+      <section class="module hidden" id="module-budget">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Budget Planner</h1>
+            <p class="module-subtitle">Track your wedding expenses</p>
+          </div>
+          <button class="btn btn-primary" onclick="openBudgetModal()">
+            <i data-lucide="plus"></i> Add Expense
+          </button>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="budget-summary-grid" id="budgetSummaryGrid">
+          <div class="budget-summary-card">
+            <div class="bsc-label">Total Estimated</div>
+            <div class="bsc-value" id="bsc-estimated">LKR 0</div>
+          </div>
+          <div class="budget-summary-card">
+            <div class="bsc-label">Total Actual</div>
+            <div class="bsc-value" id="bsc-actual">LKR 0</div>
+          </div>
+          <div class="budget-summary-card">
+            <div class="bsc-label">Total Paid</div>
+            <div class="bsc-value bsc-green" id="bsc-paid">LKR 0</div>
+          </div>
+          <div class="budget-summary-card">
+            <div class="bsc-label">Remaining</div>
+            <div class="bsc-value bsc-amber" id="bsc-remaining">LKR 0</div>
+          </div>
+        </div>
+
+        <div id="budgetOverBudgetAlert" class="over-budget-alert hidden">
+          <i data-lucide="alert-triangle"></i>
+          <span id="budgetOverBudgetMsg"></span>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="filter-bar" style="flex-wrap:wrap;gap:.5rem;">
+          <div class="chip active" data-cat="all" onclick="filterBudget(this)">All Categories</div>
+          <div class="chip" data-cat="Venue" onclick="filterBudget(this)">Venue</div>
+          <div class="chip" data-cat="Catering" onclick="filterBudget(this)">Catering</div>
+          <div class="chip" data-cat="Photography" onclick="filterBudget(this)">Photography</div>
+          <div class="chip" data-cat="Videography" onclick="filterBudget(this)">Videography</div>
+          <div class="chip" data-cat="Decor" onclick="filterBudget(this)">Decor</div>
+          <div class="chip" data-cat="Dress" onclick="filterBudget(this)">Dress</div>
+          <div class="chip" data-cat="Music" onclick="filterBudget(this)">Music</div>
+          <div class="chip" data-cat="Other" onclick="filterBudget(this)">Other</div>
+        </div>
+
+        <!-- Budget Table -->
+        <div class="card table-card">
+          <div class="table-wrapper">
+            <table class="data-table" id="budgetTable">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Item</th>
+                  <th>Estimated</th>
+                  <th>Actual</th>
+                  <th>Paid</th>
+                  <th>Remaining</th>
+                  <th>Notes</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="budgetTableBody"></tbody>
+            </table>
+          </div>
+          <div id="budgetEmptyState" class="empty-state hidden">
+            <div class="empty-icon"><i data-lucide="wallet"></i></div>
+            <h3>No expenses yet</h3>
+            <p>Start tracking your wedding budget by adding expenses.</p>
+            <button class="btn btn-primary" onclick="openBudgetModal()">
+              <i data-lucide="plus"></i> Add First Expense
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ MODULE 13: CHECKLIST ══ -->
+      <section class="module hidden" id="module-checklist">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Wedding Checklist</h1>
+            <p class="module-subtitle" id="checklistSubtitle">0 of 0 tasks completed</p>
+          </div>
+          <button class="btn btn-primary" onclick="openChecklistModal()">
+            <i data-lucide="plus"></i> Add Custom Task
+          </button>
+        </div>
+
+        <!-- Progress -->
+        <div class="card" style="padding:1.5rem;margin-bottom:1.5rem;">
+          <div class="rsvp-rate-header">
+            <span id="checklistProgressLabel">Overall Progress</span>
+            <span id="checklistProgressPct">0%</span>
+          </div>
+          <div class="progress-bar-track" style="margin-top:.75rem;">
+            <div class="progress-bar-fill progress-green" id="checklistProgressBar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div id="checklistGroups"><!-- Populated by JS --></div>
+        <div id="checklistEmptyState" class="empty-state hidden">
+          <div class="empty-icon"><i data-lucide="list-checks"></i></div>
+          <h3>Checklist is empty</h3>
+          <p>Add custom tasks to keep track of your wedding planning.</p>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ MODULE 14: VENDOR MANAGEMENT ══ -->
+      <section class="module hidden" id="module-vendors">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Vendor Management</h1>
+            <p class="module-subtitle">Manage your wedding service providers</p>
+          </div>
+          <button class="btn btn-primary" onclick="openVendorModal()">
+            <i data-lucide="plus"></i> Add Vendor
+          </button>
+        </div>
+
+        <div class="filter-tabs" id="vendorTabs" style="margin-bottom:1.5rem;">
+          <button class="filter-tab active" data-tab="my">My Vendors</button>
+          <button class="filter-tab" data-tab="marketplace">Marketplace</button>
+        </div>
+
+        <div id="myVendorsPanel">
+          <div id="myVendorsList" class="vendor-cards-grid"><!-- Populated by JS --></div>
+          <div id="myVendorsEmpty" class="empty-state hidden">
+            <div class="empty-icon"><i data-lucide="briefcase"></i></div>
+            <h3>No vendors added yet</h3>
+            <p>Add your wedding service providers to keep track of quotes and bookings.</p>
+            <button class="btn btn-primary" onclick="openVendorModal()">
+              <i data-lucide="plus"></i> Add First Vendor
+            </button>
+          </div>
+        </div>
+
+        <div id="marketplacePanel" class="hidden">
+          <div class="marketplace-placeholder">
+            <div class="marketplace-icon"><i data-lucide="store"></i></div>
+            <h3>Vendor Marketplace</h3>
+            <p>Browse approved wedding vendors near you — coming soon!</p>
+            <div class="marketplace-coming-soon">✨ Coming Soon</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ MODULE 15: ACCOUNT SETTINGS ══ -->
+      <section class="module hidden" id="module-account">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Account Settings</h1>
+            <p class="module-subtitle">Manage your account and subscription</p>
+          </div>
+        </div>
+
+        <div class="account-grid">
+          <!-- Account Info -->
+          <div class="card settings-card">
+            <div class="settings-section-header"><i data-lucide="user"></i><h3>Account Info</h3></div>
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="acc-name" class="form-input" readonly style="background:var(--adm-bg-alt);" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="acc-email" class="form-input" readonly style="background:var(--adm-bg-alt);" />
+            </div>
+          </div>
+
+          <!-- Plan Status -->
+          <div class="card settings-card plan-status-card">
+            <div class="settings-section-header"><i data-lucide="zap"></i><h3>Plan Status</h3></div>
+            <div class="plan-info">
+              <div class="plan-badge-large" id="acc-planBadge">Free Trial</div>
+              <div class="plan-detail" id="acc-planDetail">12 days remaining</div>
+            </div>
+            <div class="upgrade-cta">
+              <p>Unlock unlimited guests, premium features and more.</p>
+              <button class="btn btn-primary btn-full" onclick="showToast('Upgrade flow coming soon!','info')">
+                <i data-lucide="arrow-up-circle"></i> Upgrade to Premium
+              </button>
+            </div>
+          </div>
+
+          <!-- Change Password -->
+          <div class="card settings-card">
+            <div class="settings-section-header"><i data-lucide="key"></i><h3>Change Password</h3></div>
+            <div class="form-group">
+              <label class="form-label">Current Password</label>
+              <input type="password" id="acc-currentPw" class="form-input" placeholder="••••••••" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <input type="password" id="acc-newPw" class="form-input" placeholder="••••••••" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" id="acc-confirmPw" class="form-input" placeholder="••••••••" />
+            </div>
+            <button class="btn btn-outline" onclick="changePassword()">
+              <i data-lucide="key"></i> Update Password
+            </button>
+          </div>
+
+          <!-- Danger Zone -->
+          <div class="card settings-card danger-zone-card">
+            <div class="settings-section-header"><i data-lucide="alert-triangle" style="color:var(--adm-danger)"></i><h3 style="color:var(--adm-danger)">Danger Zone</h3></div>
+            <p class="danger-desc">Permanently delete all wedding data. This action cannot be undone.</p>
+            <button class="btn btn-danger" onclick="confirmDeleteWedding()">
+              <i data-lucide="trash-2"></i> Delete Wedding Data
+            </button>
+            <div class="danger-divider"></div>
+            <button class="btn btn-outline" id="accountLogoutBtn">
+              <i data-lucide="log-out"></i> Sign Out
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /page-content -->
+  </main><!-- /main-content -->
+</div><!-- /app -->
+
+<!-- ═══════════════════════════════════════════════════════ MODALS ══ -->
+
+<!-- ── GUEST MODAL ─────────────────────────────────────────────────── -->
+<div id="guestModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title" id="guestModalTitle">Add Guest</h3>
+      <button class="modal-close" onclick="closeModal('guestModal')" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="guestModalId" />
+      <div class="form-grid-2">
+        <div class="form-group form-col-full">
+          <label class="form-label">Full Name <span class="required">*</span></label>
+          <input type="text" id="gm-name" class="form-input" placeholder="e.g. Anura Perera" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Side <span class="required">*</span></label>
+          <select id="gm-side" class="form-select">
+            <option value="bride">Bride Side</option>
+            <option value="groom">Groom Side</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Invitation Type</label>
+          <select id="gm-type" class="form-select">
+            <option value="individual">Individual</option>
+            <option value="family">Family</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">WhatsApp <span class="required">*</span></label>
+          <input type="tel" id="gm-whatsapp" class="form-input" placeholder="+94771234567" value="+94" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email <small class="muted">(optional)</small></label>
+          <input type="email" id="gm-email" class="form-input" placeholder="guest@email.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Max Allowed Members</label>
+          <input type="number" id="gm-maxMembers" class="form-input" value="1" min="1" max="20" />
+        </div>
+        <div class="form-group form-col-full">
+          <label class="form-label">Notes <small class="muted">(optional)</small></label>
+          <textarea id="gm-notes" class="form-textarea" rows="2" placeholder="Any notes..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('guestModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveGuest()">
+        <i data-lucide="save"></i> Save Guest
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── RSVP MANUAL MODAL ────────────────────────────────────────────── -->
+<div id="rsvpModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="rsvpModalTitle">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title" id="rsvpModalTitle">Mark RSVP Manually</h3>
+      <button class="modal-close" onclick="closeModal('rsvpModal')" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="rsvpModalGuestId" />
+      <div class="form-group">
+        <label class="form-label">RSVP Status</label>
+        <select id="rm-status" class="form-select">
+          <option value="confirmed">Confirmed</option>
+          <option value="pending">Pending</option>
+          <option value="declined">Declined</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Attending Count</label>
+        <input type="number" id="rm-count" class="form-input" value="1" min="0" max="20" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Meal Preference</label>
+        <select id="rm-meal" class="form-select">
+          <option value="">Not specified</option>
+          <option value="veg">Vegetarian</option>
+          <option value="non-veg">Non-Vegetarian</option>
+          <option value="vegan">Vegan</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Liquor Preference</label>
+        <select id="rm-liquor" class="form-select">
+          <option value="">Not specified</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea id="rm-notes" class="form-textarea" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('rsvpModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRsvpManual()"><i data-lucide="save"></i> Save RSVP</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── AGENDA MODAL ────────────────────────────────────────────────── -->
+<div id="agendaModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="agendaModalTitle">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title" id="agendaModalTitle">Add Agenda Event</h3>
+      <button class="modal-close" onclick="closeModal('agendaModal')" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="agendaModalId" />
+      <div class="form-group">
+        <label class="form-label">Event Icon</label>
+        <div class="emoji-picker" id="emojiPicker">
+          <button type="button" class="emoji-btn active" data-emoji="🌸">🌸</button>
+          <button type="button" class="emoji-btn" data-emoji="💍">💍</button>
+          <button type="button" class="emoji-btn" data-emoji="📸">📸</button>
+          <button type="button" class="emoji-btn" data-emoji="🍽️">🍽️</button>
+          <button type="button" class="emoji-btn" data-emoji="💃">💃</button>
+          <button type="button" class="emoji-btn" data-emoji="🎂">🎂</button>
+          <button type="button" class="emoji-btn" data-emoji="🎊">🎊</button>
+          <button type="button" class="emoji-btn" data-emoji="🥂">🥂</button>
+          <button type="button" class="emoji-btn" data-emoji="🎵">🎵</button>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group form-col-full">
+          <label class="form-label">Event Title <span class="required">*</span></label>
+          <input type="text" id="ag-title" class="form-input" placeholder="e.g. Wedding Ceremony" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Time</label>
+          <input type="time" id="ag-time" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration (minutes)</label>
+          <input type="number" id="ag-duration" class="form-input" value="30" min="1" max="480" />
+        </div>
+        <div class="form-group form-col-full">
+          <label class="form-label">Description</label>
+          <textarea id="ag-description" class="form-textarea" rows="2" placeholder="Optional description..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('agendaModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAgendaEvent()"><i data-lucide="save"></i> Save Event</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TABLE MODAL ────────────────────────────────────────────────── -->
+<div id="tableModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="tableModalTitle">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title" id="tableModalTitle">Create Table</h3>
+      <button class="modal-close" onclick="closeModal('tableModal')" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="tableModalId" />
+      <div class="form-group">
+        <label class="form-label">Table Name <span class="required">*</span></label>
+        <input type="text" id="tm-name" class="form-input" placeholder="e.g. Table 1 — Jasmine" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Capacity (number of seats)</label>
+        <input type="number" id="tm-capacity" class="form-input" value="8" min="1" max="50" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('tableModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTable()"><i data-lucide="save"></i> Save Table</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── BUDGET MODAL ────────────────────────────────────────────────── -->
+<div id="budgetModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="budgetModalTitle">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title" id="budgetModalTitle">Add Expense</h3>
+      <button class="modal-close" onclick="closeModal('budgetModal')" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="budgetModalId" />
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Category <span class="required">*</span></label>
+          <select id="bm-category" class="form-select">
+            <option value="Venue">Venue</option>
+            <option value="Catering">Catering</option>
+            <option value="Photography">Photography</option>
+            <option value="Videography">Videography</option>
+            <option value="Decor">Decor</option>
+            <option value="Dress">Dress</option>
+            <option value="Makeup">Makeup</option>
+            <option value="Cake">Cake</option>
+            <option value="Jewelry">Jewelry</option>
+            <option value="Music">Music</option>
+            <option value="Transport">Transport</option>
+            <option value="Liquor">Liquor</option>
+            <option value="Gifts">Gifts</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Item Name <span class="required">*</span></label>
+          <input type="text" id="bm-item" class="form-input" placeholder="e.g. Ballroom booking" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estimated (LKR)</label>
+          <input type="number" id="bm-estimated" class="form-input" value="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Actual (LKR)</label>
+          <input type="number" id="bm-actual" class="form-input" value="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Paid (LKR)</label>
+          <input type="number" id="bm-paid" class="form-input" value="0" min="0" />
+        </div>
+        <div class="form-group form-col-full">
+          <label class="form-label">Notes</label>
+          <textarea id="bm-notes" class="form-textarea" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('budgetModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBudgetItem()"><i data-lucide="save"></i> Save Expense</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CHECKLIST MODAL ────────────────────────────────────────────── -->
+<div id="checklistModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="checklistModalTitle">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title" id="checklistModalTitle">Add Custom Task</h3>
+      <button class="modal-close" onclick="closeModal('checklistModal')" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="checklistModalId" />
+      <div class="form-group">
+        <label class="form-label">Task Title <span class="required">*</span></label>
+        <input type="text" id="cl-title" class="form-input" placeholder="e.g. Book honeymoon hotel" required />
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Group / Timeline</label>
+          <select id="cl-group" class="form-select">
+            <option value="4 months before">4 months before</option>
+            <option value="3 months before">3 months before</option>
+            <option value="2 months before">2 months before</option>
+            <option value="1 month before">1 month before</option>
+            <option value="1 week before">1 week before</option>
+            <option value="Wedding Day">Wedding Day</option>
+            <option value="After Wedding">After Wedding</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select id="cl-priority" class="form-select">
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="form-group form-col-full">
+          <label class="form-label">Due Date</label>
+          <input type="date" id="cl-dueDate" class="form-input" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('checklistModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveChecklistTask()"><i data-lucide="save"></i> Save Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── VENDOR MODAL ────────────────────────────────────────────────── -->
+<div id="vendorModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="vendorModalTitle">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title" id="vendorModalTitle">Add Vendor</h3>
+      <button class="modal-close" onclick="closeModal('vendorModal')" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="vendorModalId" />
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Business Name <span class="required">*</span></label>
+          <input type="text" id="vm-name" class="form-input" placeholder="e.g. Avishka Studio" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select id="vm-category" class="form-select">
+            <option value="Photography">Photography</option>
+            <option value="Videography">Videography</option>
+            <option value="Decor">Decor</option>
+            <option value="Catering">Catering</option>
+            <option value="Cake">Cake</option>
+            <option value="Music">Music</option>
+            <option value="Transport">Transport</option>
+            <option value="Makeup">Makeup</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Phone</label>
+          <input type="tel" id="vm-phone" class="form-input" placeholder="+94771234567" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quote Amount (LKR)</label>
+          <input type="number" id="vm-quote" class="form-input" value="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select id="vm-status" class="form-select">
+            <option value="contacted">Contacted</option>
+            <option value="quoted">Quoted</option>
+            <option value="booked">Booked</option>
+          </select>
+        </div>
+        <div class="form-group form-col-full">
+          <label class="form-label">Notes</label>
+          <textarea id="vm-notes" class="form-textarea" rows="2" placeholder="Notes about this vendor..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('vendorModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveVendor()"><i data-lucide="save"></i> Save Vendor</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shared JS -->
+<script src="../shared/store.js"></script>
+<script src="../shared/auth.js"></script>
+
+<!-- Dashboard JS -->
+<script src="dashboard.js"></script>
+
+</body>
+</html>

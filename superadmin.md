@@ -399,6 +399,27 @@ Debug and assist users.
 - GET /admin/vendors
 - PUT /admin/vendors/:id
 
+## Assets & Mockups
+
+The `Super Admin/` folder contains admin UI mockups to guide implementation:
+
+- Admin overview and KPIs: Super Admin/100.png
+- Couple management screens: Super Admin/101.png, Super Admin/102.png
+- Vendor management and approval: Super Admin/103.png, Super Admin/104.png
+- Template management: Super Admin/105.png, Super Admin/106.png
+- Subscription and plan controls: Super Admin/107.png
+- Reports and analytics: Super Admin/108.png, Super Admin/109.png
+- Additional admin screens: Super Admin/110.png, Super Admin/111.png, Super Admin/112.png, Super Admin/113.png, Super Admin/114.png, Super Admin/115.png, Super Admin/116.png, Super Admin/117.png
+ - Admin overview and KPIs: Super Admin/super-overview.png
+ - Couple management screens: Super Admin/super-couple-management.png, Super Admin/super-couple-details.png
+ - Vendor management and approval: Super Admin/super-vendor-management.png, Super Admin/super-vendor-details.png
+ - Template management: Super Admin/super-template-management.png, Super Admin/super-template-preview.png
+ - Subscription and plan controls: Super Admin/super-plan-management.png
+ - Reports and analytics: Super Admin/super-reports.png, Super Admin/super-logs.png
+ - Additional admin screens: Super Admin/super-user-actions.png, Super Admin/super-settings.png, Super Admin/super-support.png, Super Admin/super-data-cleanup.png, Super Admin/super-templates-list.png, Super Admin/super-usage-metrics.png, Super Admin/super-audit-trail.png, Super Admin/super-additional.png
+
+Use these mockups when scoping admin APIs and building moderation workflows.
+
 - GET /admin/templates
 - POST /admin/templates
 - PUT /admin/templates/:id

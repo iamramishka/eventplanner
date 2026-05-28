@@ -1,0 +1,226 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ============================================================
+   WEDDING PLATFORM — GLOBAL DESIGN TOKENS (REDESIGNED)
+   Shared across: Invitation, Couple Dashboard, Super Admin, Vendor Portal
+   Matches Mockups exactly: Light, airy, Rose/Burgundy theme
+   ============================================================ */
+
+/* ── INVITATION PALETTE (Romantic / Blush) ── */
+:root {
+  --inv-ivory:       #FDECEF; /* Soft blush background */
+  --inv-white:       #FFFFFF;
+  --inv-rose:        #E24B6D; /* Vibrant Rose */
+  --inv-rose-light:  #F4A6B8;
+  --inv-rose-dark:   #B03052; /* Deep burgundy text */
+  --inv-gold:        #D4AF37;
+  --inv-gold-light:  #EBD88A;
+  --inv-gold-dark:   #A68A27;
+  --inv-text-dark:   #5A2A3A;
+  --inv-text-soft:   #8E6F7A;
+}
+
+/* ── ADMIN / DASHBOARD PALETTE (Light / Clean) ── */
+:root {
+  --adm-bg:          #FCFAFB; /* Very light pinkish-white background */
+  --adm-bg-card:     #FFFFFF; /* Pure white cards */
+  --adm-bg-alt:      #FDF8F9;
+  
+  /* Sidebar */
+  --adm-sidebar:     #FFFFFF; /* White sidebar */
+  --adm-sidebar-hover: #FFF0F3; 
+  --adm-sidebar-active: #FFF0F3; 
+  --adm-sidebar-active-text: #E24B6D; 
+  
+  /* Borders */
+  --adm-border:      #F0E5E8;
+  --adm-border-light: #F9F4F5;
+
+  /* Primary Accent (The Rose/Burgundy from mockups) */
+  --adm-primary:     #D83C62; 
+  --adm-primary-light: #F28DA4;
+  --adm-primary-dark: #A12543;
+  --adm-primary-bg:  #FFF0F3;
+
+  /* Status Colors */
+  --adm-success:     #10B981;
+  --adm-success-bg:  #ECFDF5;
+  --adm-warning:     #F59E0B;
+  --adm-warning-bg:  #FFFBEB;
+  --adm-danger:      #EF4444;
+  --adm-danger-bg:   #FEF2F2;
+  --adm-info:        #3B82F6;
+  --adm-info-bg:     #EFF6FF;
+
+  /* Text */
+  --adm-text-primary:   #1E1618;
+  --adm-text-secondary: #574B4E;
+  --adm-text-muted:     #9A8E92;
+  --adm-text-inverse:   #FFFFFF;
+}
+
+/* ── TYPOGRAPHY ── */
+:root {
+  --font-serif:     'Playfair Display', Georgia, serif;
+  --font-sans:      'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --text-xs:    0.75rem;
+  --text-sm:    0.875rem;
+  --text-base:  1rem;
+  --text-lg:    1.125rem;
+  --text-xl:    1.25rem;
+  --text-2xl:   1.5rem;
+  --text-3xl:   1.875rem;
+  --text-4xl:   2.25rem;
+  --text-5xl:   3rem;
+
+  --weight-light:   300;
+  --weight-normal:  400;
+  --weight-medium:  500;
+  --weight-semi:    600;
+  --weight-bold:    700;
+}
+
+/* ── SPACING ── */
+:root {
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+}
+
+/* ── BORDER RADIUS ── */
+:root {
+  --radius-sm:   0.375rem;
+  --radius-md:   0.5rem;
+  --radius-lg:   0.75rem;
+  --radius-xl:   1rem;
+  --radius-2xl:  1.5rem; /* For those highly rounded dashboard cards */
+  --radius-3xl:  2rem;
+  --radius-full: 9999px; /* Pill shaped buttons */
+}
+
+/* ── SHADOWS ── */
+:root {
+  --shadow-sm:  0 2px 4px rgba(216, 60, 98, 0.02);
+  --shadow-md:  0 4px 12px rgba(216, 60, 98, 0.04);
+  --shadow-lg:  0 12px 24px rgba(216, 60, 98, 0.06); /* Soft rosy shadow */
+  --shadow-xl:  0 20px 40px rgba(216, 60, 98, 0.08);
+  
+  --shadow-rose: 0 10px 25px rgba(216, 60, 98, 0.25);
+}
+
+/* ── GLOBAL RESETS ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-normal);
+  color: var(--adm-text-primary);
+  background: var(--adm-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img, video { max-width: 100%; display: block; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input, textarea, select { font-family: inherit; font-size: inherit; }
+a { text-decoration: none; color: inherit; }
+ul, ol { list-style: none; }
+
+/* ── UTILITY CLASSES ── */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-2 { gap: var(--space-2); }
+.gap-4 { gap: var(--space-4); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #E5D5D9; border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: #D83C62; }
+
+/* -----------------------------
+   UI Primitives: Buttons & Inputs
+   Reusable primitives used across portals
+   ----------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-full);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-base);
+  box-shadow: var(--shadow-sm);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--adm-primary) 0%, var(--adm-primary-dark) 100%);
+  color: var(--adm-text-inverse);
+  box-shadow: var(--shadow-rose);
+}
+.btn-primary:hover { filter: brightness(1.03); }
+
+.btn-outline {
+  background: var(--adm-bg-card);
+  color: var(--adm-primary);
+  border: 1px solid var(--adm-border);
+}
+.btn-outline:hover { background: var(--adm-primary-bg); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--adm-text-primary);
+}
+
+.input {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--adm-border);
+  background: var(--adm-bg-card);
+  color: var(--adm-text-primary);
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--adm-primary);
+  box-shadow: 0 6px 18px rgba(216,60,98,0.08);
+}
+.input[disabled] { opacity: 0.6; cursor: not-allowed; }
+.input-error { border-color: var(--adm-danger); box-shadow: 0 6px 18px rgba(239,68,68,0.06); }
+
+/* Dark-safe variants (for components that opt into dark surfaces) */
+.surface-dark { background: #1f1b1c; color: #f7eef0; }
+.surface-dark .btn-outline { background: transparent; border-color: rgba(255,255,255,0.06); color: #ffd6e0; }
+.surface-dark .input { background: #2a2627; border-color: rgba(255,255,255,0.06); color: #f7eef0; }
+

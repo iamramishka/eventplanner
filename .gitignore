@@ -1,7 +1,8 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# See https://help.github.com/articles/ignoring-files/ for more about ignored files.
 
 # dependencies
 /node_modules
+/web-app/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -15,10 +16,15 @@
 
 # next.js
 /.next/
+/web-app/.next/
 /out/
 
 # production
 /build
+
+# local database archives
+/postgres.zip
+/pgsql/
 
 # misc
 .DS_Store

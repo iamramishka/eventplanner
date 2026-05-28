@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WedInvite — Super Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../shared/design-tokens.css" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════════════════════════ -->
+<div id="login-screen" class="login-screen hidden">
+  <div class="login-bg-pattern"></div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <i data-lucide="shield-check" width="28" height="28"></i>
+      </div>
+      <div>
+        <div class="login-brand">WedInvite</div>
+        <div class="login-subtitle">Super Admin Portal</div>
+      </div>
+    </div>
+
+    <h1 class="login-title">Welcome back</h1>
+    <p class="login-desc">Sign in to manage the wedding platform</p>
+
+    <div id="login-error" class="login-error hidden">
+      <i data-lucide="alert-circle" width="16" height="16"></i>
+      <span id="login-error-msg">Invalid credentials</span>
+    </div>
+
+    <form id="login-form" class="login-form" novalidate>
+      <div class="form-group">
+        <label for="login-email" class="form-label">Email Address</label>
+        <div class="input-wrapper">
+          <i data-lucide="mail" width="16" height="16" class="input-icon"></i>
+          <input type="email" id="login-email" class="form-input" placeholder="admin@test.com" autocomplete="email" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="login-password" class="form-label">Password</label>
+        <div class="input-wrapper">
+          <i data-lucide="lock" width="16" height="16" class="input-icon"></i>
+          <input type="password" id="login-password" class="form-input" placeholder="••••••••" autocomplete="current-password" />
+          <button type="button" id="toggle-password" class="input-icon-right" title="Toggle visibility">
+            <i data-lucide="eye" width="16" height="16"></i>
+          </button>
+        </div>
+      </div>
+      <button type="submit" id="login-btn" class="btn btn-primary btn-full">
+        <span>Sign In</span>
+        <i data-lucide="arrow-right" width="16" height="16"></i>
+      </button>
+    </form>
+
+    <div class="login-hint">
+      <i data-lucide="info" width="14" height="14"></i>
+      Default: <strong>admin@test.com</strong> / <strong>admin123</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════════════════════ -->
+<div id="app" class="app hidden">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+          <i data-lucide="shield-check" width="20" height="20"></i>
+        </div>
+        <div class="sidebar-brand">
+          <span class="sidebar-brand-name">WedInvite</span>
+          <span class="sidebar-brand-role">Super Admin</span>
+        </div>
+      </div>
+      <button id="sidebar-toggle" class="sidebar-toggle" title="Collapse sidebar">
+        <i data-lucide="panel-left-close" width="18" height="18"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="#" class="nav-item active" data-module="dashboard" id="nav-dashboard">
+        <span class="nav-icon"><i data-lucide="layout-dashboard" width="18" height="18"></i></span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-module="couples" id="nav-couples">
+        <span class="nav-icon"><i data-lucide="users" width="18" height="18"></i></span>
+        <span class="nav-label">Couples</span>
+      </a>
+      <a href="#" class="nav-item" data-module="vendors" id="nav-vendors">
+        <span class="nav-icon"><i data-lucide="briefcase" width="18" height="18"></i></span>
+        <span class="nav-label">Vendors</span>
+        <span class="nav-badge" id="vendor-pending-badge">0</span>
+      </a>
+      <a href="#" class="nav-item" data-module="templates" id="nav-templates">
+        <span class="nav-icon"><i data-lucide="layout-template" width="18" height="18"></i></span>
+        <span class="nav-label">Templates</span>
+      </a>
+
+      <div class="nav-section-label">Commerce</div>
+      <a href="#" class="nav-item" data-module="plans" id="nav-plans">
+        <span class="nav-icon"><i data-lucide="credit-card" width="18" height="18"></i></span>
+        <span class="nav-label">Plans</span>
+      </a>
+      <a href="#" class="nav-item" data-module="cleanup" id="nav-cleanup">
+        <span class="nav-icon"><i data-lucide="trash-2" width="18" height="18"></i></span>
+        <span class="nav-label">Trial Cleanup</span>
+      </a>
+
+      <div class="nav-section-label">Content</div>
+      <a href="#" class="nav-item" data-module="cms" id="nav-cms">
+        <span class="nav-icon"><i data-lucide="file-text" width="18" height="18"></i></span>
+        <span class="nav-label">Content CMS</span>
+      </a>
+      <a href="#" class="nav-item" data-module="reports" id="nav-reports">
+        <span class="nav-icon"><i data-lucide="bar-chart-2" width="18" height="18"></i></span>
+        <span class="nav-label">Reports</span>
+      </a>
+
+      <div class="nav-section-label">System</div>
+      <a href="#" class="nav-item" data-module="settings" id="nav-settings">
+        <span class="nav-icon"><i data-lucide="settings" width="18" height="18"></i></span>
+        <span class="nav-label">Settings</span>
+      </a>
+      <a href="#" class="nav-item" data-module="logs" id="nav-logs">
+        <span class="nav-icon"><i data-lucide="scroll" width="18" height="18"></i></span>
+        <span class="nav-label">Logs</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">
+          <i data-lucide="user" width="16" height="16"></i>
+        </div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-user-name">Admin</div>
+          <div class="sidebar-user-role">Super Admin</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-wrapper">
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div class="header-left">
+        <button id="mobile-menu-toggle" class="mobile-menu-btn" title="Menu">
+          <i data-lucide="menu" width="20" height="20"></i>
+        </button>
+        <div class="breadcrumb">
+          <span class="breadcrumb-root">Admin</span>
+          <i data-lucide="chevron-right" width="14" height="14" class="breadcrumb-sep"></i>
+          <span id="breadcrumb-current" class="breadcrumb-current">Dashboard</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="header-badge">
+          <i data-lucide="shield-check" width="14" height="14"></i>
+          Super Admin
+        </div>
+        <button id="logout-btn" class="btn btn-ghost btn-sm" title="Logout">
+          <i data-lucide="log-out" width="16" height="16"></i>
+          <span>Logout</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <main class="page-content" id="page-content">
+
+      <!-- LOADING SHIMMER -->
+      <div id="loading-shimmer" class="shimmer-container">
+        <div class="shimmer-row">
+          <div class="shimmer-card"></div>
+          <div class="shimmer-card"></div>
+          <div class="shimmer-card"></div>
+          <div class="shimmer-card"></div>
+        </div>
+        <div class="shimmer-row">
+          <div class="shimmer-block tall"></div>
+          <div class="shimmer-block tall"></div>
+        </div>
+      </div>
+
+      <!-- ── MODULE: DASHBOARD ─────────────────────────────── -->
+      <section id="module-dashboard" class="module hidden">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Dashboard Overview</h1>
+            <p class="module-desc">Platform health at a glance</p>
+          </div>
+          <div class="module-actions">
+            <span id="dash-last-updated" class="text-muted text-sm"></span>
+          </div>
+        </div>
+
+        <!-- KPI GRID -->
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i data-lucide="users" width="22" height="22"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpi-couples">—</div>
+              <div class="kpi-label">Total Couples</div>
+            </div>
+            <div class="kpi-trend up"><i data-lucide="trending-up" width="14" height="14"></i> +12%</div>
+          </div>
+          <div class="kpi-card kpi-amber">
+            <div class="kpi-icon"><i data-lucide="clock" width="22" height="22"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpi-active-trials">—</div>
+              <div class="kpi-label">Active Trials</div>
+            </div>
+            <div class="kpi-trend up"><i data-lucide="trending-up" width="14" height="14"></i> +5%</div>
+          </div>
+          <div class="kpi-card kpi-red">
+            <div class="kpi-icon"><i data-lucide="alert-triangle" width="22" height="22"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpi-expired-trials">—</div>
+              <div class="kpi-label">Expired Trials</div>
+            </div>
+            <div class="kpi-trend down"><i data-lucide="trending-down" width="14" height="14"></i> 3 new</div>
+          </div>
+          <div class="kpi-card kpi-purple">
+            <div class="kpi-icon"><i data-lucide="briefcase" width="22" height="22"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpi-vendors">—</div>
+              <div class="kpi-label">Total Vendors</div>
+            </div>
+            <div class="kpi-trend up"><i data-lucide="trending-up" width="14" height="14"></i> +8%</div>
+          </div>
+          <div class="kpi-card kpi-orange">
+            <div class="kpi-icon"><i data-lucide="bell" width="22" height="22"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpi-pending-approvals">—</div>
+              <div class="kpi-label">Pending Approvals</div>
+            </div>
+            <div class="kpi-trend neutral"><i data-lucide="minus" width="14" height="14"></i> Same</div>
+          </div>
+          <div class="kpi-card kpi-green">
+            <div class="kpi-icon"><i data-lucide="user-check" width="22" height="22"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpi-guests">—</div>
+              <div class="kpi-label">Total Guests</div>
+            </div>
+            <div class="kpi-trend up"><i data-lucide="trending-up" width="14" height="14"></i> +23%</div>
+          </div>
+          <div class="kpi-card kpi-teal">
+            <div class="kpi-icon"><i data-lucide="globe" width="22" height="22"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpi-live">—</div>
+              <div class="kpi-label">Invitations Live</div>
+            </div>
+            <div class="kpi-trend up"><i data-lucide="trending-up" width="14" height="14"></i> +2</div>
+          </div>
+          <div class="kpi-card kpi-indigo">
+            <div class="kpi-icon"><i data-lucide="banknote" width="22" height="22"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-value">LKR 487K</div>
+              <div class="kpi-label">Platform Revenue</div>
+            </div>
+            <div class="kpi-trend up"><i data-lucide="trending-up" width="14" height="14"></i> +18%</div>
+          </div>
+        </div>
+
+        <!-- CHARTS ROW 1 -->
+        <div class="chart-grid-2">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3 class="chart-title">User Growth (Last 6 Months)</h3>
+              <div class="chart-badge">Monthly</div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chart-growth" height="120"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3 class="chart-title">User Distribution</h3>
+              <div class="chart-badge">All Time</div>
+            </div>
+            <div class="chart-wrap doughnut-wrap">
+              <canvas id="chart-distribution" height="160"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHART ROW 2 + ACTIVITY -->
+        <div class="chart-grid-2">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3 class="chart-title">RSVP Activity</h3>
+              <div class="chart-badge">Last 6 Months</div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chart-rsvp" height="120"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3 class="chart-title">Recent Activity</h3>
+              <div class="chart-badge">Live Feed</div>
+            </div>
+            <div class="activity-feed" id="activity-feed">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── MODULE: COUPLES ───────────────────────────────── -->
+      <section id="module-couples" class="module hidden">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Couple Management</h1>
+            <p class="module-desc"><span id="couples-count">0</span> couples registered on the platform</p>
+          </div>
+          <div class="module-actions">
+            <div class="search-box">
+              <i data-lucide="search" width="16" height="16" class="search-icon"></i>
+              <input type="text" id="couples-search" class="search-input" placeholder="Search couples…" />
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-tabs" id="couples-filter-tabs">
+          <button class="filter-tab active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="trial">Active Trial</button>
+          <button class="filter-tab" data-filter="expired">Expired Trial</button>
+          <button class="filter-tab" data-filter="premium">Premium</button>
+        </div>
+
+        <div class="table-card">
+          <div class="table-responsive">
+            <table class="data-table" id="couples-table">
+              <thead>
+                <tr>
+                  <th>Couple Names</th>
+                  <th>Email</th>
+                  <th>Wedding Slug</th>
+                  <th>Plan</th>
+                  <th>Guests</th>
+                  <th>Wedding Date</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="couples-tbody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+          <div id="couples-empty" class="empty-state hidden">
+            <i data-lucide="users" width="40" height="40"></i>
+            <h3>No couples found</h3>
+            <p>Try adjusting your search or filter</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── MODULE: VENDORS ──────────────────────────────── -->
+      <section id="module-vendors" class="module hidden">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Vendor Management</h1>
+            <p class="module-desc"><span id="vendors-count">0</span> vendors on the platform</p>
+          </div>
+          <div class="module-actions">
+            <div class="search-box">
+              <i data-lucide="search" width="16" height="16" class="search-icon"></i>
+              <input type="text" id="vendors-search" class="search-input" placeholder="Search vendors…" />
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-tabs" id="vendors-filter-tabs">
+          <button class="filter-tab active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="pending">Pending <span id="pending-count-tab" class="tab-badge">0</span></button>
+          <button class="filter-tab" data-filter="approved">Approved</button>
+          <button class="filter-tab" data-filter="rejected">Rejected</button>
+          <button class="filter-tab" data-filter="featured">Featured</button>
+        </div>
+
+        <div class="table-card">
+          <div class="table-responsive">
+            <table class="data-table" id="vendors-table">
+              <thead>
+                <tr>
+                  <th>Business Name</th>
+                  <th>Category</th>
+                  <th>Contact</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>Rating</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="vendors-tbody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+          <div id="vendors-empty" class="empty-state hidden">
+            <i data-lucide="briefcase" width="40" height="40"></i>
+            <h3>No vendors found</h3>
+            <p>Try adjusting your search or filter</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── MODULE: TEMPLATES ────────────────────────────── -->
+      <section id="module-templates" class="module hidden">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Template Management</h1>
+            <p class="module-desc">Manage invitation templates available to couples</p>
+          </div>
+          <div class="module-actions">
+            <button class="btn btn-primary" id="add-template-btn">
+              <i data-lucide="plus" width="16" height="16"></i>
+              New Template
+            </button>
+          </div>
+        </div>
+        <div class="template-grid" id="template-grid">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- ── MODULE: PLANS ────────────────────────────────── -->
+      <section id="module-plans" class="module hidden">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Plans & Subscriptions</h1>
+            <p class="module-desc">Configure platform pricing and trial settings</p>
+          </div>
+        </div>
+
+        <div class="plan-cards-grid" id="plan-cards-grid">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="settings-section">
+          <h2 class="section-title">Trial Settings</h2>
+          <div class="settings-grid">
+            <div class="form-group">
+              <label class="form-label" for="trial-duration">Trial Duration (days)</label>
+              <input type="number" id="trial-duration" class="form-input" min="1" max="90" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="trial-grace">Grace Period After Expiry (days)</label>
+              <input type="number" id="trial-grace" class="form-input" min="0" max="30" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Auto-Delete Expired Trials</label>
+              <div class="toggle-row">
+                <label class="toggle">
+                  <input type="checkbox" id="auto-delete-toggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-desc" id="auto-delete-label">Disabled</span>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary mt-4" id="save-trial-settings">
+            <i data-lucide="save" width="16" height="16"></i>
+            Save Trial Settings
+          </button>
+        </div>
+      </section>
+
+      <!-- ── MODULE: CLEANUP ─────────────────────────────── -->
+      <section id="module-cleanup" class="module hidden">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Trial & Data Cleanup</h1>
+            <p class="module-desc"><span id="expired-count">0</span> expired trials need attention</p>
+          </div>
+          <div class="module-actions">
+            <button class="btn btn-danger" id="run-cleanup-btn">
+              <i data-lucide="trash-2" width="16" height="16"></i>
+              Run Auto Cleanup
+            </button>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Couple Name</th>
+                  <th>Email</th>
+                  <th>Trial Ended</th>
+                  <th>Days Since Expiry</th>
+                  <th>Wedding Guests</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="cleanup-tbody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+          <div id="cleanup-empty" class="empty-state hidden">
+            <i data-lucide="check-circle" width="40" height="40" style="color:var(--adm-success)"></i>
+            <h3>All Clean!</h3>
+            <p>No expired trials to clean up</p>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <h2 class="section-title">Cleanup History</h2>
+        <div class="table-card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Records Deleted</th>
+                  <th>Triggered By</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="cleanup-history-tbody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── MODULE: CMS ─────────────────────────────────── -->
+      <section id="module-cms" class="module hidden">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Content CMS</h1>
+            <p class="module-desc">Manage public-facing content and copy</p>
+          </div>
+        </div>
+
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-cms-tab="faqs">FAQs</button>
+          <button class="filter-tab" data-cms-tab="testimonials">Testimonials</button>
+          <button class="filter-tab" data-cms-tab="pricing-content">Pricing Page</button>
+        </div>
+
+        <!-- FAQs Tab -->
+        <div id="cms-tab-faqs" class="cms-tab-content">
+          <div class="cms-tab-header">
+            <h3 class="section-title">Frequently Asked Questions</h3>
+            <button class="btn btn-primary btn-sm" id="add-faq-btn">
+              <i data-lucide="plus" width="14" height="14"></i> Add FAQ
+            </button>
+          </div>
+          <div id="faq-list" class="faq-list">
+            <!-- Populated by JS -->
+          </div>
+          <div id="faq-empty" class="empty-state hidden">
+            <i data-lucide="help-circle" width="40" height="40"></i>
+            <h3>No FAQs yet</h3>
+            <p>Add your first FAQ to get started</p>
+          </div>
+        </div>
+
+        <!-- Testimonials Tab -->
+        <div id="cms-tab-testimonials" class="cms-tab-content hidden">
+          <div class="cms-tab-header">
+            <h3 class="section-title">Testimonials</h3>
+            <button class="btn btn-primary btn-sm" id="add-testimonial-btn">
+              <i data-lucide="plus" width="14" height="14"></i> Add Testimonial
+            </button>
+          </div>
+          <div id="testimonials-list" class="testimonials-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Pricing Page Tab -->
+        <div id="cms-tab-pricing-content" class="cms-tab-content hidden">
+          <div class="settings-section">
+            <h3 class="section-title">Pricing Page Content</h3>
+            <div class="settings-grid">
+              <div class="form-group span-2">
+                <label class="form-label" for="pricing-hero-title">Hero Title</label>
+                <input type="text" id="pricing-hero-title" class="form-input" value="Simple, Transparent Pricing" />
+              </div>
+              <div class="form-group span-2">
+                <label class="form-label" for="pricing-hero-sub">Hero Subtitle</label>
+                <textarea id="pricing-hero-sub" class="form-textarea" rows="2">Start free, upgrade anytime. No hidden fees, no surprises.</textarea>
+              </div>
+              <div class="form-group span-2">
+                <label class="form-label" for="pricing-faq-title">FAQ Section Title</label>
+                <input type="text" id="pricing-faq-title" class="form-input" value="Frequently Asked Questions" />
+              </div>
+            </div>
+            <button class="btn btn-primary mt-4" id="save-pricing-content">
+              <i data-lucide="save" width="16" height="16"></i>
+              Save Content
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── MODULE: REPORTS ─────────────────────────────── -->
+      <section id="module-reports" class="module hidden">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Reports & Analytics</h1>
+            <p class="module-desc">Detailed platform performance metrics</p>
+          </div>
+        </div>
+
+        <!-- Stats Summary Row -->
+        <div class="stats-row">
+          <div class="stat-pill">
+            <div class="stat-pill-label">Avg Guests/Wedding</div>
+            <div class="stat-pill-value">87</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill-label">RSVP Response Rate</div>
+            <div class="stat-pill-value">68%</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill-label">Most Popular Feature</div>
+            <div class="stat-pill-value">RSVP</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill-label">Avg Time to First RSVP</div>
+            <div class="stat-pill-value">2.4 days</div>
+          </div>
+        </div>
+
+        <div class="chart-grid-2">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3 class="chart-title">Monthly Signups (12 Months)</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chart-monthly-signups" height="120"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3 class="chart-title">Feature Usage</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chart-feature-usage" height="120"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-grid-2">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3 class="chart-title">RSVP Activity (Last 6 Months)</h3>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="chart-rsvp-activity" height="120"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <h3 class="chart-title">Plan Distribution</h3>
+            </div>
+            <div class="chart-wrap doughnut-wrap">
+              <canvas id="chart-plan-dist" height="160"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── MODULE: SETTINGS ────────────────────────────── -->
+      <section id="module-settings" class="module hidden">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">System Settings</h1>
+            <p class="module-desc">Configure global platform settings</p>
+          </div>
+        </div>
+
+        <div class="settings-panel">
+          <!-- Platform Branding -->
+          <div class="settings-section">
+            <div class="settings-section-header">
+              <i data-lucide="star" width="18" height="18"></i>
+              <h2 class="section-title">Platform Branding</h2>
+            </div>
+            <div class="settings-grid">
+              <div class="form-group">
+                <label class="form-label" for="platform-name">Platform Name</label>
+                <input type="text" id="platform-name" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="support-email">Support Email</label>
+                <input type="email" id="support-email" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="logo-upload">Logo Upload</label>
+                <div class="file-upload-area">
+                  <input type="file" id="logo-upload" accept="image/*" class="file-input" />
+                  <label for="logo-upload" class="file-upload-label">
+                    <i data-lucide="upload-cloud" width="20" height="20"></i>
+                    <span>Click to upload logo</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <!-- Default Settings -->
+          <div class="settings-section">
+            <div class="settings-section-header">
+              <i data-lucide="sliders" width="18" height="18"></i>
+              <h2 class="section-title">Default Settings</h2>
+            </div>
+            <div class="settings-grid">
+              <div class="form-group">
+                <label class="form-label" for="default-trial-days">Default Trial Days</label>
+                <input type="number" id="default-trial-days" class="form-input" min="1" max="90" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="default-grace">Grace Period (days)</label>
+                <input type="number" id="default-grace" class="form-input" min="0" max="30" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="max-guests-free">Max Guests (Free)</label>
+                <input type="number" id="max-guests-free" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="max-guests-premium">Max Guests (Premium)</label>
+                <input type="number" id="max-guests-premium" class="form-input" />
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <!-- Email Settings -->
+          <div class="settings-section">
+            <div class="settings-section-header">
+              <i data-lucide="mail" width="18" height="18"></i>
+              <h2 class="section-title">Email Settings</h2>
+            </div>
+            <div class="settings-grid">
+              <div class="form-group">
+                <label class="form-label">Sender Name</label>
+                <input type="text" class="form-input" value="WedInvite Platform" readonly style="opacity:0.7;cursor:not-allowed" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Sender Email</label>
+                <input type="email" class="form-input" value="noreply@wedinvite.lk" readonly style="opacity:0.7;cursor:not-allowed" />
+              </div>
+            </div>
+            <p class="form-hint"><i data-lucide="info" width="13" height="13"></i> Email settings are configured server-side and cannot be changed here.</p>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <!-- Feature Toggles -->
+          <div class="settings-section">
+            <div class="settings-section-header">
+              <i data-lucide="toggle-right" width="18" height="18"></i>
+              <h2 class="section-title">Global Feature Toggles</h2>
+            </div>
+            <div class="toggle-list">
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <span class="toggle-title">Vendor Marketplace</span>
+                  <span class="toggle-sub">Allow couples to browse and contact vendors</span>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="toggle-vendors-enabled" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <span class="toggle-title">Photo Gallery</span>
+                  <span class="toggle-sub">Enable gallery upload on invitation pages</span>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="toggle-gallery-enabled" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <span class="toggle-title">Music Feature</span>
+                  <span class="toggle-sub">Allow background music on invitation pages</span>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="toggle-music-enabled" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-save-row">
+            <button class="btn btn-primary btn-lg" id="save-settings-btn">
+              <i data-lucide="save" width="18" height="18"></i>
+              Save All Settings
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── MODULE: LOGS ─────────────────────────────────── -->
+      <section id="module-logs" class="module hidden">
+        <div class="module-header">
+          <div>
+            <h1 class="module-title">Support & Logs</h1>
+            <p class="module-desc">System logs, activity, and support inquiries</p>
+          </div>
+        </div>
+
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-log-tab="error-logs">Error Logs</button>
+          <button class="filter-tab" data-log-tab="activity-log">Activity Log</button>
+          <button class="filter-tab" data-log-tab="contact-inquiries">Contact Inquiries</button>
+        </div>
+
+        <!-- Error Logs -->
+        <div id="log-tab-error-logs" class="cms-tab-content">
+          <div class="cms-tab-header">
+            <div class="filter-chips" id="log-level-filter">
+              <button class="chip active" data-level="all">All</button>
+              <button class="chip chip-error" data-level="ERROR">ERROR</button>
+              <button class="chip chip-warn" data-level="WARN">WARN</button>
+              <button class="chip chip-info" data-level="INFO">INFO</button>
+            </div>
+            <button class="btn btn-danger btn-sm" id="clear-logs-btn">
+              <i data-lucide="trash-2" width="14" height="14"></i> Clear Logs
+            </button>
+          </div>
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Level</th>
+                    <th>Message</th>
+                    <th>Source</th>
+                  </tr>
+                </thead>
+                <tbody id="error-logs-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div id="log-tab-activity-log" class="cms-tab-content hidden">
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Actor</th>
+                    <th>Action</th>
+                    <th>Target</th>
+                    <th>IP Address</th>
+                  </tr>
+                </thead>
+                <tbody id="activity-log-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Inquiries -->
+        <div id="log-tab-contact-inquiries" class="cms-tab-content hidden">
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Subject</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="inquiries-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODALS
+═══════════════════════════════════════════════════════════ -->
+
+<!-- Couple Detail Modal -->
+<div id="modal-couple-detail" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 class="modal-title" id="couple-modal-title">Couple Details</h2>
+      <button class="modal-close" data-close-modal="modal-couple-detail"><i data-lucide="x" width="18" height="18"></i></button>
+    </div>
+    <div class="modal-body" id="couple-modal-body">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Vendor Detail Modal -->
+<div id="modal-vendor-detail" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 class="modal-title" id="vendor-modal-title">Vendor Details</h2>
+      <button class="modal-close" data-close-modal="modal-vendor-detail"><i data-lucide="x" width="18" height="18"></i></button>
+    </div>
+    <div class="modal-body" id="vendor-modal-body">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Template Modal -->
+<div id="modal-template" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="template-modal-title">New Template</h2>
+      <button class="modal-close" data-close-modal="modal-template"><i data-lucide="x" width="18" height="18"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="template-form" novalidate>
+        <input type="hidden" id="template-edit-id" />
+        <div class="form-group">
+          <label class="form-label required" for="tpl-name">Template Name</label>
+          <input type="text" id="tpl-name" class="form-input" placeholder="e.g. Ivory Rose" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="tpl-desc">Description</label>
+          <textarea id="tpl-desc" class="form-textarea" rows="2" placeholder="Brief description of this template…"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="tpl-color">Primary Color</label>
+          <div class="color-input-row">
+            <input type="color" id="tpl-color" class="color-picker" value="#C45A74" />
+            <span id="tpl-color-preview" class="color-hex">#C45A74</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Active</label>
+          <div class="toggle-row">
+            <label class="toggle">
+              <input type="checkbox" id="tpl-active" checked />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-desc">Template is visible to couples</span>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close-modal="modal-template">Cancel</button>
+      <button class="btn btn-primary" id="save-template-btn">Save Template</button>
+    </div>
+  </div>
+</div>
+
+<!-- Plan Edit Modal -->
+<div id="modal-plan-edit" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="plan-modal-title">Edit Plan</h2>
+      <button class="modal-close" data-close-modal="modal-plan-edit"><i data-lucide="x" width="18" height="18"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="plan-form" novalidate>
+        <input type="hidden" id="plan-edit-id" />
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label required" for="plan-name">Plan Name</label>
+            <input type="text" id="plan-name" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="plan-price">Price (LKR/year)</label>
+            <input type="number" id="plan-price" class="form-input" min="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="plan-duration">Duration (days)</label>
+            <input type="number" id="plan-duration" class="form-input" min="1" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="plan-guests">Guest Limit</label>
+            <input type="number" id="plan-guests" class="form-input" min="1" />
+          </div>
+          <div class="form-group span-2">
+            <label class="form-label" for="plan-gallery">Gallery Limit</label>
+            <input type="number" id="plan-gallery" class="form-input" min="1" />
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close-modal="modal-plan-edit">Cancel</button>
+      <button class="btn btn-primary" id="save-plan-btn">Save Plan</button>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ Modal -->
+<div id="modal-faq" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="faq-modal-title">Add FAQ</h2>
+      <button class="modal-close" data-close-modal="modal-faq"><i data-lucide="x" width="18" height="18"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="faq-form" novalidate>
+        <input type="hidden" id="faq-edit-id" />
+        <div class="form-group">
+          <label class="form-label required" for="faq-question">Question</label>
+          <input type="text" id="faq-question" class="form-input" placeholder="e.g. How does the free trial work?" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label required" for="faq-answer">Answer</label>
+          <textarea id="faq-answer" class="form-textarea" rows="4" placeholder="Provide a clear, helpful answer…" required></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Active</label>
+          <div class="toggle-row">
+            <label class="toggle">
+              <input type="checkbox" id="faq-active" checked />
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-desc">Visible on public FAQ page</span>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close-modal="modal-faq">Cancel</button>
+      <button class="btn btn-primary" id="save-faq-btn">Save FAQ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Testimonial Modal -->
+<div id="modal-testimonial" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Add Testimonial</h2>
+      <button class="modal-close" data-close-modal="modal-testimonial"><i data-lucide="x" width="18" height="18"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="testimonial-form" novalidate>
+        <input type="hidden" id="testimonial-edit-id" />
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label required" for="test-name">Person Name</label>
+            <input type="text" id="test-name" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="test-couple">Wedding Couple</label>
+            <input type="text" id="test-couple" class="form-input" placeholder="e.g. Priya & Kasun" />
+          </div>
+          <div class="form-group span-2">
+            <label class="form-label required" for="test-text">Testimonial Text</label>
+            <textarea id="test-text" class="form-textarea" rows="3" required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="test-rating">Rating (1-5)</label>
+            <input type="number" id="test-rating" class="form-input" min="1" max="5" value="5" />
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close-modal="modal-testimonial">Cancel</button>
+      <button class="btn btn-primary" id="save-testimonial-btn">Save Testimonial</button>
+    </div>
+  </div>
+</div>
+
+<!-- Inquiry Detail Modal -->
+<div id="modal-inquiry" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Inquiry Details</h2>
+      <button class="modal-close" data-close-modal="modal-inquiry"><i data-lucide="x" width="18" height="18"></i></button>
+    </div>
+    <div class="modal-body" id="inquiry-modal-body">
+      <!-- Populated by JS -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close-modal="modal-inquiry">Close</button>
+      <button class="btn btn-primary" id="mark-replied-btn">Mark as Replied</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirm-dialog" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="confirm-title">Confirm Action</h2>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-icon" id="confirm-icon-wrap">
+        <i data-lucide="alert-triangle" width="32" height="32" style="color:var(--adm-danger)"></i>
+      </div>
+      <p id="confirm-message" class="confirm-message">Are you sure?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+<!-- Sidebar overlay for mobile -->
+<div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+
+<!-- SCRIPTS -->
+<script src="../shared/store.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="admin.js"></script>
+</body>
+</html>

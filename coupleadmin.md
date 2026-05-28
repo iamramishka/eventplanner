@@ -420,6 +420,28 @@ Manage invitation imagery.
 ### UX notes
 Use drag-and-drop grid layout with upload cards.
 
+## Assets & Mockups
+
+The `Couple Dashboard/` folder contains exported UI mockups for the Couple Admin Dashboard. Use these when implementing or reviewing UI:
+
+- Overview and dashboard screens: Couple Dashboard/200.png
+- Guests and RSVP views: Couple Dashboard/201.png, Couple Dashboard/202.png
+- Invitation editor and preview: Couple Dashboard/203.png, Couple Dashboard/204.png
+- Theme & design controls: Couple Dashboard/205.png
+- Tables & seating: Couple Dashboard/206.png
+- Budget and checklist: Couple Dashboard/207.png, Couple Dashboard/208.png
+- Gallery manager and media uploads: Couple Dashboard/209.png
+- Additional screens: Couple Dashboard/210.png, Couple Dashboard/211.png, Couple Dashboard/212.png, Couple Dashboard/213.png, Couple Dashboard/214.png
+ - Overview and dashboard screens: Couple Dashboard/couple-overview.png
+ - Guests and RSVP views: Couple Dashboard/couple-guests-list.png, Couple Dashboard/couple-guest-card.png
+ - Invitation editor and preview: Couple Dashboard/couple-invitation-editor.png, Couple Dashboard/couple-invitation-preview.png
+ - Theme & design controls: Couple Dashboard/couple-theme-controls.png
+ - Tables & seating: Couple Dashboard/couple-tables-seating.png
+ - Budget and checklist: Couple Dashboard/couple-budget.png, Couple Dashboard/couple-checklist.png
+ - Gallery manager and media uploads: Couple Dashboard/couple-gallery-manager.png
+ - Additional screens: Couple Dashboard/couple-notifications.png, Couple Dashboard/couple-settings.png, Couple Dashboard/couple-agenda.png, Couple Dashboard/couple-seating-assistant.png, Couple Dashboard/couple-advanced-views.png
+
+Add these image files as visual references in implementation tickets and link them from UI tasks.
 ---
 
 ## 7.9 Music Settings

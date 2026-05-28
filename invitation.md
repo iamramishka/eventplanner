@@ -399,6 +399,17 @@ The invitation must feel:
 - emotional
 - minimal
 
+## Assets & Mockups
+
+The `invitation Page/` folder contains the exported invitation mockups used for the public-facing flows:
+
+- Loading & cover screens: invitation Page/Invitation 1st Loading.png
+- Sample invitation layout: invitation Page/40.png
+ - Loading & cover screens: invitation Page/invitation-loading-cover.png
+ - Sample invitation layout: invitation Page/invitation-sample-layout.png
+
+Reference these images when implementing the guest entry flow and cover animations.
+
 ---
 
 ## Color System

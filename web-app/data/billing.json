@@ -1,0 +1,8 @@
+{
+  "customer:cus_test": {
+    "customerId": "cus_test",
+    "subscriptionId": "sub_test",
+    "status": "active",
+    "updatedAt": "2026-05-23T16:39:29.892Z"
+  }
+}
