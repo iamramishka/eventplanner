@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff, User, Users, CheckCircle2, ShieldCheck, MailOpen, CalendarCheck } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, Users, CheckCircle2, ShieldCheck, MailOpen, CalendarCheck, MapPin, Heart } from 'lucide-react';
 import styles from './register.module.css';
 
 type FormState = {
@@ -149,7 +149,7 @@ export default function RegisterPage() {
       <div className={styles.leftPanel}>
         <div className={styles.leftContent}>
           <div className={styles.logoArea}>
-            <div className={styles.logoW}>W</div>
+            <div className={styles.logoW}><Heart size={22} fill="currentColor" aria-hidden="true" /></div>
             <div className={styles.logoText}>
               <span className={styles.logoTitle}>WedPlan</span>
               <span className={styles.logoSubtitle}>Plan Beautiful. Celebrate Forever.</span>

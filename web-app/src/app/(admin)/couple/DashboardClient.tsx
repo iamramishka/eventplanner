@@ -309,8 +309,8 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
         {/* Brand */}
         <div className="sidebar-header">
           <div className="sidebar-brand">
-            <Heart style={{ color: '#C45A74', width: 20, height: 20 }} />
-            <span className="brand-name">WedInvite</span>
+            <Heart style={{ color: 'var(--brand-mark)', width: 20, height: 20 }} />
+            <span className="brand-name">WedPlan</span>
           </div>
         </div>
 
@@ -408,7 +408,7 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
                   <div className="user-dropdown-header">
                     <div className="wedding-avatar" style={{ width: 40, height: 40, margin: '0 auto 0.5rem', fontSize: '0.8rem' }}>{initials}</div>
                     <div className="user-dropdown-name">{wedding?.brideName} &amp; {wedding?.groomName}</div>
-                    <div className="user-dropdown-email">{wedding?.contactEmail || 'hello@wedinvite.com'}</div>
+                    <div className="user-dropdown-email">{wedding?.contactEmail || 'hello@wedplan.lk'}</div>
                   </div>
                   <div className="user-dropdown-divider" />
                   <button className="user-dropdown-item" onClick={() => { handleNavigate('settings'); setUserDropdownOpen(false); }}>
@@ -1181,7 +1181,7 @@ function buildThemeSpecMarkdown(wedding: any, theme: InvitationTheme) {
 
   return `# ${title} Theme Spec
 
-Generated from WedInvite Theme & Design on ${new Date().toLocaleString()}.
+Generated from WedPlan Theme & Design on ${new Date().toLocaleString()}.
 
 ## Selected Presets
 

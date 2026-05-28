@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-serif" });
 
 export const metadata: Metadata = {
-  title: "WedInvite — Beautiful Digital Wedding Invitations",
-  description: "The all-in-one wedding invitation and planning platform.",
+  title: "WedPlan — Wedding Planning, Simplified",
+  description: "The all-in-one wedding planning, invitation, guest, and vendor platform.",
 };
 
 export default async function RootLayout({

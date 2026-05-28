@@ -47,7 +47,7 @@ export default function LoginPage() {
       <div className={styles.leftPanel}>
         <div className={styles.leftContent}>
           <div className={styles.logoArea}>
-            <div className={styles.logoW}>W</div>
+            <div className={styles.logoW}><Heart size={22} fill="currentColor" aria-hidden="true" /></div>
             <div className={styles.logoText}>
               <span className={styles.logoTitle}>WedPlan</span>
               <span className={styles.logoSubtitle}>Plan Beautiful. Celebrate Forever.</span>

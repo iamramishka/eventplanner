@@ -8,7 +8,7 @@ import {
   ToggleLeft, ToggleRight, Upload, X, Save, AlertCircle,
   Tag, Globe, DollarSign, Image, FileText, ChevronDown,
   ChevronUp, Search, Filter, ImageOff, RefreshCw, Check,
-  ExternalLink, Info
+  ExternalLink, Info, Heart
 } from 'lucide-react';
 import styles from './vendor.module.css';
 
@@ -41,9 +41,9 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
       {/* ─ SIDEBAR ─────────────────────────────────────────── */}
       <aside className={`${styles.vndSidebar} ${mobileMenuOpen ? styles.mobileOpen : ''} ${sidebarCollapsed ? styles.collapsed : ''}`}>
         <div className={styles.sidebarLogo}>
-          <div className={styles.sidebarLogoIcon}><Package size={20} /></div>
+          <div className={styles.sidebarLogoIcon}><Heart size={20} /></div>
           <div className={styles.sidebarLogoTextWrapper}>
-            <div className={styles.sidebarLogoText}>WedInvite</div>
+            <div className={styles.sidebarLogoText}>WedPlan</div>
             <div className={styles.sidebarLogoSub}>Vendor Portal</div>
           </div>
         </div>
@@ -556,7 +556,7 @@ function ProfileModule({ vendor: initialVendor, onVendorSaved }: any) {
             <div className="profField">
               <label className="profLabel">Keywords <span className="profHint">(comma-separated)</span></label>
               <input id="prof-seoKeywords" className="profInput" value={vendor.seoKeywords || ''} onChange={e => change('seoKeywords', e.target.value)} placeholder="wedding photography colombo, sri lanka photographer, candid wedding" />
-              <span className="profHint">Optional. Helps with internal search discovery on the WedInvite platform.</span>
+              <span className="profHint">Optional. Helps with internal search discovery on the WedPlan platform.</span>
             </div>
 
             <div style={{ background: 'var(--adm-bg-alt)', borderRadius: '.75rem', padding: '1.25rem' }}>
@@ -567,7 +567,7 @@ function ProfileModule({ vendor: initialVendor, onVendorSaved }: any) {
                 <div style={{ color: '#1558d6', fontSize: '1rem', fontWeight: 400, lineHeight: 1.3, marginBottom: '.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {vendor.seoTitle || `${vendor.businessName} | ${vendor.category} in ${vendor.location}`}
                 </div>
-                <div style={{ color: '#006621', fontSize: '.8rem', marginBottom: '.2rem' }}>wedinvite.com/vendors/{vendor.id}</div>
+                <div style={{ color: '#006621', fontSize: '.8rem', marginBottom: '.2rem' }}>wedplan.lk/vendors/{vendor.id}</div>
                 <div style={{ color: '#545454', fontSize: '.85rem', lineHeight: 1.5 }}>
                   {vendor.seoDescription || vendor.description?.slice(0, 150) || 'No description set.'}
                 </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Heart } from 'lucide-react';
 import './styles.css';
 
 export const metadata = {
@@ -11,7 +12,10 @@ export default function PublicLanding() {
     <main className="public-landing">
       <div className="container">
         <header className="header">
-          <div className="brand">WedPlan</div>
+          <div className="brand" aria-label="WedPlan">
+            <span className="brand-mark"><Heart size={18} fill="currentColor" aria-hidden="true" /></span>
+            <span>WedPlan</span>
+          </div>
           <nav className="nav" aria-label="Primary navigation">
             <a href="/vendors">Vendors</a>
             <a href="/features">Features</a>
@@ -123,9 +127,9 @@ export default function PublicLanding() {
           <footer style={{marginTop:40}}>
             <div className="footer-top">
               <p>Subscribe to our newsletter</p>
-              <form style={{display:'flex',gap:8,marginTop:8}} onSubmit={e=>e.preventDefault()}>
+              <form style={{display:'flex',gap:8,marginTop:8}}>
                 <input aria-label="Email" placeholder="Your email" style={{padding:'0.6rem 0.8rem',borderRadius:8,border:'1px solid #e6e6e6'}} />
-                <button className="btn btn-primary">Subscribe</button>
+                <button type="button" className="btn btn-primary">Subscribe</button>
               </form>
             </div>
 

@@ -19,12 +19,27 @@
   border: 1px solid #f0f0f0;
 }
 
+.brandLockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--brand-text);
+  font-family: var(--brand-font);
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 auto 20px;
+}
+
 .logoW {
-  font-size: 48px;
-  font-weight: bold;
-  color: #c2185b;
-  font-family: serif;
-  margin-bottom: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff0f3;
+  color: var(--brand-mark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(194, 24, 91, 0.12);
 }
 
 .title {

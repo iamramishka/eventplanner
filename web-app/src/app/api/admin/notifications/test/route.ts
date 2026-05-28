@@ -18,7 +18,7 @@ export async function GET() {
       weddingId: w.id,
       guestId: g1?.id,
       type: 'invite',
-      imageUrl: 'https://cdn.wedinvite.lk/assets/invite_bg_1.jpg'
+      imageUrl: 'https://cdn.wedplan.lk/assets/invite_bg_1.jpg'
     });
 
     // Test 2: Basic WhatsApp Invite (with opt-in check)
@@ -39,7 +39,7 @@ export async function GET() {
       weddingId: w.id,
       guestId: g2?.id,
       type: 'invite',
-      imageUrl: 'https://cdn.wedinvite.lk/assets/invite_bg_2.jpg'
+      imageUrl: 'https://cdn.wedplan.lk/assets/invite_bg_2.jpg'
     });
 
     // Test 4: Broadcast Reminder (Simulating trigger point)

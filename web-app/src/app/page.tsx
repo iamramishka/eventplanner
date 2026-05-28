@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, LayoutDashboard, Eye } from 'lucide-react';
+import { ArrowRight, LayoutDashboard, Eye, Heart } from 'lucide-react';
 
 export default function LandingPage() {
   return (
@@ -24,6 +24,32 @@ export default function LandingPage() {
           text-align: center;
           padding: 2rem 1rem;
           position: relative;
+        }
+
+        .brand-lockup {
+          position: absolute;
+          top: 2rem;
+          left: 2rem;
+          z-index: 2;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.6rem;
+          color: var(--brand-text);
+          font-family: var(--brand-font);
+          font-size: 1.25rem;
+          font-weight: var(--weight-bold);
+        }
+
+        .brand-mark {
+          width: 38px;
+          height: 38px;
+          border-radius: var(--radius-full);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--inv-rose-tint);
+          color: var(--brand-mark);
+          box-shadow: var(--shadow-soft);
         }
 
         /* Subtle floral/rose gradient background */
@@ -166,9 +192,29 @@ export default function LandingPage() {
           line-height: 1.6;
           font-size: 0.95rem;
         }
+
+        .portal-card-main {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .vendor-register-link {
+          margin-top: 1rem;
+          font-size: 0.85rem;
+          color: var(--brand-mark);
+          font-weight: 600;
+          text-decoration: underline;
+        }
       `}</style>
 
       <section className="hero">
+        <div className="brand-lockup" aria-label="WedPlan">
+          <span className="brand-mark"><Heart size={20} fill="currentColor" aria-hidden="true" /></span>
+          <span>WedPlan</span>
+        </div>
         <h1 className="hero-title">
           Celebrate Love,<br />
           <span>Beautifully Planned</span>
@@ -221,16 +267,18 @@ export default function LandingPage() {
             <p className="portal-desc">Platform control center for monitoring users and system settings.</p>
           </Link>
 
-          <Link href="/vendor" className="portal-card card-vendor">
-            <div className="portal-icon-wrapper">
-              <ArrowRight size={28} />
-            </div>
-            <div className="portal-name">Vendor Portal</div>
-            <p className="portal-desc">Workspace for wedding vendors to manage listings and bookings.</p>
-            <Link href="/vendor-register" style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#c45a74', fontWeight: 600, textDecoration: 'underline' }} onClick={e => e.stopPropagation()}>
+          <div className="portal-card card-vendor">
+            <Link href="/vendor" className="portal-card-main">
+              <div className="portal-icon-wrapper">
+                <ArrowRight size={28} />
+              </div>
+              <div className="portal-name">Vendor Portal</div>
+              <p className="portal-desc">Workspace for wedding vendors to manage listings and bookings.</p>
+            </Link>
+            <Link href="/vendor-register" className="vendor-register-link">
               Register as a vendor →
             </Link>
-          </Link>
+          </div>
         </div>
       </section>
     </main>

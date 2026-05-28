@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Briefcase, LayoutTemplate, CreditCard, Trash2, 
   FileText, BarChart2, Settings, Scroll, ShieldCheck, ShieldOff, PanelLeftClose, User, 
   Menu, ChevronRight, LogOut, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle, 
-  Bell, UserCheck, Globe, Banknote, Search, Plus, Save, Check, X, Star, Eye
+  Bell, UserCheck, Globe, Banknote, Search, Plus, Save, Check, X, Star, Eye, Heart
 } from 'lucide-react';
 import styles from './admin.module.css';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -46,10 +46,10 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
         <div className={cn("sidebar-header")}>
           <div className={cn("sidebar-logo")}>
             <div className={cn("sidebar-logo-icon")}>
-              <ShieldCheck size={20} />
+              <Heart size={20} />
             </div>
             <div className={cn("sidebar-brand")}>
-              <span className={cn("sidebar-brand-name")}>WedInvite</span>
+              <span className={cn("sidebar-brand-name")}>WedPlan</span>
               <span className={cn("sidebar-brand-role")}>Super Admin</span>
             </div>
           </div>

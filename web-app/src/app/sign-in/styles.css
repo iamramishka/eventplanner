@@ -1,7 +1,7 @@
 /* Sign-in page styles */
 .auth-shell { display:flex; min-height:100vh; background:var(--inv-bg); }
 .auth-panel { flex:1; padding:48px; color:var(--inv-rose-dark); background:linear-gradient(180deg,var(--inv-rose-tint),var(--inv-gold-tint)); display:flex; flex-direction:column; justify-content:center; gap:18px; }
-.auth-panel .brand { font-weight:700; font-size:1.25rem; }
+.auth-panel .brand { display:inline-flex; align-items:center; gap:8px; font-weight:700; font-size:1.25rem; color:var(--brand-text); }
 .auth-panel .panel-title { font-size:2rem; margin:0; }
 .auth-panel .panel-copy { color:var(--inv-text-soft); max-width:36rem; }
 .auth-panel .panel-illus { margin-top:18px; height:220px; border-radius:12px; background-image:url('/Public Website/Sign in.png'); background-size:cover; background-position:center; box-shadow:var(--shadow-soft); }
