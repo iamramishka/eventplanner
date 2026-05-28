@@ -283,11 +283,11 @@ async function run() {
   console.log(`  Results: ${passed} passed, ${failed} failed`);
   if (failed === 0) {
     console.log(`  🎉 All vendor profile & listing smoke tests passed!\n`);
-    process.exit(0);
+    process.exitCode = 0;
   } else {
     console.error(`  ⚠️  ${failed} test(s) failed.\n`);
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
 
-run().catch(err => { console.error('Fatal:', err); process.exit(1); });
+run().catch(err => { console.error('Fatal:', err); process.exitCode = 1; });

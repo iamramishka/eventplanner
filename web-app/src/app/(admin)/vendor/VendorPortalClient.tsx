@@ -13,7 +13,7 @@ import {
 import styles from './vendor.module.css';
 
 // ─── Main Portal ────────────────────────────────────────────────
-export default function VendorPortalClient({ vendor: initialVendor, listings: initialListings, bookings }: any) {
+export default function VendorPortalClient({ vendor: initialVendor, listings: initialListings, portal: initialPortal }: any) {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -22,6 +22,13 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
   // Live state for vendor profile + listings (optimistic updates)
   const [vendor, setVendor] = useState(initialVendor);
   const [listings, setListings] = useState<any[]>(initialListings);
+  const [portal, setPortal] = useState<any>(initialPortal || {});
+  const [bookingRecords, setBookingRecords] = useState<any[]>(initialPortal?.bookings || []);
+  const messageThreads = portal.messages || [];
+  const payouts = portal.payouts || [];
+  const availability = portal.availability;
+  const vendorSettings = portal.settings;
+  const analytics = portal.analytics || {};
 
   const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
@@ -33,6 +40,7 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
   };
 
   const activePct = listings.length ? Math.round((listings.filter((l: any) => l.active).length / listings.length) * 100) : 0;
+  const unreadMessages = messageThreads.filter((thread: any) => thread.unread).length;
 
   return (
     <div className={`${styles.dashboardScreen} ${sidebarCollapsed ? styles.sidebarCollapsed : ''}`}>
@@ -55,9 +63,9 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
           <NavItem icon={<Package size={18} />} label="My Listings" isActive={activeModule === 'listings'} onClick={() => navigateTo('listings')} />
 
           <div className={styles.navLabel}>Operations</div>
-          <NavItem icon={<CalendarCheck size={18} />} label="Bookings" badge={bookings.filter((b: any) => b.status === 'pending').length} isActive={activeModule === 'bookings'} onClick={() => navigateTo('bookings')} />
+          <NavItem icon={<CalendarCheck size={18} />} label="Bookings" badge={bookingRecords.filter((b: any) => b.status === 'pending').length} isActive={activeModule === 'bookings'} onClick={() => navigateTo('bookings')} />
           <NavItem icon={<Calendar size={18} />} label="Availability" isActive={activeModule === 'availability'} onClick={() => navigateTo('availability')} />
-          <NavItem icon={<MessageSquare size={18} />} label="Messages" badge={3} isActive={activeModule === 'messages'} onClick={() => navigateTo('messages')} />
+          <NavItem icon={<MessageSquare size={18} />} label="Messages" badge={unreadMessages} isActive={activeModule === 'messages'} onClick={() => navigateTo('messages')} />
 
           <div className={styles.navLabel}>Business</div>
           <NavItem icon={<BarChart2 size={18} />} label="Analytics" isActive={activeModule === 'analytics'} onClick={() => navigateTo('analytics')} />
@@ -115,15 +123,15 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
         </header>
 
         <main className={styles.vndContent}>
-          {activeModule === 'dashboard' && <DashboardModule vendor={vendor} listings={listings} bookings={bookings} onNavigate={navigateTo} />}
+          {activeModule === 'dashboard' && <DashboardModule vendor={vendor} listings={listings} bookings={bookingRecords} onNavigate={navigateTo} />}
           {activeModule === 'profile' && <ProfileModule vendor={vendor} onVendorSaved={setVendor} />}
           {activeModule === 'listings' && <ListingsModule vendorId={vendor.id} listings={listings} onListingsChange={setListings} />}
-          {activeModule === 'bookings' && <PlaceholderModule title="Bookings" icon={<CalendarCheck size={24} />} desc="Booking management coming in Task 8.2+" />}
-          {activeModule === 'availability' && <PlaceholderModule title="Availability" icon={<Calendar size={24} />} desc="Calendar availability management coming soon." />}
-          {activeModule === 'messages' && <PlaceholderModule title="Messages" icon={<MessageSquare size={24} />} desc="Couple enquiry inbox coming soon." />}
-          {activeModule === 'analytics' && <PlaceholderModule title="Analytics" icon={<BarChart2 size={24} />} desc="Profile views, enquiry rate, and conversion metrics coming soon." />}
-          {activeModule === 'payouts' && <PlaceholderModule title="Payouts" icon={<Banknote size={24} />} desc="Payout management and billing history coming in Sprint 9." />}
-          {activeModule === 'settings' && <PlaceholderModule title="Settings" icon={<Settings size={24} />} desc="Account and notification settings coming soon." />}
+          {activeModule === 'bookings' && <BookingsModule vendorId={vendor.id} bookings={bookingRecords} onBookingsChange={setBookingRecords} onPortalChange={setPortal} />}
+          {activeModule === 'availability' && <AvailabilityModule vendorId={vendor.id} listings={listings} availability={availability} onPortalChange={setPortal} />}
+          {activeModule === 'messages' && <MessagesModule vendor={vendor} threads={messageThreads} onPortalChange={setPortal} />}
+          {activeModule === 'analytics' && <AnalyticsModule vendor={vendor} listings={listings} bookings={bookingRecords} analytics={analytics} />}
+          {activeModule === 'payouts' && <PayoutsModule payouts={payouts} />}
+          {activeModule === 'settings' && <SettingsModule vendor={vendor} settings={vendorSettings} onPortalChange={setPortal} />}
         </main>
       </div>
     </div>
@@ -1046,16 +1054,477 @@ function ListingsModule({ vendorId, listings: initial, onListingsChange }: any) 
   );
 }
 
-// ─── Placeholder Module ───────────────────────────────────────
-function PlaceholderModule({ title, icon, desc }: { title: string; icon: React.ReactNode; desc: string }) {
+// ─── Operational Modules ──────────────────────────────────────
+function OpsStyles() {
+  return (
+    <style>{`
+      .opsGrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; }
+      .opsCard { background:white; border:1px solid var(--adm-border); border-radius:var(--radius-2xl); padding:1.25rem; box-shadow:var(--shadow-sm); }
+      .opsCardHeader { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
+      .opsTitle { font-weight:700; color:var(--adm-text-primary); display:flex; align-items:center; gap:.5rem; }
+      .opsMuted { color:var(--adm-text-muted); font-size:.85rem; }
+      .opsList { display:flex; flex-direction:column; gap:.75rem; }
+      .opsRow { display:flex; justify-content:space-between; gap:1rem; padding:.9rem; border:1px solid var(--adm-border-light); border-radius:var(--radius-lg); background:var(--adm-bg-alt); }
+      .opsRowMain { min-width:0; }
+      .opsRowTitle { font-weight:650; color:var(--adm-text-primary); margin-bottom:.2rem; }
+      .opsRowMeta { color:var(--adm-text-secondary); font-size:.82rem; line-height:1.45; }
+      .opsPills { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.65rem; }
+      .opsPill { border:1px solid var(--adm-border); background:white; border-radius:999px; padding:.25rem .6rem; font-size:.75rem; color:var(--adm-text-secondary); }
+      .opsStatus { display:inline-flex; align-items:center; gap:.35rem; border-radius:999px; padding:.3rem .65rem; font-size:.75rem; font-weight:700; text-transform:capitalize; white-space:nowrap; }
+      .opsStatus.pending { background:var(--adm-warning-bg); color:#92400E; }
+      .opsStatus.confirmed, .opsStatus.paid, .opsStatus.active { background:var(--adm-success-bg); color:#065F46; }
+      .opsStatus.draft, .opsStatus.unread { background:var(--adm-info-bg); color:#1D4ED8; }
+      .opsStatus.cancelled, .opsStatus.failed { background:var(--adm-danger-bg); color:#9B1C1C; }
+      .opsToolbar { display:flex; gap:.75rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; }
+      .opsSegment { display:flex; gap:.25rem; padding:.25rem; border:1px solid var(--adm-border); border-radius:999px; background:white; }
+      .opsSegment button { border-radius:999px; padding:.45rem .8rem; color:var(--adm-text-secondary); }
+      .opsSegment button.active { background:var(--adm-primary-bg); color:var(--adm-primary); font-weight:700; }
+      .opsInput, .opsSelect { border:1px solid var(--adm-border); background:white; border-radius:var(--radius-lg); padding:.65rem .8rem; color:var(--adm-text-primary); }
+      .opsEmpty { text-align:center; padding:3rem 1rem; color:var(--adm-text-muted); border:1px dashed var(--adm-border); border-radius:var(--radius-2xl); background:white; }
+      .opsMetric { display:flex; flex-direction:column; gap:.25rem; }
+      .opsMetricValue { font-size:1.55rem; font-weight:800; color:var(--adm-text-primary); }
+      .opsMetricLabel { color:var(--adm-text-secondary); font-size:.82rem; }
+      .opsBarTrack { height:8px; border-radius:999px; background:var(--adm-bg-alt); overflow:hidden; }
+      .opsBarFill { height:100%; border-radius:999px; background:var(--inv-rose); }
+      .opsCalendar { display:grid; grid-template-columns:repeat(7,1fr); gap:.5rem; }
+      .opsDay { min-height:74px; border:1px solid var(--adm-border-light); border-radius:var(--radius-lg); padding:.55rem; background:white; }
+      .opsDay.blocked { background:#FEF2F2; border-color:#FECACA; }
+      .opsDay.open { background:#ECFDF5; border-color:#A7F3D0; }
+      .opsToggleRow { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.9rem 0; border-bottom:1px solid var(--adm-border-light); }
+      .opsNotice { display:flex; align-items:center; gap:.5rem; border:1px solid #A7F3D0; background:#ECFDF5; color:#047857; border-radius:var(--radius-lg); padding:.75rem .9rem; margin-bottom:1rem; font-weight:650; font-size:.85rem; }
+      .opsNotice.error { border-color:#FECACA; background:#FEF2F2; color:#9B1C1C; }
+      .opsTextarea { min-height:96px; width:100%; resize:vertical; box-sizing:border-box; }
+      @media(max-width:700px){ .opsRow { flex-direction:column; } .opsCalendar { grid-template-columns:repeat(2,1fr); } }
+    `}</style>
+  );
+}
+
+function EmptyState({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
+  return (
+    <div className="opsEmpty">
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '.75rem', color: 'var(--adm-text-muted)' }}>{icon}</div>
+      <div style={{ fontWeight: 700, color: 'var(--adm-text-primary)', marginBottom: '.25rem' }}>{title}</div>
+      <div>{desc}</div>
+    </div>
+  );
+}
+
+function BookingsModule({ vendorId, bookings, onBookingsChange, onPortalChange }: any) {
+  const [filter, setFilter] = useState('all');
+  const [selectedId, setSelectedId] = useState(bookings[0]?.id || '');
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState('');
+  const visible = bookings.filter((b: any) => filter === 'all' || b.status === filter);
+  const selected = bookings.find((b: any) => b.id === selectedId) || visible[0];
+
+  async function updateStatus(id: string, status: string) {
+    setSaving(id);
+    setError('');
+    setNotice('');
+    try {
+      const res = await fetch(`/api/vendors/${vendorId}/portal`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingStatus: { bookingId: id, status } }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Booking update failed.');
+      onPortalChange(data);
+      onBookingsChange(data.bookings || []);
+      setNotice(`Booking marked ${status}.`);
+    } catch (err: any) {
+      setError(err.message || 'Booking update failed.');
+    } finally {
+      setSaving('');
+    }
+  }
+
   return (
     <section className={styles.moduleSection}>
+      <OpsStyles />
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{title}</h1>
+        <div>
+          <h1 className={styles.pageTitle}>Bookings</h1>
+          <p className={styles.pageSubtitle}>Review enquiries, confirm dates, and track booking status.</p>
+        </div>
       </div>
-      <div style={{ textAlign: 'center', padding: '5rem 2rem', color: 'var(--adm-text-muted)' }}>
-        <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--adm-bg-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>{icon}</div>
-        <p style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--adm-text-secondary)', maxWidth: 400, margin: '0 auto' }}>{desc}</p>
+      <div className="opsToolbar">
+        <div className="opsSegment">
+          {['all', 'pending', 'confirmed', 'cancelled'].map(s => <button key={s} className={filter === s ? 'active' : ''} onClick={() => setFilter(s)}>{s}</button>)}
+        </div>
+      </div>
+      {notice && <div className="opsNotice"><Check size={15} /> {notice}</div>}
+      {error && <div className="opsNotice error"><AlertCircle size={15} /> {error}</div>}
+      {bookings.length === 0 ? <EmptyState icon={<CalendarCheck size={30} />} title="No bookings yet" desc="New couple requests will appear here with pending, confirmed, or cancelled states." /> : (
+        <div className="opsGrid">
+          <div className="opsCard">
+            <div className="opsCardHeader"><div className="opsTitle"><CalendarCheck size={18} /> Requests</div><span className="opsMuted">{visible.length} shown</span></div>
+            {visible.length === 0 ? <EmptyState icon={<Filter size={28} />} title="No bookings in this state" desc="Switch filters or wait for new requests." /> : <div className="opsList">
+              {visible.map((b: any) => (
+                <button key={b.id} className="opsRow" style={{ textAlign: 'left', borderColor: selected?.id === b.id ? 'var(--inv-rose)' : undefined }} onClick={() => setSelectedId(b.id)}>
+                  <div className="opsRowMain">
+                    <div className="opsRowTitle">{b.coupleName}</div>
+                    <div className="opsRowMeta">{b.serviceName} · {new Date(b.weddingDate).toLocaleDateString()}</div>
+                  </div>
+                  <span className={`opsStatus ${b.status}`}>{b.status}</span>
+                </button>
+              ))}
+            </div>}
+          </div>
+          <div className="opsCard">
+            {selected ? (
+              <>
+                <div className="opsCardHeader"><div className="opsTitle"><FileText size={18} /> Booking Detail</div><span className={`opsStatus ${selected.status}`}>{selected.status}</span></div>
+                <div className="opsList">
+                  <div className="opsRow"><span className="opsMuted">Couple</span><strong>{selected.coupleName}</strong></div>
+                  <div className="opsRow"><span className="opsMuted">Service</span><strong>{selected.serviceName}</strong></div>
+                  <div className="opsRow"><span className="opsMuted">Wedding date</span><strong>{new Date(selected.weddingDate).toLocaleDateString()}</strong></div>
+                  <div className="opsRow"><span className="opsMuted">Estimate</span><strong>LKR {Number(selected.amount).toLocaleString()}</strong></div>
+                </div>
+                <div className="opsPills">
+                  <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => updateStatus(selected.id, 'confirmed')} disabled={saving === selected.id}><Check size={15} /> Confirm</button>
+                  <button className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => updateStatus(selected.id, 'pending')} disabled={saving === selected.id}><RefreshCw size={15} /> Reopen</button>
+                  <button className={`${styles.btn} ${styles.btnSecondary}`} onClick={() => updateStatus(selected.id, 'cancelled')} disabled={saving === selected.id}><X size={15} /> Decline</button>
+                </div>
+              </>
+            ) : <EmptyState icon={<Info size={28} />} title="Select a request" desc="Booking details and response actions show here." />}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AvailabilityModule({ vendorId, listings, availability, onPortalChange }: any) {
+  const [leadTime, setLeadTime] = useState(availability?.minLeadDays ?? 14);
+  const [weekendsOnly, setWeekendsOnly] = useState(availability?.weekendsOnly ?? false);
+  const [blockedDates, setBlockedDates] = useState<string[]>(availability?.blockedDates || []);
+  const [notice, setNotice] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i + 1);
+    return d;
+  });
+  const blocked = new Set(blockedDates);
+  const toDateKey = (date: Date) => date.toISOString().slice(0, 10);
+
+  function toggleBlocked(dateKey: string) {
+    setBlockedDates(prev => prev.includes(dateKey) ? prev.filter(item => item !== dateKey) : [...prev, dateKey]);
+    setNotice('Availability calendar updated. Save rules to publish changes.');
+    setError('');
+  }
+
+  async function saveAvailability() {
+    setSaving(true);
+    setError('');
+    setNotice('');
+    try {
+      const res = await fetch(`/api/vendors/${vendorId}/portal`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ availability: { minLeadDays: leadTime, weekendsOnly, blockedDates } }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Availability save failed.');
+      onPortalChange(data);
+      setNotice('Availability rules saved.');
+    } catch (err: any) {
+      setError(err.message || 'Availability save failed.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className={styles.moduleSection}>
+      <OpsStyles />
+      <div className={styles.pageHeader}>
+        <div>
+          <h1 className={styles.pageTitle}>Availability</h1>
+          <p className={styles.pageSubtitle}>Set enquiry rules and review upcoming open or blocked dates.</p>
+        </div>
+      </div>
+      <div className="opsGrid">
+        <div className="opsCard">
+          <div className="opsCardHeader"><div className="opsTitle"><Settings size={18} /> Rules</div><span className="opsStatus active">Active</span></div>
+          <div className="opsToggleRow"><div><strong>Minimum lead time</strong><div className="opsMuted">How soon couples can book.</div></div><input className="opsInput" type="number" min={0} value={leadTime} onChange={e => setLeadTime(Number(e.target.value))} style={{ width: 90 }} /></div>
+          <div className="opsToggleRow"><div><strong>Weekend events only</strong><div className="opsMuted">Hide weekday dates from enquiries.</div></div><input type="checkbox" checked={weekendsOnly} onChange={e => setWeekendsOnly(e.target.checked)} style={{ width: 18, height: 18, accentColor: 'var(--inv-rose)' }} /></div>
+          <div className="opsToggleRow"><div><strong>Services accepting bookings</strong><div className="opsMuted">{listings.filter((l: any) => l.active).length} active listings can receive enquiries.</div></div><span className="opsPill">{listings.length} total</span></div>
+          {error && <div className="opsNotice error"><AlertCircle size={15} /> {error}</div>}
+          <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={saveAvailability} disabled={saving}>
+            {saving ? <><RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> Saving...</> : <><Save size={15} /> Save rules</>}
+          </button>
+        </div>
+        <div className="opsCard">
+          <div className="opsCardHeader"><div className="opsTitle"><Calendar size={18} /> Next 14 Days</div><span className="opsMuted">Demo calendar</span></div>
+          {notice && <div className="opsNotice"><Check size={15} /> {notice}</div>}
+          <div className="opsCalendar">
+            {days.map((day, i) => {
+              const weekend = [0, 6].includes(day.getDay());
+              const dateKey = toDateKey(day);
+              const isBlocked = blocked.has(dateKey) || (weekendsOnly && !weekend);
+              return (
+                <button key={day.toISOString()} className={`opsDay ${isBlocked ? 'blocked' : 'open'}`} onClick={() => toggleBlocked(dateKey)} style={{ textAlign: 'left', cursor: 'pointer' }} title="Toggle blocked date">
+                  <strong>{day.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</strong>
+                  <div className="opsMuted">{day.toLocaleDateString(undefined, { weekday: 'short' })}</div>
+                  <div className={`opsStatus ${isBlocked ? 'cancelled' : 'active'}`} style={{ marginTop: '.5rem' }}>{isBlocked ? 'Blocked' : 'Open'}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }: any) {
+  const [activeId, setActiveId] = useState(initialThreads[0]?.id || '');
+  const [replyText, setReplyText] = useState('');
+  const [readIds, setReadIds] = useState<Record<string, boolean>>({});
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const threads = initialThreads.map((thread: any) => ({
+    ...thread,
+    unread: thread.unread && !readIds[thread.id],
+    lastMessage: thread.messages?.[thread.messages.length - 1]?.body || 'No messages yet.',
+  }));
+  const active = threads.find((t: any) => t.id === activeId) || threads[0];
+
+  async function patchPortal(payload: any) {
+    const res = await fetch(`/api/vendors/${vendor.id}/portal`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Message update failed.');
+    onPortalChange(data);
+    return data;
+  }
+
+  async function openThread(id: string) {
+    setActiveId(id);
+    setReadIds(prev => ({ ...prev, [id]: true }));
+    setError('');
+    try {
+      await patchPortal({ messageRead: { threadId: id } });
+    } catch (err: any) {
+      setError(err.message || 'Message update failed.');
+    }
+  }
+
+  async function sendReply() {
+    if (!active || !replyText.trim()) return;
+    setSaving(true);
+    setError('');
+    setNotice('');
+    try {
+      await patchPortal({ messageReply: { threadId: active.id, message: replyText } });
+      setReplyText('');
+      setNotice('Reply sent.');
+    } catch (err: any) {
+      setError(err.message || 'Message send failed.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className={styles.moduleSection}>
+      <OpsStyles />
+      <div className={styles.pageHeader}>
+        <div>
+          <h1 className={styles.pageTitle}>Messages</h1>
+          <p className={styles.pageSubtitle}>Couple enquiry inbox for {vendor.businessName}.</p>
+        </div>
+      </div>
+      {notice && <div className="opsNotice"><Check size={15} /> {notice}</div>}
+      {error && <div className="opsNotice error"><AlertCircle size={15} /> {error}</div>}
+      {threads.length === 0 ? <EmptyState icon={<MessageSquare size={30} />} title="No enquiries yet" desc="Messages from shortlisted couples and booking requests will appear here." /> : (
+        <div className="opsGrid">
+          <div className="opsCard">
+            <div className="opsCardHeader"><div className="opsTitle"><MessageSquare size={18} /> Inbox</div><span className="opsMuted">{threads.filter((t: any) => t.unread).length} unread</span></div>
+            <div className="opsList">
+              {threads.map((thread: any) => (
+                <button key={thread.id} className="opsRow" style={{ textAlign: 'left', borderColor: active?.id === thread.id ? 'var(--inv-rose)' : undefined }} onClick={() => openThread(thread.id)}>
+                  <div className="opsRowMain">
+                    <div className="opsRowTitle">{thread.coupleName}</div>
+                    <div className="opsRowMeta">{thread.lastMessage}</div>
+                  </div>
+                  {thread.unread && <span className="opsStatus unread">Unread</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="opsCard">
+            <div className="opsCardHeader"><div className="opsTitle"><User size={18} /> {active?.coupleName || 'Conversation'}</div><span className="opsMuted">{active?.subject}</span></div>
+            <div className="opsList">
+              {active?.messages?.map((message: any) => (
+                <div key={message.id} className="opsRow" style={{ background: message.sender === 'vendor' ? 'white' : 'var(--adm-bg-alt)' }}>
+                  <div className="opsRowMain">
+                    <div className="opsRowTitle">{message.sender === 'vendor' ? vendor.businessName : active.coupleName}</div>
+                    <div className="opsRowMeta">{message.body}</div>
+                  </div>
+                </div>
+              ))}
+              <textarea className="opsInput opsTextarea" rows={4} value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Write a reply..." />
+              <button className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: 'flex-start' }} onClick={sendReply} disabled={saving || !replyText.trim()}>
+                {saving ? <><RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> Sending...</> : <><MessageSquare size={15} /> Send reply</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AnalyticsModule({ vendor, listings, bookings, analytics }: any) {
+  const activeListings = listings.filter((l: any) => l.active).length;
+  const confirmed = analytics.confirmedBookings ?? bookings.filter((b: any) => b.status === 'confirmed').length;
+  const pending = analytics.pendingBookings ?? bookings.filter((b: any) => b.status === 'pending').length;
+  const revenue = analytics.confirmedValue ?? bookings.filter((b: any) => b.status === 'confirmed').reduce((sum: number, b: any) => sum + Number(b.amount || 0), 0);
+  const profileScore = Math.min(100, 35 + activeListings * 15 + (vendor.portfolioImages?.length || 0) * 4 + (vendor.description ? 15 : 0));
+
+  return (
+    <section className={styles.moduleSection}>
+      <OpsStyles />
+      <div className={styles.pageHeader}>
+        <div>
+          <h1 className={styles.pageTitle}>Analytics</h1>
+          <p className={styles.pageSubtitle}>Meaningful health metrics calculated from current vendor data.</p>
+        </div>
+      </div>
+      <div className="opsGrid">
+        <div className="opsCard"><div className="opsMetric"><span className="opsMetricValue">{activeListings}</span><span className="opsMetricLabel">Active listings</span></div></div>
+        <div className="opsCard"><div className="opsMetric"><span className="opsMetricValue">{pending}</span><span className="opsMetricLabel">Pending enquiries</span></div></div>
+        <div className="opsCard"><div className="opsMetric"><span className="opsMetricValue">{confirmed}</span><span className="opsMetricLabel">Confirmed bookings</span></div></div>
+        <div className="opsCard"><div className="opsMetric"><span className="opsMetricValue">LKR {revenue.toLocaleString()}</span><span className="opsMetricLabel">Confirmed value</span></div></div>
+      </div>
+      <div className="opsCard" style={{ marginTop: '1rem' }}>
+        <div className="opsCardHeader"><div className="opsTitle"><BarChart2 size={18} /> Profile readiness</div><strong>{profileScore}%</strong></div>
+        <div className="opsBarTrack"><div className="opsBarFill" style={{ width: `${profileScore}%` }} /></div>
+        <div className="opsPills">
+          <span className="opsPill">{listings.length} listings</span>
+          <span className="opsPill">{vendor.portfolioImages?.length || 0} portfolio images</span>
+          <span className="opsPill">{bookings.length} booking records</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PayoutsModule({ payouts }: any) {
+  const payoutRows = payouts || [];
+  const totalDue = payoutRows.filter((p: any) => p.status === 'pending').reduce((sum: number, p: any) => sum + p.gross - p.fee, 0);
+
+  return (
+    <section className={styles.moduleSection}>
+      <OpsStyles />
+      <div className={styles.pageHeader}>
+        <div>
+          <h1 className={styles.pageTitle}>Payouts</h1>
+          <p className={styles.pageSubtitle}>Track payout estimates and billing history from confirmed bookings.</p>
+        </div>
+      </div>
+      <div className="opsGrid">
+        <div className="opsCard"><div className="opsMetric"><span className="opsMetricValue">LKR {totalDue.toLocaleString()}</span><span className="opsMetricLabel">Estimated pending payout</span></div></div>
+        <div className="opsCard"><div className="opsMetric"><span className="opsMetricValue">{payoutRows.length}</span><span className="opsMetricLabel">Billing history items</span></div></div>
+      </div>
+      <div className="opsCard" style={{ marginTop: '1rem' }}>
+        <div className="opsCardHeader"><div className="opsTitle"><Banknote size={18} /> Payout History</div><span className="opsMuted">5% platform fee estimate</span></div>
+        {payoutRows.length === 0 ? <EmptyState icon={<DollarSign size={30} />} title="No payouts yet" desc="Confirmed bookings will generate payout history rows here." /> : (
+          <div className="opsList">
+            {payoutRows.map((p: any) => (
+              <div key={p.id} className="opsRow">
+                <div className="opsRowMain"><div className="opsRowTitle">{p.label}</div><div className="opsRowMeta">{new Date(p.payoutDate).toLocaleDateString()} · Fee {p.currency} {p.fee.toLocaleString()}</div></div>
+                <div style={{ textAlign: 'right' }}><strong>{p.currency} {(p.gross - p.fee).toLocaleString()}</strong><div><span className={`opsStatus ${p.status}`}>{p.status}</span></div></div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function SettingsModule({ vendor, settings: initialSettings, onPortalChange }: any) {
+  const [settings, setSettings] = useState({
+    emailBookings: initialSettings?.emailBookings ?? true,
+    emailMessages: initialSettings?.emailMessages ?? true,
+    weeklyDigest: initialSettings?.weeklyDigest ?? true,
+    smsUrgent: initialSettings?.smsUrgent ?? false,
+    publicProfile: initialSettings?.publicProfile ?? vendor.status === 'approved',
+  });
+  const [notice, setNotice] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const set = (key: keyof typeof settings, value: boolean) => setSettings(s => ({ ...s, [key]: value }));
+
+  async function saveSettings() {
+    setSaving(true);
+    setNotice('');
+    setError('');
+    try {
+      const res = await fetch(`/api/vendors/${vendor.id}/portal`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Preference save failed.');
+      onPortalChange(data);
+      setNotice('Preferences saved.');
+    } catch (err: any) {
+      setError(err.message || 'Preference save failed.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className={styles.moduleSection}>
+      <OpsStyles />
+      <div className={styles.pageHeader}>
+        <div>
+          <h1 className={styles.pageTitle}>Settings</h1>
+          <p className={styles.pageSubtitle}>Manage account visibility and notification preferences.</p>
+        </div>
+      </div>
+      <div className="opsGrid">
+        <div className="opsCard">
+          <div className="opsCardHeader"><div className="opsTitle"><User size={18} /> Account</div><span className={`opsStatus ${vendor.status === 'approved' ? 'active' : 'pending'}`}>{vendor.status}</span></div>
+          <div className="opsList">
+            <div className="opsRow"><span className="opsMuted">Business</span><strong>{vendor.businessName}</strong></div>
+            <div className="opsRow"><span className="opsMuted">Email</span><strong>{vendor.email}</strong></div>
+            <div className="opsRow"><span className="opsMuted">Category</span><strong>{vendor.category}</strong></div>
+          </div>
+        </div>
+        <div className="opsCard">
+          <div className="opsCardHeader"><div className="opsTitle"><Bell size={18} /> Notifications</div><span className="opsMuted">Local preferences</span></div>
+          {notice && <div className="opsNotice"><Check size={15} /> {notice}</div>}
+          {error && <div className="opsNotice error"><AlertCircle size={15} /> {error}</div>}
+          {[
+            ['emailBookings', 'Booking request emails'],
+            ['emailMessages', 'New message emails'],
+            ['weeklyDigest', 'Weekly performance digest'],
+            ['smsUrgent', 'SMS for urgent changes'],
+            ['publicProfile', 'Public profile visible'],
+          ].map(([key, label]) => (
+            <div className="opsToggleRow" key={key}>
+              <div><strong>{label}</strong><div className="opsMuted">{key === 'publicProfile' ? 'Controls whether couples can discover this vendor.' : 'Notification preference for this account.'}</div></div>
+              <input type="checkbox" checked={settings[key as keyof typeof settings]} onChange={e => set(key as keyof typeof settings, e.target.checked)} style={{ width: 18, height: 18, accentColor: 'var(--inv-rose)' }} />
+            </div>
+          ))}
+          <button className={`${styles.btn} ${styles.btnPrimary}`} style={{ marginTop: '1rem' }} onClick={saveSettings} disabled={saving}>
+            {saving ? <><RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> Saving...</> : <><Save size={15} /> Save preferences</>}
+          </button>
+        </div>
       </div>
     </section>
   );
