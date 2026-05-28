@@ -1,4 +1,4 @@
-@import "../../../../src/shared/design-tokens.css";
+@import "../../shared/design-tokens.css";
 
 .public-landing {
   background: var(--inv-ivory);

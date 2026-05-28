@@ -3,10 +3,6 @@ import { useState } from "react";
 import "../../shared/design-tokens.css";
 import "./styles.css";
 
-export const metadata = {
-  title: "Sign In - WedPlan",
-};
-
 export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

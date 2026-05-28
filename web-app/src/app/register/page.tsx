@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff, User, Users, CheckCircle2, ShieldCheck, MailOpen, CalendarCheck } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, Users, CheckCircle2, ShieldCheck, MailOpen, CalendarCheck, MapPin } from 'lucide-react';
 import styles from './register.module.css';
 
 type FormState = {
