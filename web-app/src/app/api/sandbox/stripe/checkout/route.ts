@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createMockCheckoutSession } from '../../../../lib/sandboxStripe';
+import { createMockCheckoutSession } from '@/lib/sandboxStripe';
 
 export async function POST(req: Request) {
   try {
