@@ -7,10 +7,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const event = body || { type: 'checkout.session.completed', id: 'evt_sandbox_1', data: { object: {} } };
 
-    // Log the sent sandbox event
     await auditLog({ event: 'sandbox.webhook.sent', type: event.type, id: event.id || null });
 
-    // Call the existing webhook handler directly (it accepts test-mode raw bodies)
     const fakeReq = new Request('http://internal/sandbox-webhook', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

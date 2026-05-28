@@ -5,11 +5,17 @@ import { requireSuperAdmin } from '@/lib/rbac';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
     const access = await requireSuperAdmin();
     if (access.response) return access.response;
+    const { id } = await params;
     const body = await req.json();
     const { action, notes, reviewedBy } = body as { action: string; notes?: string; reviewedBy?: string };
+    const reviewer = typeof reviewedBy === 'string' && reviewedBy.trim()
+      ? reviewedBy.trim().slice(0, 120)
+      : 'admin';
+    const reviewNotes = typeof notes === 'string' && notes.trim()
+      ? notes.trim().slice(0, 1000)
+      : undefined;
 
     if (!['approve', 'reject'].includes(action)) {
       return NextResponse.json({ ok: false, error: 'invalid action' }, { status: 400 });
@@ -20,11 +26,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     let updated = null;
     if (action === 'approve') {
-      updated = approveVendor(id, reviewedBy || 'admin', notes);
-      await auditLog({ action: 'vendor-approve', targetId: id, reviewedBy: reviewedBy || 'admin', notes: notes || null });
+      updated = approveVendor(id, reviewer, reviewNotes);
+      await auditLog({ action: 'vendor-approve', targetId: id, reviewedBy: reviewer, notes: reviewNotes || null });
     } else {
-      updated = rejectVendor(id, reviewedBy || 'admin', notes);
-      await auditLog({ action: 'vendor-reject', targetId: id, reviewedBy: reviewedBy || 'admin', notes: notes || null });
+      updated = rejectVendor(id, reviewer, reviewNotes);
+      await auditLog({ action: 'vendor-reject', targetId: id, reviewedBy: reviewer, notes: reviewNotes || null });
     }
 
     if (!updated) return NextResponse.json({ ok: false, error: 'update failed' }, { status: 500 });
