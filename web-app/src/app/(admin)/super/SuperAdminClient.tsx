@@ -49,7 +49,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
               <ShieldCheck size={20} />
             </div>
             <div className={cn("sidebar-brand")}>
-              <span className={cn("sidebar-brand-name")}>WedInvite</span>
+              <span className={cn("sidebar-brand-name")}>WedPlan</span>
               <span className={cn("sidebar-brand-role")}>Super Admin</span>
             </div>
           </div>

@@ -117,7 +117,7 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettingsState = {
   updatedAt: new Date(0).toISOString(),
   settings: {
     branding: {
-      siteName: 'WedInvite',
+      siteName: 'WedPlan',
       logoUrl: '',
       primaryColor: '#E24B6D',
       publicTagline: 'Beautiful digital wedding invitations and planning tools.',
@@ -125,7 +125,7 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettingsState = {
     contact: {
       phone: '+94 77 123 4567',
       whatsapp: '+94 77 123 4567',
-      supportEmail: 'support@wedinvite.test',
+      supportEmail: 'support@wedplan.test',
     },
     publicSite: {
       heroTitle: 'Create wedding websites, manage guests, and plan together',

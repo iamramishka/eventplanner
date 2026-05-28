@@ -467,7 +467,7 @@ export default function InvitationClient({ wedding, guests, agenda, rsvps }: any
               <h2 className="footer-couple">{wedding.brideName} & {wedding.groomName}</h2>
               <p className="footer-date">{formatDate(wedding.date)}</p>
             </div>
-            <p className="footer-powered">Powered by <strong>WedInvite</strong></p>
+            <p className="footer-powered">Powered by <strong>WedPlan</strong></p>
           </footer>
           
           {wedding.music?.enabled !== false && (

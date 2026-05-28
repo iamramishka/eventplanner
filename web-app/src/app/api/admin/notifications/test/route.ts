@@ -31,7 +31,7 @@ export async function GET() {
       weddingId: w.id,
       guestId: g1?.id,
       type: 'invite',
-      imageUrl: 'https://cdn.wedinvite.lk/assets/invite_bg_1.jpg'
+      imageUrl: 'https://cdn.wedplan.lk/assets/invite_bg_1.jpg'
     });
 
     if (g1) g1.whatsappOptIn = false;
@@ -49,7 +49,7 @@ export async function GET() {
       weddingId: w.id,
       guestId: g2?.id,
       type: 'invite',
-      imageUrl: 'https://cdn.wedinvite.lk/assets/invite_bg_2.jpg'
+      imageUrl: 'https://cdn.wedplan.lk/assets/invite_bg_2.jpg'
     });
 
     const broadcastRes = await broadcastToGuests(w.id, 'reminder', 'email');

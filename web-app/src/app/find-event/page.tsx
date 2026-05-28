@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, CalendarHeart, Loader2 } from 'lucide-react';
+import { Search, MapPin, CalendarHeart, Loader2, Heart } from 'lucide-react';
 import styles from './find-event.module.css';
 
 type EventResult = {
@@ -58,7 +58,10 @@ export default function FindEventPage() {
   return (
     <main className={styles.container}>
       <div className={styles.searchCard}>
-        <div className={styles.logoW}>W</div>
+        <div className={styles.brandLockup} aria-label="WedPlan">
+          <div className={styles.logoW}><Heart size={22} fill="currentColor" aria-hidden="true" /></div>
+          <span>WedPlan</span>
+        </div>
         <h1 className={styles.title}>Find an Event</h1>
         <p className={styles.subtitle}>
           Enter the couple&apos;s names, event code, or paste the invitation link to find their wedding details and RSVP.

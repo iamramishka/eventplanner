@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Heart } from 'lucide-react';
 
 /* ─────────────────────────── Types ─────────────────────────── */
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -37,6 +38,11 @@ type FormState = {
 };
 
 type FieldErrors = Partial<Record<string, string>>;
+type VendorRegisterResult = {
+  id?: string;
+  businessName?: string;
+  category?: string;
+};
 
 /* ─────────────────────────── Constants ─────────────────────────── */
 const TOTAL_STEPS: Step = 5;
@@ -96,7 +102,7 @@ export default function VendorRegisterPage() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<VendorRegisterResult | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [portfolioPreviews, setPortfolioPreviews] = useState<string[]>([]);
   const [docFileName, setDocFileName] = useState<string>('');
@@ -247,8 +253,8 @@ export default function VendorRegisterPage() {
       }
       setResult(data);
       setLoading(false);
-    } catch (err: any) {
-      setSubmitError(String(err?.message || err));
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : String(err));
       setLoading(false);
     }
   }
@@ -297,7 +303,10 @@ export default function VendorRegisterPage() {
       <div style={S.card}>
         {/* ── Brand header ── */}
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-          <div style={S.brandBadge}>💍 WedInvite</div>
+          <div style={S.brandBadge} aria-label="WedPlan">
+            <Heart size={14} fill="currentColor" aria-hidden="true" />
+            <span>WedPlan</span>
+          </div>
           <h1 style={S.heading}>Vendor Registration</h1>
           <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
             Step {step} of {TOTAL_STEPS} — <strong style={{ color: '#6b7280' }}>{STEP_LABELS[step - 1]}</strong>
@@ -320,7 +329,7 @@ export default function VendorRegisterPage() {
                 <span style={{ ...S.pillDot, ...(done ? S.pillDotDone : active ? S.pillDotActive : {}) }}>
                   {done ? '✓' : idx}
                 </span>
-                <span style={{ fontSize: '0.7rem', fontWeight: active || done ? 600 : 400, display: 'none' as any }}>{label}</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: active || done ? 600 : 400, display: 'none' }}>{label}</span>
               </div>
             );
           })}
@@ -670,7 +679,7 @@ function ReviewRow({ label, value }: { label: string; value?: string }) {
 }
 
 /* ─────────────────────────── Styles ─────────────────────────── */
-const S: Record<string, any> = {
+const S = {
   page: {
     minHeight: '100vh',
     display: 'flex',
@@ -689,7 +698,9 @@ const S: Record<string, any> = {
     border: '1px solid #f3f4f6',
   },
   brandBadge: {
-    display: 'inline-block',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.4rem',
     background: 'linear-gradient(135deg, #c45a74, #a855f7)',
     color: '#fff',
     borderRadius: 24,
@@ -872,4 +883,4 @@ const S: Record<string, any> = {
     lineHeight: 1,
   },
   successIcon: { fontSize: '4rem', marginBottom: '1rem' },
-};
+} satisfies Record<string, React.CSSProperties | ((hasError: boolean) => React.CSSProperties)>;

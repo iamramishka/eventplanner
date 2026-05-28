@@ -16,7 +16,7 @@ export default async function RsvpTokenPage({ params }: { params: Promise<{ toke
           <p style={{ margin: '0 0 20px', color: '#7D6F6A', lineHeight: 1.6 }}>
             Please check the link you received or contact the couple for a fresh RSVP link.
           </p>
-          <Link href="/" style={{ color: '#C45A74', fontWeight: 700 }}>Back to WedInvite</Link>
+          <Link href="/" style={{ color: '#C45A74', fontWeight: 700 }}>Back to WedPlan</Link>
         </section>
       </main>
     );
