@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSubscriptionByEmail } from '@/lib/billingStore';
 
-export async function GET(req: Request, { params }: { params: Promise<{ email: string }> }) {
+export async function GET(_: Request, { params }: { params: Promise<{ email: string }> }) {
   try {
     const { email } = await params;
     const rec = getSubscriptionByEmail(email);

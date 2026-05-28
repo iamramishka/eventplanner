@@ -1,69 +1,65 @@
-# AGENT_TASK.md - Public Site UI Agent
+# AGENT_TASK.md - Couple Dashboard Agent
 
 ## Branch And Worktree
 
-- Branch: `codex/public-site-design-align`
-- Worktree: `C:\Users\ramis\Downloads\wed-plan-worktrees\wed-plan-wt-04-public-site`
+- Branch: `codex/couple-dashboard-align`
+- Worktree: `C:\Users\ramis\Downloads\wed-plan-worktrees\wed-plan-wt-05-couple-dashboard`
 - Base branch: `dev`
 - Production app: `web-app`
 
 ## Agent Role
 
-Public Site UI Agent.
+Couple Dashboard Agent.
 
 ## Skills
 
+- Feature Comparing
 - UI/UX Alignment
-- Image Comparing
-- Logo & Branding Placement
+- Flow Testing
 
 ## Mission
 
-Align public landing, auth, signup, and find-event experiences with the `Public Website` design references.
+Bring the Couple Dashboard closer to `coupleadmin.md` and the `Couple Dashboard` mockups while preserving existing working modules.
 
 ## Primary Responsibilities
 
-- Align landing page to `Public Website/Public Website.png`.
-- Align login page to `Public Website/Sign in.png`.
-- Align signup step 1 to `Public Website/Sign up Step 1.png`.
-- Align signup step 2 to `Public Website/Sign up step 2.png`.
-- Align find-event page with the public-site visual language.
-- Ensure assets are served from valid `web-app/public` paths.
-- Preserve responsive behavior across desktop and mobile.
-- Keep form states accessible and usable.
+- Compare current couple dashboard against `coupleadmin.md`.
+- Add or complete missing couple modules for vendors, music, account/subscription, notifications, and advanced seating polish.
+- Remove "Soon" states for core couple modules where a usable v1 can be built.
+- Preserve existing guests, RSVP, agenda, gallery, budget, checklist, and table functionality.
+- Keep dashboard UI dense, operational, and responsive.
 
 ## Ownership Boundaries
 
-You may touch public-site pages, auth/signup presentation, public CSS/modules, image placement, and visual assets needed by these pages.
+You may touch couple dashboard routes, couple dashboard components, couple-specific API consumers, and couple dashboard styles.
 
 ## Do Not Touch
 
-- Do not change auth database logic.
-- Do not change billing internals.
-- Do not implement Super Admin CMS persistence.
+- Do not rewrite vendor portal internals.
+- Do not implement Super Admin CMS.
+- Do not change auth primitives except to consume existing session/role data.
 - Do not revert work from other branches or worktrees.
 
 ## Coordination Notes
 
-- Coordinate with Design System Agent for WedPlan/WedInvite and logo decisions.
-- Coordinate with Data/Auth Agent before changing form submit contracts.
-- Coordinate with QA Automation Agent for screenshot breakpoints.
+- Coordinate with Vendor Portal Agent for shared vendor data contracts.
+- Coordinate with Billing Agent for account/subscription display and entitlement behavior.
+- Coordinate with Design System Agent for shared tokens and branding.
 
 ## Verification Checklist
 
-- Desktop landing screenshot compared to design reference.
-- Mobile landing screenshot checked for layout and text fit.
-- Login screenshot compared to design reference.
-- Signup step 1 and step 2 screenshots checked.
-- Find-event flow still navigates correctly.
+- Existing couple dashboard modules still load.
+- New couple modules have usable empty/loading/error states.
+- No core couple module remains marked "Soon" without a documented reason.
+- Main couple flows still work: guests, RSVPs, budget, checklist, agenda, tables, invitation editor.
 
 ## Exit Gate
 
-Desktop/mobile screenshots match the public/auth references closely enough for implementation review.
+Couple dashboard matches the spec direction and has no undocumented "Soon" core modules.
 
 ## Final Report Requirements
 
-- List changed files and assets.
-- Include screenshot paths or descriptions.
-- Note any intentional deviations from mockups.
-- Report responsive checks.
+- List changed files.
+- List completed modules.
+- List any remaining couple dashboard gaps.
+- Report manual or automated flow checks.
