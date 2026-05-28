@@ -1,53 +1,53 @@
 .container {
-  display: flex;
   min-height: 100vh;
-  font-family: system-ui, -apple-system, sans-serif;
-  background-color: #faf9f8;
+  display: grid;
+  grid-template-columns: minmax(360px, 0.94fr) minmax(440px, 1.06fr);
+  padding: 34px;
+  background: radial-gradient(circle at 12% 10%, #fff2f4 0, transparent 34%), #fffaf9;
 }
 
 .leftPanel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   position: relative;
-  background-color: #fdf5f6;
-  padding: 40px;
+  min-height: calc(100vh - 68px);
+  padding: 64px 72px 0;
   overflow: hidden;
-  max-width: 50%;
+  border: 1px solid #f0dde1;
+  border-right: 0;
+  border-radius: 28px 0 0 28px;
+  background: linear-gradient(155deg, #fff5f6 0%, #fffaf9 56%, #fdecef 100%);
 }
 
 .leftPanel::before {
-  content: '';
+  content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  left: 42px;
+  right: 42px;
   bottom: 0;
-  background-image: url('/wedding_login.png');
-  background-size: cover;
-  background-position: center;
-  opacity: 0.8;
-  z-index: 1;
+  height: 36%;
+  min-height: 300px;
+  background: url('/public-site/wedding-couple.png') center 35% / cover no-repeat;
+  border-radius: 32px 32px 0 0;
 }
 
 .leftContent {
   position: relative;
-  z-index: 2;
-  color: #333;
+  z-index: 1;
 }
 
 .logoArea {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 40px;
+  gap: 12px;
+  margin-bottom: 58px;
 }
 
 .logoW {
-  font-size: 32px;
-  font-weight: bold;
-  color: #c2185b;
-  font-family: serif;
+  color: #c9164f;
+  font-family: var(--font-serif);
+  font-size: 52px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 0.8;
 }
 
 .logoText {
@@ -56,107 +56,115 @@
 }
 
 .logoTitle {
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 1.2;
+  color: #111;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .logoSubtitle {
+  color: #6f686a;
   font-size: 12px;
-  color: #666;
+  margin-top: 4px;
 }
 
 .welcomeText {
-  margin-top: 60px;
-  font-size: 48px;
-  line-height: 1.2;
-  font-family: serif;
+  max-width: 520px;
+  color: #211719;
+  font-family: var(--font-serif);
+  font-size: clamp(42px, 4.8vw, 62px);
+  font-weight: 600;
+  line-height: 1.22;
 }
 
 .highlightText {
-  color: #c2185b;
+  color: #c9164f;
 }
 
 .divider {
+  width: min(100%, 380px);
   display: flex;
   align-items: center;
-  margin: 30px 0;
-  color: #c2185b;
+  margin: 34px 0;
+  color: #c9164f;
 }
 
 .dividerLine {
-  flex: 1;
   height: 1px;
-  background-color: #ccc;
-  max-width: 150px;
+  flex: 1;
+  background: #ead6d9;
 }
 
 .dividerIcon {
-  margin: 0 15px;
+  margin: 0 20px;
 }
 
 .subtitleText {
-  font-size: 16px;
-  color: #555;
-  line-height: 1.5;
-  max-width: 300px;
+  max-width: 430px;
+  color: #6d6669;
+  font-size: 19px;
+  line-height: 1.7;
 }
 
 .rightPanel {
-  flex: 1;
+  position: relative;
+  min-height: calc(100vh - 68px);
   display: flex;
-  flex-direction: column;
-  padding: 40px;
-  background-color: #fff;
   align-items: center;
   justify-content: center;
-  position: relative;
+  padding: 72px 64px 92px;
+  border: 1px solid #eadfe1;
+  border-radius: 0 28px 28px 0;
+  background: #fff;
 }
 
 .languageSelector {
   position: absolute;
-  top: 40px;
-  right: 40px;
-  display: flex;
+  top: 56px;
+  right: 64px;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: 1px solid #eee;
-  border-radius: 20px;
-  background: white;
-  cursor: pointer;
-  font-size: 14px;
+  gap: 9px;
+  padding: 12px 22px;
+  border: 1px solid #e8e0e2;
+  border-radius: 999px;
+  color: #302b2d;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(34, 18, 24, 0.04);
 }
 
 .formContainer {
-  width: 100%;
-  max-width: 400px;
+  width: min(100%, 560px);
 }
 
 .title {
-  font-size: 32px;
-  font-family: serif;
+  margin: 0;
   text-align: center;
-  margin-bottom: 10px;
+  color: #171113;
+  font-family: var(--font-serif);
+  font-size: clamp(34px, 3.6vw, 48px);
+  font-weight: 600;
+  line-height: 1.15;
 }
 
 .subtitle {
+  margin: 22px 0 44px;
   text-align: center;
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 40px;
-  line-height: 1.5;
+  color: #7b7376;
+  font-size: 19px;
+  line-height: 1.6;
 }
 
 .formGroup {
-  margin-bottom: 20px;
+  margin-bottom: 28px;
 }
 
 .label {
   display: block;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 8px;
+  color: #121012;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
 }
 
 .inputWrapper {
@@ -167,192 +175,225 @@
 
 .inputIcon {
   position: absolute;
-  left: 12px;
-  color: #c2185b;
+  left: 22px;
+  color: #cf1b55;
 }
 
 .input {
   width: 100%;
-  padding: 12px 12px 12px 40px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
+  height: 66px;
+  border: 1px solid #ded8db;
+  border-radius: 14px;
+  color: #242024;
+  font-size: 17px;
+  padding: 0 56px;
   outline: none;
-  transition: border-color 0.2s;
 }
 
 .input:focus {
-  border-color: #c2185b;
+  border-color: #cf1b55;
+  box-shadow: 0 0 0 4px rgba(207, 27, 85, 0.1);
 }
 
 .togglePassword {
   position: absolute;
-  right: 12px;
-  background: none;
-  border: none;
-  color: #666;
-  cursor: pointer;
+  right: 18px;
+  color: #696165;
+  display: grid;
+  place-items: center;
 }
 
 .optionsRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  font-size: 14px;
+  margin: -4px 0 34px;
+  color: #2b2528;
+  font-size: 16px;
 }
 
 .rememberMe {
   display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
+  gap: 10px;
 }
 
-.forgotPassword {
-  color: #c2185b;
-  text-decoration: none;
+.rememberMe input {
+  width: 20px;
+  height: 20px;
+  accent-color: #cf1b55;
+}
+
+.forgotPassword,
+.signupLink {
+  color: #cf1b55;
+  font-weight: 800;
 }
 
 .submitBtn {
   width: 100%;
-  padding: 14px;
-  background-color: #c2185b;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
+  height: 66px;
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 8px;
-  transition: background-color 0.2s;
-}
-
-.submitBtn:hover {
-  background-color: #a0144b;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 14px;
+  color: white;
+  background: linear-gradient(135deg, #df1d5a 0%, #c9164f 100%);
+  box-shadow: 0 14px 30px rgba(201, 22, 79, 0.2);
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .submitBtn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+  opacity: 0.72;
 }
 
 .orDivider {
   display: flex;
   align-items: center;
-  text-align: center;
-  margin: 30px 0;
-  color: #888;
-  font-size: 14px;
+  gap: 22px;
+  justify-content: center;
+  margin: 42px 0 24px;
+  color: #827a7e;
+  font-size: 16px;
 }
 
 .orDivider::before,
 .orDivider::after {
-  content: '';
+  content: "";
   flex: 1;
-  border-bottom: 1px solid #eee;
-}
-
-.orDivider::before {
-  margin-right: 10px;
-}
-
-.orDivider::after {
-  margin-left: 10px;
+  height: 1px;
+  background: #eee7e9;
 }
 
 .socialBtns {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  gap: 16px;
 }
 
 .socialBtn {
   width: 100%;
-  padding: 12px;
-  background: white;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
+  height: 62px;
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 10px;
-  transition: background-color 0.2s;
-}
-
-.socialBtn:hover {
-  background-color: #f9f9f9;
+  justify-content: center;
+  gap: 14px;
+  border: 1px solid #e6e0e2;
+  border-radius: 14px;
+  color: #171113;
+  background: #fff;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .securityNote {
-  margin-top: 30px;
-  padding: 16px;
-  background-color: #fffafb;
-  border-radius: 8px;
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 18px;
+  align-items: center;
+  margin-top: 42px;
+  padding: 28px 34px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fff7f8, #fff1f3);
 }
 
 .securityIcon {
-  color: #c2185b;
+  width: 52px;
+  height: 52px;
+  padding: 12px;
+  border-radius: 50%;
+  color: #cf1b55;
+  background: #fde3e9;
 }
 
 .securityTitle {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 4px;
+  color: #171113;
+  font-size: 16px;
+  font-weight: 800;
 }
 
 .securityDesc {
-  font-size: 12px;
-  color: #666;
-  line-height: 1.4;
+  color: #6d6669;
+  font-size: 15px;
+  line-height: 1.45;
+  margin-top: 5px;
 }
 
 .signupPrompt {
-  margin-top: 40px;
+  position: absolute;
+  bottom: 28px;
+  color: #6d6669;
+  font-size: 17px;
   text-align: center;
-  font-size: 14px;
-  color: #666;
-  width: 100%;
-  padding-bottom: 20px;
-}
-
-.signupLink {
-  color: #c2185b;
-  font-weight: 500;
-  text-decoration: none;
 }
 
 .errorText {
-  color: red;
-  font-size: 14px;
+  margin-bottom: 18px;
+  color: #b4234a;
   text-align: center;
-  margin-bottom: 16px;
+  font-weight: 700;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .container {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    overflow-x: hidden;
+    padding: 18px;
   }
+
+  .leftPanel,
+  .rightPanel {
+    min-height: auto;
+    border: 1px solid #f0dde1;
+    border-radius: 24px;
+  }
+
   .leftPanel {
-    max-width: 100%;
-    padding: 30px 20px;
-    min-height: 300px;
+    width: calc(100vw - 36px);
+    box-sizing: border-box;
+    padding: 34px 28px 320px;
   }
-  .languageSelector {
-    top: 20px;
-    right: 20px;
-  }
+
   .welcomeText {
-    margin-top: 30px;
-    font-size: 32px;
+    max-width: 100%;
+    font-size: clamp(32px, 8.8vw, 38px);
+    overflow-wrap: anywhere;
+  }
+
+  .subtitleText {
+    max-width: 100%;
+    font-size: 18px;
+  }
+
+  .leftPanel::before {
+    height: 280px;
+    min-height: 0;
+    left: 28px;
+    right: 28px;
+  }
+
+  .rightPanel {
+    width: calc(100vw - 36px);
+    box-sizing: border-box;
+    margin-top: 18px;
+    padding: 88px 22px 82px;
+  }
+
+  .formContainer {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .languageSelector {
+    top: 22px;
+    right: 22px;
+  }
+
+  .optionsRow {
+    gap: 18px;
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

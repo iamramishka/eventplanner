@@ -1,9 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import React from 'react';
 
 export default function SiteNav() {
+  const pathname = usePathname();
+  const hiddenRoutes = ['/public-landing', '/login', '/register', '/find-event', '/sign-in'];
+
+  if (!pathname || pathname === '/' || hiddenRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
+    return null;
+  }
+
   return (
     <header style={{ borderBottom: '1px solid #e6e7eb', padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
