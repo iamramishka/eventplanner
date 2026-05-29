@@ -1,73 +1,50 @@
 # Undone Tasks & Pending Work
 
-## Sprint 7 — Table Assignments (BLOCKED: needs Sprint 6 complete)
+## ✅ Completed (verified with smoke tests)
 
-### Task 7.2 — Guest-to-Table Assignment Flows
-- Status: **NOT STARTED**
-- Branch: `codex/couple-dashboard-align`
-- Work: conflict checks, undo/reassign flow, bulk assignment, keyboard accessibility
-- Acceptance: guests can be assigned and reassigned with conflicts prevented
-
-### Task 7.3 — Guest "Find My Table" Experience
-- Status: **NOT STARTED**
-- Branch: `codex/invitation-flow-align`
-- Work: privacy-gated lookup form, verification step, table result display
-- Acceptance: guests can locate their table only after passing verification
-
-### Task 7.4 — Sprint 7 QA
-- Status: **NOT STARTED**
-- Work: assignment smoke tests, capacity enforcement, privacy checks, print/export validation
-
----
-
-## Sprint 8 — Vendor Portal
-
-### Task 8.3 — Vendor Profile & Service Listing Management
-- Status: **NOT STARTED**
-- Branch: `codex/vendor-portal-complete`
-- Work: profile editing, service listing forms, gallery images, pricing fields, SEO copy
-- Acceptance: vendors can update profiles and service listings and changes persist
+| Task | Sprint | Evidence |
+|---|---|---|
+| Build stabilized — 0 errors, 42 routes | Infra | PR #10 open |
+| Lint — 0 errors, 291 warnings documented | Infra | PR #10 open |
+| Public landing page — CSS mockups replace broken images | Sprint 10 | PR #11 open |
+| Task 7.2 — Guest-to-table assignment, undo, bulk, drag-drop | Sprint 7 | `test_task72_guest_table_assignments.js` ✅ |
+| Task 7.3 — Guest "Find My Table" with privacy gating | Sprint 7 | `test_task73_find_table.js` ✅ |
+| Task 7.4 — Sprint 7 seating-chart regression | Sprint 7 | `test_task74_seating_chart_regression.js` ✅ |
+| Task 8.3 — Vendor profile & service listing management | Sprint 8 | `test_task83_vendor_profile_listings.js` ✅ (68/68) |
+| Task 8.4 — Vendor browse & shortlist | Sprint 8 | `test_task84_vendor_browse_and_shortlist.js` ✅ |
+| Task 8.5 — Sprint 8 QA full lifecycle | Sprint 8 | `test_task85_sprint8_qa.js` ✅ |
+| Task 9.2 — Super Admin plan & entitlement management | Sprint 9 | `test_task92_plans.js` ✅ (11/11) |
+| Task 9.3 — Email & WhatsApp notifications with opt-in | Sprint 9 | `test_task93_notifications.js` ✅ (7/7) |
+| All stale branches deleted | Infra | local + remote |
+| `dev` merged into `main`, `dev` deleted | Infra | done |
 
 ---
 
-## Sprint 9 — Subscriptions, Payments & Polish
-
-### Task 9.2 — Super Admin Plan & Subscription Management
-- Status: **NOT STARTED**
-- Branch: `codex/super-admin-full-control`
-- Work: feature gating matrix, entitlements, billing state display, support notes
-- Acceptance: admins can view and manage plan state with proper gating
-
-### Task 9.3 — Email Notifications & WhatsApp Invite Integration
-- Status: **NOT STARTED**
-- Branch: `codex/couple-dashboard-align` or `codex/billing-pricing-entitlements`
-- Work: email/WhatsApp templates, sending hooks, retry handling, opt-in rules
-- Acceptance: notifications can be generated and sent from relevant trigger points
+## 🔲 Remaining Work
 
 ### Task 9.4 — End-to-End Testing, Bug Squashing & UI Polish
 - Status: **NOT STARTED**
-- Work: E2E test coverage, visual regression checks, bug log, release checklist
-- Acceptance: critical user journeys pass E2E tests and UI issues are resolved
+- Branch: `codex/qa-smoke-browser`
+- Work: full E2E test coverage across all journeys, visual regression, bug log, release checklist
+- Acceptance: critical user journeys pass E2E and UI issues are resolved
 
----
-
-## Sprint 10 — Public Website
-
-### Task 10.1 — Public Website Landing Page
-- Status: **NOT STARTED**
+### Task 10.1 — Public Website Landing Page (full design match)
+- Status: **PR #11 OPEN** — broken images fixed with CSS mockups
+- Remaining: real hero screenshot when app is deployed; template thumbnails from actual designs
 - Branch: `codex/public-site-design-align`
-- Reference: `Public Website/Public Website.png`
-- Work: brand header, hero, CTA hierarchy, feature cards, how-it-works, templates, stats, testimonials, vendor logos, footer, newsletter
-- Acceptance: landing page matches design and is responsive
 
 ---
 
-## Infrastructure / Setup
+## Open PRs (pending merge)
 
-### codex/stabilize-build-lint Branch
-- Status: **BRANCH MISSING** — `codex/stabilize-build-lint` does not exist yet
-- Run: `git worktree add -b codex/stabilize-build-lint "C:\Users\ramis\Downloads\wed-plan-worktrees\wed-plan-wt-01-stabilize" dev`
-- Work: fix build blockers, bad import paths, duplicate middleware, stale route bugs
+| PR | Branch | What |
+|---|---|---|
+| #10 | `codex/stabilize-build-lint` | Build + lint fixes |
+| #11 | `codex/public-site-design-align` | Landing page broken image fix |
+
+---
+
+## Infrastructure
 
 ### Postgres Migration (Production)
 - Status: **PENDING** — only SQLite dev DB verified locally
@@ -77,15 +54,11 @@
   3. `npx prisma migrate deploy`
   4. `npm run prisma:seed`
 
-### Stale/Extra Branches to Review
-These branches exist but are not in the official plan — review and close/merge or delete:
-- `agents/commit-to-dev-branch`
-- `agents/greeting-response-handler`
-- `backup-before-undo`
-- `codex/fix-pr-7-sentry-env`
-- `pre-remove-zip`
-- `subagent-Couple-Dashboard-Builder-portal-builder-828c0d39`
-- `subagent-Invitation-Website-Builder-portal-builder-cfdc92cc`
+### Lint Debt (291 warnings)
+- All `@typescript-eslint/no-explicit-any` — 200+ instances across AI-generated code
+- All `@next/next/no-img-element` — `<img>` should be `<Image>` for LCP
+- Owner: each lane agent should clean their own module files
+- Tracked: `eslint.config.mjs` sets `no-explicit-any` to `warn` (not error)
 
 ---
 
