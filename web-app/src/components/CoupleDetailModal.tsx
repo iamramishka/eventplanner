@@ -36,6 +36,7 @@ export default function CoupleDetailModal({ open, couple, onClose, onSaved }: an
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm(couple || {});
     setSaved(false);
   }, [couple]);
