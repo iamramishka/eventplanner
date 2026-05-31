@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -140,10 +141,10 @@ export default function LoginPage() {
 
           <div className={styles.socialBtns}>
             <button type="button" className={styles.socialBtn}>
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="20" height="20" /> Continue with Google
+              <Image src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="20" height="20" unoptimized /> Continue with Google
             </button>
             <button type="button" className={styles.socialBtn}>
-              <img src="https://www.svgrepo.com/show/511330/apple-173.svg" alt="Apple" width="20" height="20" /> Continue with Apple
+              <Image src="https://www.svgrepo.com/show/511330/apple-173.svg" alt="Apple" width="20" height="20" unoptimized /> Continue with Apple
             </button>
           </div>
 
