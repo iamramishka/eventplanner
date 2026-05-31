@@ -5,6 +5,9 @@ import {
   deleteListing,
   toggleListingActive,
 } from '@/lib/vendorStore';
+import { requireVendorListingAccess } from '@/lib/rbac';
+
+type ListingPatch = Parameters<typeof updateListing>[1];
 
 // ─── GET /api/vendors/[id]/listings/[lid] ───────────────────
 export async function GET(
@@ -18,7 +21,7 @@ export async function GET(
       return NextResponse.json({ error: 'Listing not found.' }, { status: 404 });
     }
     return NextResponse.json({ listing });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
@@ -30,12 +33,14 @@ export async function PUT(
 ) {
   try {
     const { id, lid } = await params;
+    const access = await requireVendorListingAccess(id, lid);
+    if (access.response) return access.response;
     const existing = getListingById(lid);
     if (!existing || existing.vendorId !== id) {
       return NextResponse.json({ error: 'Listing not found.' }, { status: 404 });
     }
 
-    const body = await req.json();
+    const body = await req.json() as Record<string, unknown>;
 
     // Validate
     if (body.title !== undefined && !String(body.title || '').trim()) {
@@ -47,11 +52,11 @@ export async function PUT(
         return NextResponse.json({ error: 'Price must be a non-negative number.' }, { status: 400 });
       }
     }
-    if (body.galleryImages && body.galleryImages.length > 10) {
+    if (Array.isArray(body.galleryImages) && body.galleryImages.length > 10) {
       return NextResponse.json({ error: 'Maximum 10 gallery images per listing.' }, { status: 400 });
     }
 
-    const patch: Record<string, any> = {};
+    const patch: Record<string, unknown> = {};
     const allowed = [
       'title', 'category', 'subcategory', 'description', 'price', 'currency', 'pricingType',
       'coverImageBase64', 'galleryImages', 'tags', 'seoTitle', 'seoDescription', 'contentMarkdown', 'active',
@@ -63,10 +68,10 @@ export async function PUT(
     }
     if (patch.price !== undefined) patch.price = Number(patch.price);
 
-    const updated = updateListing(lid, patch);
+    const updated = updateListing(lid, patch as ListingPatch);
     if (!updated) return NextResponse.json({ error: 'Update failed.' }, { status: 500 });
     return NextResponse.json({ listing: updated });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
@@ -78,12 +83,14 @@ export async function PATCH(
 ) {
   try {
     const { id, lid } = await params;
+    const access = await requireVendorListingAccess(id, lid);
+    if (access.response) return access.response;
     const existing = getListingById(lid);
     if (!existing || existing.vendorId !== id) {
       return NextResponse.json({ error: 'Listing not found.' }, { status: 404 });
     }
 
-    const body = await req.json();
+    const body = await req.json() as Record<string, unknown>;
 
     // Special case: toggle active
     if (typeof body.active === 'boolean' && Object.keys(body).length === 1) {
@@ -92,7 +99,7 @@ export async function PATCH(
     }
 
     return PUT(req, { params });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }
@@ -104,13 +111,15 @@ export async function DELETE(
 ) {
   try {
     const { id, lid } = await params;
+    const access = await requireVendorListingAccess(id, lid);
+    if (access.response) return access.response;
     const existing = getListingById(lid);
     if (!existing || existing.vendorId !== id) {
       return NextResponse.json({ error: 'Listing not found.' }, { status: 404 });
     }
     const removed = deleteListing(lid);
     return NextResponse.json({ deleted: true, id: removed?.id });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
 }

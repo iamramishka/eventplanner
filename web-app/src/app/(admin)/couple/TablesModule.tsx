@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 type TableRecord = {
   id: string;
@@ -20,7 +20,17 @@ type GuestRecord = {
   rsvpStatus?: string;
 };
 
+type WeddingRecord = {
+  id?: string;
+};
+
 type AssignmentSnapshot = Array<{ tableId: string; assignedGuestIds: string[] }>;
+
+type AssignmentRequest =
+  | { action: 'assign'; tableId: string; guestId: string }
+  | { action: 'unassign'; guestId: string }
+  | { action: 'bulkAssign'; tableId: string; guestIds: string[] }
+  | { action: 'undo'; snapshot: AssignmentSnapshot };
 
 type AssignResponse = {
   ok: boolean;
@@ -35,7 +45,11 @@ type AssignResponse = {
   error?: string;
 };
 
-export default function TablesModule({ wedding, guests }: { wedding: any; guests: GuestRecord[] }) {
+function errorMessage(err: unknown, fallback: string) {
+  return err instanceof Error ? err.message : fallback;
+}
+
+export default function TablesModule({ wedding, guests }: { wedding: WeddingRecord; guests: GuestRecord[] }) {
   const [tables, setTables] = useState<TableRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
@@ -55,7 +69,26 @@ export default function TablesModule({ wedding, guests }: { wedding: any; guests
 
   const weddingId = wedding?.id;
 
-  useEffect(() => { void fetchTables(); }, [weddingId]);
+  const fetchTables = useCallback(async () => {
+    if (!weddingId) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/weddings/${weddingId}/tables`);
+      const json = await res.json();
+      if (!res.ok || !json?.ok) throw new Error(json?.error || 'Unable to load tables');
+      setTables(json.data || []);
+    } catch (err: unknown) {
+      setError(errorMessage(err, 'Unable to load tables.'));
+    } finally {
+      setLoading(false);
+    }
+  }, [weddingId]);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => { void fetchTables(); }, 0);
+    return () => window.clearTimeout(handle);
+  }, [fetchTables]);
 
   const assignmentByGuest = useMemo(() => {
     const map: Record<string, TableRecord> = {};
@@ -65,22 +98,6 @@ export default function TablesModule({ wedding, guests }: { wedding: any; guests
 
   const unassignedGuests = useMemo(() => (guests || []).filter(guest => !assignmentByGuest[guest.id]), [guests, assignmentByGuest]);
   const selectedBulkIds = Object.entries(bulkSelection).filter(([, selected]) => selected).map(([id]) => id);
-
-  async function fetchTables() {
-    if (!weddingId) return;
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch(`/api/weddings/${weddingId}/tables`);
-      const json = await res.json();
-      if (!res.ok || !json?.ok) throw new Error(json?.error || 'Unable to load tables');
-      setTables(json.data || []);
-    } catch (err: any) {
-      setError(err?.message || 'Unable to load tables.');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function applyAssignmentResponse(json: AssignResponse, fallback: string) {
     if (json.data?.tables) setTables(json.data.tables);
@@ -96,7 +113,7 @@ export default function TablesModule({ wedding, guests }: { wedding: any; guests
     setMessage(fallback);
   }
 
-  async function postAssignment(body: Record<string, any>, successMessage: string) {
+  async function postAssignment(body: AssignmentRequest, successMessage: string) {
     setError('');
     setMessage('');
     const res = await fetch(`/api/weddings/${weddingId}/tables/assign`, {
@@ -132,8 +149,8 @@ export default function TablesModule({ wedding, guests }: { wedding: any; guests
       setCapacity(8);
       setMessage('Table created.');
       setError('');
-    } catch (err: any) {
-      setError(err?.message || 'Unable to create table.');
+    } catch (err: unknown) {
+      setError(errorMessage(err, 'Unable to create table.'));
     }
   }
 
@@ -202,8 +219,8 @@ export default function TablesModule({ wedding, guests }: { wedding: any; guests
       if (!res.ok || !json?.ok) throw new Error(json?.error || 'Delete failed');
       setTables(prev => prev.filter(table => table.id !== tableId));
       setMessage('Table deleted.');
-    } catch (err: any) {
-      setError(err?.message || 'Delete failed.');
+    } catch (err: unknown) {
+      setError(errorMessage(err, 'Delete failed.'));
     }
   }
 
@@ -225,6 +242,9 @@ export default function TablesModule({ wedding, guests }: { wedding: any; guests
           <button className="btn btn-secondary" type="button" onClick={undoLastAction} disabled={!lastSnapshot}>
             Undo Last Change
           </button>
+          <a className="btn btn-secondary" href={`/api/weddings/${weddingId}/tables/export`}>
+            Export CSV
+          </a>
           <button className="btn btn-primary" type="button" onClick={() => setPrintView(prev => !prev)}>
             {printView ? 'Hide Printable View' : 'Printable View'}
           </button>
@@ -308,6 +328,8 @@ export default function TablesModule({ wedding, guests }: { wedding: any; guests
           {!loading && tables.length === 0 && <div className="empty-hint">Create a table to start seating guests.</div>}
           {tables.map(table => {
             const assignedGuests = table.assignedGuestIds || [];
+            const capacityDelta = table.capacity - assignedGuests.length;
+            const capacityState = capacityDelta < 0 ? 'over' : capacityDelta === 0 ? 'full' : 'open';
             const isDropTarget = dragOverTableId === table.id;
             return (
               <article
@@ -328,6 +350,9 @@ export default function TablesModule({ wedding, guests }: { wedding: any; guests
                     <strong>{table.name}</strong>
                     <span>{assignedGuests.length} / {table.capacity} assigned</span>
                   </div>
+                  <span className={`seating-capacity-chip seating-capacity-${capacityState}`}>
+                    {capacityState === 'over' ? `${Math.abs(capacityDelta)} over capacity` : capacityState === 'full' ? 'Full' : `${capacityDelta} seats open`}
+                  </span>
                   <div className="table-actions">
                     <button className="table-action-btn" type="button" onClick={() => setEditingTable({ ...table })}>Edit</button>
                     <button className="table-action-btn" type="button" onClick={() => handleDelete(table.id)}>Delete</button>
@@ -388,7 +413,10 @@ export default function TablesModule({ wedding, guests }: { wedding: any; guests
 
       {printView && (
         <div className="card seating-print-card">
-          <h3>Printable Layout</h3>
+          <div className="panel-header">
+            <h3>Printable Layout</h3>
+            <span className="text-muted">Use browser print or export CSV for sharing with venue staff.</span>
+          </div>
           <div className="seating-print-grid">
             {tables.map(table => (
               <div key={table.id} className="seating-print-table">
@@ -423,8 +451,8 @@ export default function TablesModule({ wedding, guests }: { wedding: any; guests
                   setEditingTable(null);
                   await fetchTables();
                   setMessage('Table updated.');
-                } catch (err: any) {
-                  setError(err?.message || 'Update failed.');
+                } catch (err: unknown) {
+                  setError(errorMessage(err, 'Update failed.'));
                 }
               }}>Save</button>
               <button className="btn btn-secondary" type="button" onClick={() => setEditingTable(null)}>Cancel</button>

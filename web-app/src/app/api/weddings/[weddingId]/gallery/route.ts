@@ -2,9 +2,18 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { addGalleryImage, db, getGalleryImagesByWedding, reorderGalleryImages } from '@/lib/store';
+import { requireWeddingAccess } from '@/lib/rbac';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
+type StoreRow = {
+  id?: unknown;
+};
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
 
 function sanitizeFileName(name: string) {
   return name
@@ -25,7 +34,9 @@ function extensionForMime(mimeType: string) {
 
 export async function GET(_: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   const { weddingId } = await params;
-  const wedding = db.weddings.findUnique((w: any) => w.id === weddingId);
+  const access = await requireWeddingAccess(weddingId);
+  if (access.response) return access.response;
+  const wedding = db.weddings.findUnique((w: StoreRow) => w.id === weddingId);
   if (!wedding) {
     return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
   }
@@ -36,7 +47,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ weddingId:
 export async function POST(request: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   try {
     const { weddingId } = await params;
-    const wedding = db.weddings.findUnique((w: any) => w.id === weddingId);
+    const access = await requireWeddingAccess(weddingId);
+    if (access.response) return access.response;
+    const wedding = db.weddings.findUnique((w: StoreRow) => w.id === weddingId);
     if (!wedding) {
       return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
     }
@@ -80,15 +93,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ wed
     });
 
     return NextResponse.json(image, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ ok: false, error: String(error?.message || error) }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });
   }
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   try {
     const { weddingId } = await params;
-    const wedding = db.weddings.findUnique((w: any) => w.id === weddingId);
+    const access = await requireWeddingAccess(weddingId);
+    if (access.response) return access.response;
+    const wedding = db.weddings.findUnique((w: StoreRow) => w.id === weddingId);
     if (!wedding) {
       return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
     }
@@ -99,7 +114,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ we
     }
 
     return NextResponse.json(reorderGalleryImages(weddingId, body.orderedIds.map(String)));
-  } catch (error: any) {
-    return NextResponse.json({ ok: false, error: String(error?.message || error) }, { status: 400 });
+  } catch (error: unknown) {
+    return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });
   }
 }

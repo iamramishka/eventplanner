@@ -1,4 +1,4 @@
-# Vendor Onboarding Guide — WedInvite Platform
+# Vendor Onboarding Guide — WedPlan Platform
 
 > This document outlines the complete vendor onboarding flow. Share it with new vendors after registration.
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-Welcome to **WedInvite Vendor Portal**! This guide walks you through the steps to get your business listed and accepting bookings from couples on the platform.
+Welcome to **WedPlan Vendor Portal**! This guide walks you through the steps to get your business listed and accepting bookings from couples on the platform.
 
 **Typical timeline:** 2–5 business days from registration to going live.
 
@@ -144,10 +144,10 @@ Only your public-facing business name, description, category, location, pricing,
 
 If you have questions about your application:
 
-- **Email:** vendors@wedinvite.com
+- **Email:** vendors@wedplan.lk
 - **WhatsApp:** +94 77 000 0000
 - **Hours:** Monday–Friday, 9 AM – 6 PM (Sri Lanka Time)
 
 ---
 
-*Last updated: May 2026 — WedInvite Platform*
+*Last updated: May 2026 — WedPlan Platform*

@@ -1,6 +1,6 @@
 import React from 'react';
 import VendorPortalClient from './VendorPortalClient';
-import { getVendorById, toPublicVendor, getListingsByVendor } from '@/lib/vendorStore';
+import { getVendorById, toPublicVendor, getListingsByVendor, getVendorPortalData } from '@/lib/vendorStore';
 import styles from './vendor.module.css';
 
 export default async function VendorPage() {
@@ -67,17 +67,14 @@ export default async function VendorPage() {
     updatedAt: l.updatedAt,
   }));
 
-  const mockBookings = [
-    { id: 'bk001', coupleName: 'Priya & Kasun', serviceName: 'Full Day Photography', status: 'pending', amount: 150000, weddingDate: '2026-08-15' },
-    { id: 'bk002', coupleName: 'Nadeesha & Tharaka', serviceName: 'Pre-Wedding Shoot', status: 'confirmed', amount: 35000, weddingDate: '2026-09-20' },
-  ];
+  const portalData = getVendorPortalData(DEMO_VENDOR_ID);
 
   return (
     <div className={styles.vndApp}>
       <VendorPortalClient
         vendor={vendorData}
         listings={listingsData}
-        bookings={mockBookings}
+        portal={portalData}
       />
     </div>
   );

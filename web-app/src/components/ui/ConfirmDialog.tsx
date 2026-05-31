@@ -3,7 +3,16 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 
-export default function ConfirmDialog({ open, title, message, onConfirm, onCancel, danger = true }: any) {
+type ConfirmDialogProps = {
+  open: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  danger?: boolean;
+};
+
+export default function ConfirmDialog({ open, title, message, onConfirm, onCancel, danger = true }: ConfirmDialogProps) {
   if (!open) return null;
 
   return (

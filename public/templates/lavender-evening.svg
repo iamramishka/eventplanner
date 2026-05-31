@@ -1,0 +1,19 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="#F7F2FC"/>
+  <rect x="104" y="96" width="992" height="708" rx="40" fill="#FFFDFB"/>
+  <rect x="104" y="96" width="992" height="708" rx="40" fill="url(#paint0_linear)" fill-opacity="0.28"/>
+  <circle cx="930" cy="258" r="92" fill="#E8DDF9"/>
+  <circle cx="276" cy="656" r="124" fill="#F8E9DA"/>
+  <text x="298" y="296" fill="#2B2220" font-family="Georgia, serif" font-size="72">Lavender Evening</text>
+  <text x="318" y="344" fill="#816D66" font-family="Arial, sans-serif" font-size="26">Dreamy, cinematic, and fashion-forward.</text>
+  <rect x="224" y="430" width="752" height="220" rx="34" fill="#FFFFFF"/>
+  <rect x="270" y="486" width="318" height="16" rx="8" fill="#2B2220" fill-opacity="0.88"/>
+  <rect x="270" y="524" width="230" height="10" rx="5" fill="#8A7770" fill-opacity="0.56"/>
+  <rect x="666" y="474" width="236" height="124" rx="28" fill="#EEE5FA"/>
+  <defs>
+    <linearGradient id="paint0_linear" x1="104" y1="96" x2="1096" y2="804" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6EEFC"/>
+      <stop offset="1" stop-color="#FFF4EF"/>
+    </linearGradient>
+  </defs>
+</svg>

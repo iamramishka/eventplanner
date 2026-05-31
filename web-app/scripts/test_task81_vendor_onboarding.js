@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // scripts/test_task81_vendor_onboarding.js
 // Smoke tests for Task 8.1 — Vendor Registration & Onboarding
-// Usage: BASE_URL=http://localhost:3000 node scripts/test_task81_vendor_onboarding.js
+// Usage: BASE_URL=http://127.0.0.1:3000 node scripts/test_task81_vendor_onboarding.js
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 let passed = 0;
 let failed = 0;
@@ -147,9 +147,9 @@ async function runTests() {
     ok('Returns 200', status === 200, `got ${status}`);
     ok('Has vendors array', Array.isArray(data?.vendors));
     ok('Has total count', typeof data?.total === 'number');
-    // Seed vendor (approved) should be visible
-    const seed = data?.vendors?.find((v) => v.businessName === 'Lumina Studios');
-    ok('Seed vendor (approved) visible', !!seed, 'Lumina Studios not found');
+    // Seed vendor (approved) should be visible even after profile smoke tests rename it.
+    const seed = data?.vendors?.find((v) => v.id === 'vnd_seed_001');
+    ok('Seed vendor (approved) visible', !!seed, 'vnd_seed_001 not found');
     // New pending vendor should NOT be in default public listing
     const pending = data?.vendors?.find((v) => v.businessName === 'Nimal Photo Studios');
     ok('Pending vendor not in public list', !pending, 'Pending vendor incorrectly visible');
@@ -206,14 +206,14 @@ async function runTests() {
   console.log(`  Results: ${passed} passed, ${failed} failed`);
   if (failed === 0) {
     console.log(`  🎉 All vendor onboarding smoke tests passed!\n`);
-    process.exit(0);
+    process.exitCode = 0;
   } else {
     console.error(`  ⚠️  ${failed} test(s) failed. Check the output above.\n`);
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
 
 runTests().catch(err => {
   console.error('Fatal error running tests:', err);
-  process.exit(1);
+  process.exitCode = 1;
 });

@@ -1,16 +1,13 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 
 export default function ResetPage() {
   const params = useSearchParams()
   const router = useRouter()
-  const tokenParam = params?.get('token') || ''
-  const [token, setToken] = useState(tokenParam)
+  const [token, setToken] = useState(params?.get('token') || '')
   const [password, setPassword] = useState('')
   const [status, setStatus] = useState<string | null>(null)
-
-  useEffect(() => { if (tokenParam) setToken(tokenParam) }, [tokenParam])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()

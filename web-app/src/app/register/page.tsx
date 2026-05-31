@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff, User, Users, CheckCircle2, ShieldCheck, MailOpen, CalendarCheck } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, Users, CheckCircle2, ShieldCheck, MailOpen, CalendarCheck, MapPin } from 'lucide-react';
 import styles from './register.module.css';
 
 type FormState = {
@@ -29,21 +29,13 @@ type FormState = {
 
 type FieldErrors = Partial<Record<keyof FormState, string>> & { terms?: string };
 
-const TOTAL_STEPS = 2; // For now we simplify to the 2 step flow shown in the new design
-const TIMEZONES = [
-  'Asia/Colombo', 'Asia/Kolkata', 'Asia/Dubai', 'Europe/London',
-  'Europe/Paris', 'America/New_York', 'America/Los_Angeles', 'Australia/Sydney',
-];
-
 export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormState>({});
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [result, setResult] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -129,10 +121,9 @@ export default function RegisterPage() {
         setLoading(false);
         return;
       }
-      setResult(data);
       setLoading(false);
       router.push('/couple');
-    } catch (e: any) {
+    } catch (e: unknown) {
       setSubmitError(String(e));
       setLoading(false);
     }
@@ -199,7 +190,7 @@ export default function RegisterPage() {
         </div>
 
         <div className={styles.illustration}>
-          <Image src="/wedding_login.png" alt="Wedding couple" fill style={{ objectFit: 'cover' }} />
+          <Image src="/public-site/wedding-couple.png" alt="Wedding couple" fill sizes="(max-width: 900px) 100vw, 42vw" className={styles.illustrationImage} />
         </div>
       </div>
 
@@ -345,10 +336,10 @@ export default function RegisterPage() {
 
               <div className={styles.socialBtns}>
                 <button type="button" className={styles.socialBtn}>
-                  <Image src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="20" height="20" unoptimized /> Google
+                  <Image src="/public-site/google-mark.svg" alt="Google" width={20} height={20} /> Google
                 </button>
                 <button type="button" className={styles.socialBtn}>
-                  <Image src="https://www.svgrepo.com/show/511330/apple-173.svg" alt="Apple" width="20" height="20" unoptimized /> Apple
+                  <Image src="/public-site/apple-mark.svg" alt="Apple" width={20} height={20} /> Apple
                 </button>
               </div>
 
@@ -366,7 +357,7 @@ export default function RegisterPage() {
             <div>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Groom's First Name</label>
+                  <label className={styles.label}>Groom&apos;s First Name</label>
                   <div className={styles.inputWrapper}>
                     <User size={18} className={styles.inputIcon} />
                     <input
@@ -380,7 +371,7 @@ export default function RegisterPage() {
                   {errors.groomName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.groomName}</div>}
                 </div>
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Bride's First Name</label>
+                  <label className={styles.label}>Bride&apos;s First Name</label>
                   <div className={styles.inputWrapper}>
                     <User size={18} className={styles.inputIcon} />
                     <input

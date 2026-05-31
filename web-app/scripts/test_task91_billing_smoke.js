@@ -1,7 +1,7 @@
 // Minimal smoke test for billing: create a Checkout Session and (optionally) POST a test webhook.
 const fetch = global.fetch || require('node-fetch');
 
-const BASE = process.env.BASE_URL || 'http://localhost:3000';
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 async function run() {
   console.log('Billing smoke: using BASE =', BASE);

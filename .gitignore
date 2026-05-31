@@ -1,5 +1,53 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignored files.
 
-postgres.zip
-pgsql/
-web-app/node_modules/
-web-app/.next/
+# dependencies
+/node_modules
+/web-app/node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/web-app/.next/
+/out/
+
+# production
+/build
+
+# local database archives
+/postgres.zip
+/pgsql/
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+credentials.md
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# local automation and test artifacts
+/.playwright-cli/
+/test-results/
+/output/

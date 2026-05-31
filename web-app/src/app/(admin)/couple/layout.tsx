@@ -2,6 +2,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
+type SessionUserWithRole = {
+  role?: string;
+};
+
 /**
  * Server-side layout guard for /couple routes.
  * In development, auth is bypassed so the dashboard can be previewed directly.
@@ -20,7 +24,7 @@ export default async function CoupleLayout({
       redirect("/login?from=/couple");
     }
 
-    if ((session.user as any)?.role !== "COUPLE") {
+    if ((session.user as SessionUserWithRole)?.role !== "COUPLE") {
       redirect("/");
     }
   }

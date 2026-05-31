@@ -9,6 +9,7 @@ import {
   restoreTableAssignmentSnapshot,
   unassignGuestFromTable,
 } from '@/lib/store';
+import { requireWeddingAccess } from '@/lib/rbac';
 
 function statusForError(message: string) {
   if (/not found/i.test(message)) return 404;
@@ -32,6 +33,8 @@ function jsonError(message: string, status = statusForError(message)) {
 
 export async function POST(req: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   const { weddingId } = await params;
+  const access = await requireWeddingAccess(weddingId);
+  if (access.response) return access.response;
   const wedding = db.weddings.findUnique((w: any) => w.id === weddingId);
   if (!wedding) return jsonError('Wedding not found', 404);
 

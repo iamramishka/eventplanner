@@ -6,21 +6,6 @@ import { getInvitationContent, renderMarkdownBlocks, type InvitationContent } fr
 import CountdownTimer from './CountdownTimer';
 import GalleryImageTile from './GalleryImageTile';
 import { formatEventDateTime } from './invitation-date';
-import {
-  Calendar,
-  CalendarDays,
-  Camera,
-  Clock,
-  Clock4,
-  Gift,
-  GlassWater,
-  MapPin,
-  Mic2,
-  Music,
-  PartyPopper,
-  Sparkles,
-  Utensils,
-} from 'lucide-react';
 
 type Props = { params: Promise<{ slug: string }> };
 type WeddingRecord = {
@@ -66,20 +51,20 @@ type AgendaEventRecord = {
   sortOrder?: number;
 };
 
-const AGENDA_ICON_MAP: Record<string, React.ElementType> = {
-  CalendarDays,
-  Calendar,
-  Clock,
-  Clock4,
-  GlassWater,
-  PartyPopper,
-  Music,
-  MapPin,
-  Utensils,
-  Camera,
-  Gift,
-  Mic2,
-  Sparkles,
+const AGENDA_ICON_LABELS: Record<string, string> = {
+  CalendarDays: 'date',
+  Calendar: 'date',
+  Clock: 'time',
+  Clock4: 'time',
+  GlassWater: 'toast',
+  PartyPopper: 'party',
+  Music: 'music',
+  MapPin: 'place',
+  Utensils: 'meal',
+  Camera: 'photo',
+  Gift: 'gift',
+  Mic2: 'mic',
+  Sparkles: 'star',
 };
 
 export const dynamic = 'force-dynamic';
@@ -343,8 +328,8 @@ export default async function InvitationPage({ params }: Props) {
                       )}
                       {(durationLabel || item.location) && (
                         <div className="public-agenda-meta">
-                          {durationLabel && <span data-testid="public-agenda-duration"><Clock4 size={14} /> {durationLabel}</span>}
-                          {item.location && <span data-testid="public-agenda-location" title={item.location}><MapPin size={14} /> {item.location}</span>}
+                          {durationLabel && <span data-testid="public-agenda-duration">Duration: {durationLabel}</span>}
+                          {item.location && <span data-testid="public-agenda-location" title={item.location}>Location: {item.location}</span>}
                         </div>
                       )}
                     </div>
@@ -747,7 +732,7 @@ function isEmojiIcon(value: string) {
 function getAgendaIconMode(item: AgendaEventRecord) {
   const iconValue = String(item.icon || item.iconKey || '').trim();
   if (iconValue && isEmojiIcon(iconValue)) return 'emoji';
-  return AGENDA_ICON_MAP[iconValue] ? 'mapped' : 'fallback';
+  return AGENDA_ICON_LABELS[iconValue] ? 'mapped' : 'fallback';
 }
 
 function renderAgendaIcon(item: AgendaEventRecord) {
@@ -755,8 +740,7 @@ function renderAgendaIcon(item: AgendaEventRecord) {
   if (iconValue && isEmojiIcon(iconValue)) {
     return <span aria-hidden="true">{iconValue}</span>;
   }
-  const Icon = AGENDA_ICON_MAP[iconValue] || CalendarDays;
-  return <Icon size={22} strokeWidth={1.8} aria-hidden="true" />;
+  return <span aria-hidden="true">{AGENDA_ICON_LABELS[iconValue] || 'date'}</span>;
 }
 
 function renderBlock(block: { type: 'heading' | 'paragraph' | 'list'; text?: string; items?: string[] }, index: number) {

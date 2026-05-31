@@ -56,6 +56,7 @@ export default function FindTableClient({ wedding, initialToken }: { wedding: an
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (initialToken) void lookup({ token: initialToken });
   }, [initialToken]);
 

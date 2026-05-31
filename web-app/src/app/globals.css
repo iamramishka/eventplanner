@@ -8,6 +8,11 @@
 
 /* ── INVITATION PALETTE (Romantic / Blush) ── */
 :root {
+  --brand-name:       "WedPlan";
+  --brand-font:       var(--font-serif);
+  --brand-mark:       #C45A74;
+  --brand-text:       var(--inv-rose-dark);
+
   --inv-ivory:       #FDECEF; /* Soft blush background */
   --inv-white:       #FFFFFF;
   --inv-rose:        #E24B6D; /* Vibrant Rose */
@@ -18,6 +23,15 @@
   --inv-gold-dark:   #A68A27;
   --inv-text-dark:   #5A2A3A;
   --inv-text-soft:   #8E6F7A;
+
+  /* Compatibility aliases for older public/auth styles */
+  --inv-bg:          var(--inv-ivory);
+  --inv-surface:     var(--inv-white);
+  --inv-text:        var(--inv-text-dark);
+  --inv-border:      #F0DCE2;
+  --inv-input-bg:    #FFFFFF;
+  --inv-rose-tint:   #FFF0F3;
+  --inv-gold-tint:   #FFF8E7;
 }
 
 /* ── ADMIN / DASHBOARD PALETTE (Light / Clean) ── */
@@ -25,6 +39,7 @@
   --adm-bg:          #FCFAFB; /* Very light pinkish-white background */
   --adm-bg-card:     #FFFFFF; /* Pure white cards */
   --adm-bg-alt:      #FDF8F9;
+  --adm-bg-soft:     #FFF7F9;
   
   /* Sidebar */
   --adm-sidebar:     #FFFFFF; /* White sidebar */
@@ -63,6 +78,7 @@
 :root {
   --font-serif:     'Playfair Display', Georgia, serif;
   --font-sans:      'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-geist-sans: var(--font-sans);
 
   --text-xs:    0.75rem;
   --text-sm:    0.875rem;
@@ -79,6 +95,9 @@
   --weight-medium:  500;
   --weight-semi:    600;
   --weight-bold:    700;
+
+  --leading-tight:  1.2;
+  --tracking-tight: 0;
 }
 
 /* ── SPACING ── */
@@ -114,6 +133,14 @@
   --shadow-xl:  0 20px 40px rgba(216, 60, 98, 0.08);
   
   --shadow-rose: 0 10px 25px rgba(216, 60, 98, 0.25);
+  --shadow-soft: 0 14px 34px rgba(90, 42, 58, 0.10);
+  --shadow-card: 0 18px 44px rgba(90, 42, 58, 0.10);
+}
+
+/* ── MOTION / SURFACE HELPERS ── */
+:root {
+  --transition-fast: 150ms ease;
+  --agenda-line: #F0DCE2;
 }
 
 /* ── GLOBAL RESETS ── */

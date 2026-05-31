@@ -1,0 +1,12 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="#FFF5F6"/>
+  <rect x="98" y="98" width="1004" height="704" rx="38" fill="#FFFDFC"/>
+  <circle cx="292" cy="230" r="106" fill="#FADAE4"/>
+  <circle cx="918" cy="642" r="118" fill="#FCE7D9"/>
+  <text x="372" y="310" fill="#2B2220" font-family="Georgia, serif" font-size="74">Blush Bloom</text>
+  <text x="352" y="360" fill="#816D66" font-family="Arial, sans-serif" font-size="26">Romantic, soft, and story-led.</text>
+  <rect x="226" y="450" width="748" height="176" rx="32" fill="#FCECEF"/>
+  <rect x="264" y="498" width="286" height="16" rx="8" fill="#2B2220" fill-opacity="0.88"/>
+  <rect x="264" y="534" width="236" height="10" rx="5" fill="#8A7770" fill-opacity="0.56"/>
+  <rect x="624" y="488" width="252" height="98" rx="24" fill="#FFFFFF"/>
+</svg>

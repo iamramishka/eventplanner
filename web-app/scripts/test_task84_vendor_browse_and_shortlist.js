@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // scripts/test_task84_vendor_browse_and_shortlist.js
-// Usage: BASE_URL=http://localhost:3001 node scripts/test_task84_vendor_browse_and_shortlist.js
+// Usage: BASE_URL=http://127.0.0.1:3000 node scripts/test_task84_vendor_browse_and_shortlist.js
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3001';
+const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
 
 let passed = 0;
 let failed = 0;
@@ -71,11 +71,11 @@ async function run() {
   console.log(`  Results: ${passed} passed, ${failed} failed`);
   if (failed === 0) {
     console.log(`  🎉 Task 8.4 smoke tests passed!\n`);
-    process.exit(0);
+    process.exitCode = 0;
   } else {
     console.error(`  ⚠️  ${failed} test(s) failed.\n`);
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
 
-run().catch(err => { console.error('Fatal:', err); process.exit(1); });
+run().catch(err => { console.error('Fatal:', err); process.exitCode = 1; });

@@ -61,14 +61,14 @@ export async function sendEmailNotification(options: NotificationOptions): Promi
 
   let guestName = 'Guest';
   let guestEmail = '';
-  let rsvpLink = `https://wedinvite.lk/${wedding.slug}`;
+  let rsvpLink = `https://wedplan.lk/${wedding.slug}`;
 
   if (options.guestId) {
     const guest = db.guests.findMany((g: any) => g.id === options.guestId)[0];
     if (!guest) return { success: false, channel: 'email', error: 'Guest not found' };
     guestName = guest.name;
     guestEmail = guest.email || '';
-    rsvpLink = `https://wedinvite.lk/${wedding.slug}?token=${guest.token}`;
+    rsvpLink = `https://wedplan.lk/${wedding.slug}?token=${guest.token}`;
   } else {
     guestEmail = wedding.contactEmail; // Fallback to couple for testing
   }
@@ -96,7 +96,7 @@ export async function sendWhatsAppNotification(options: NotificationOptions): Pr
 
   let guestName = 'Guest';
   let guestPhone = '';
-  let rsvpLink = `https://wedinvite.lk/${wedding.slug}`;
+  let rsvpLink = `https://wedplan.lk/${wedding.slug}`;
 
   if (options.guestId) {
     const guest = db.guests.findMany((g: any) => g.id === options.guestId)[0];
@@ -109,7 +109,7 @@ export async function sendWhatsAppNotification(options: NotificationOptions): Pr
 
     guestName = guest.name;
     guestPhone = guest.whatsapp || guest.phone || '';
-    rsvpLink = `https://wedinvite.lk/${wedding.slug}?token=${guest.token}`;
+    rsvpLink = `https://wedplan.lk/${wedding.slug}?token=${guest.token}`;
   } else {
     guestPhone = wedding.contactWhatsApp;
   }

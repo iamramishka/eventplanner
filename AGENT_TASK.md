@@ -1,67 +1,66 @@
-# AGENT_TASK.md - GitHub Release Agent
+# AGENT_TASK.md - Design System Agent
 
 ## Branch And Worktree
 
-- Branch: `codex/docs-release-checklist`
-- Worktree: `C:\Users\ramis\Downloads\wed-plan-worktrees\wed-plan-wt-12-docs-release`
+- Branch: `codex/design-system-branding`
+- Worktree: `C:\Users\ramis\Downloads\wed-plan-worktrees\wed-plan-wt-09-design-system`
 - Base branch: `dev`
 - Production app: `web-app`
 
 ## Agent Role
 
-GitHub Release Agent.
+Design System Agent.
 
 ## Skills
 
-- GitHub Ethics
-- QA/Release
-- Feature Comparing
+- Logo & Branding Placement
+- UI/UX Alignment
+- Image Comparing
 
 ## Mission
 
-Keep final docs, release checklist, setup instructions, QA evidence, and merge notes aligned with the real app state.
+Consolidate brand and shared visual rules so public, couple, vendor, and super-admin surfaces feel like one product.
 
 ## Primary Responsibilities
 
-- Update release checklist only after real implementation and QA evidence exists.
-- Maintain setup/run instructions.
-- Maintain worktree summary and merge notes.
-- Track known issues honestly.
-- Make docs match actual test results, not assumptions.
-- Prepare GitHub-friendly release notes or PR summaries when requested.
+- Consolidate WedPlan/WedInvite naming to WedPlan unless owner supplies a different brand later.
+- Normalize logo placement across public, auth, couple, vendor, and super-admin surfaces.
+- Review and align shared design tokens.
+- Resolve admin palette direction consistently.
+- Update favicon or logo references if needed.
+- Avoid feature logic changes.
 
 ## Ownership Boundaries
 
-You may touch documentation, release checklists, setup guides, known-issues logs, and QA evidence references.
+You may touch shared CSS/tokens, branding text, logo/favicons, navigation brand labels, and visual constants.
 
 ## Do Not Touch
 
-- Do not change product code except documentation links or references.
-- Do not mark tests as passed unless evidence exists.
-- Do not merge branches or rewrite git history.
+- Do not implement business logic or migrations.
+- Do not rewrite page workflows.
+- Do not change API contracts.
 - Do not revert work from other branches or worktrees.
 
 ## Coordination Notes
 
-- Coordinate with QA Automation Agent for test evidence.
-- Coordinate with Security Reviewer for open risk summary.
-- Coordinate with all feature agents for final changed-file summaries.
+- Coordinate with Public Site UI Agent for public/auth pages.
+- Coordinate with Super Admin Backend Agent for admin-editable branding.
+- Coordinate with Couple and Vendor agents for dashboard brand labels.
 
 ## Verification Checklist
 
-- Docs mention actual commands used.
-- Release checklist reflects real pass/fail status.
-- Known issues are not hidden.
-- Worktree merge order is documented.
-- Final docs do not claim production readiness without evidence.
+- WedPlan/WedInvite inconsistency is resolved or documented.
+- Logo placement is consistent across main surfaces.
+- Shared tokens do not break page readability.
+- Desktop/mobile spot checks show no obvious overlap or text clipping.
 
 ## Exit Gate
 
-Docs match actual app status and test evidence.
+Brand is consistent across public, admin, vendor, and couple surfaces.
 
 ## Final Report Requirements
 
-- List changed docs.
-- Summarize release readiness.
-- Include test evidence references.
-- Include known issues and next actions.
+- List changed files.
+- Summarize final brand decision.
+- Report surfaces checked.
+- Note any remaining design-system debt.

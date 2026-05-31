@@ -6,7 +6,26 @@ import { Star, Heart, Columns, MapPin } from 'lucide-react';
 import styles from './vendor.module.css';
 import useShortlist from '@/lib/useShortlist';
 
-export default function VendorCard({ vendor, onCompare }: any) {
+type VendorCardVendor = {
+  id: string;
+  businessName: string;
+  category: string;
+  location?: string;
+  description?: string;
+  coverImageBase64?: string;
+  logoBase64?: string;
+  packages?: { image?: string }[];
+  rating?: number;
+  currency?: string;
+  basePrice?: number;
+};
+
+type VendorCardProps = {
+  vendor: VendorCardVendor;
+  onCompare?: (id: string) => void;
+};
+
+export default function VendorCard({ vendor, onCompare }: VendorCardProps) {
   const { isSaved, toggle } = useShortlist();
   const saved = isSaved(vendor.id);
 

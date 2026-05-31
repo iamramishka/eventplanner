@@ -1,4 +1,4 @@
-const base = process.env.BASE_URL || 'http://localhost:3000';
+const base = process.env.BASE_URL || 'http://127.0.0.1:3000';
 const weddingId = 'w_1';
 const slug = 'priya-and-kasun';
 const guestWithTable = { id: 'g_2', name: 'Fernando Family', phoneLast4: '0002', token: 'token_g2' };

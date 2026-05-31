@@ -205,7 +205,7 @@ export default function InvitationClient({ wedding, guests, agenda, rsvps }: any
   return (
     <div className="invitation-theme-root" style={getInvitationThemeCssVars(wedding.theme)}>
       {wedding.music?.enabled !== false && (
-        <audio ref={audioRef} loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" />
+        <audio ref={audioRef} loop src={wedding.music?.sourceUrl || "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"} />
       )}
       
       {/* LOADING SCREEN */}
@@ -467,7 +467,7 @@ export default function InvitationClient({ wedding, guests, agenda, rsvps }: any
               <h2 className="footer-couple">{wedding.brideName} & {wedding.groomName}</h2>
               <p className="footer-date">{formatDate(wedding.date)}</p>
             </div>
-            <p className="footer-powered">Powered by <strong>WedInvite</strong></p>
+            <p className="footer-powered">Powered by <strong>WedPlan</strong></p>
           </footer>
           
           {wedding.music?.enabled !== false && (
