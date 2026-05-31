@@ -1,0 +1,75 @@
+import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server-client";
+import { buildAppSession } from "@/lib/supabase/auth-helpers";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getRateLimitConfig } from "@/lib/server/env";
+import { buildRateLimitKey, enforceRateLimit, getRequestIp } from "@/lib/server/rate-limit";
+import { captureServerError } from "@/lib/server/logger";
+
+export async function POST(request: Request) {
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json(
+      { message: "Supabase is not configured for this environment." },
+      { status: 501 },
+    );
+  }
+
+  const payload = (await request.json()) as {
+    role: "couple" | "vendor";
+    fullName: string;
+    email: string;
+    password: string;
+    businessName?: string;
+  };
+
+  const throttled = await enforceRateLimit(request, {
+    scope: "auth-register",
+    key: buildRateLimitKey([getRequestIp(request)]),
+    max: getRateLimitConfig().register.max,
+    windowMs: getRateLimitConfig().register.windowMs,
+    message: "Too many signup attempts. Please try again later.",
+  });
+
+  if (throttled) {
+    return throttled;
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase.auth.signUp({
+    email: payload.email.trim().toLowerCase(),
+    password: payload.password,
+    options: {
+      data: {
+        role: payload.role,
+        full_name: payload.fullName.trim(),
+        business_name: payload.businessName?.trim() ?? "",
+      },
+    },
+  });
+
+  if (error) {
+    await captureServerError("auth-register", error, {
+      requestPath: "/api/v1/auth/register",
+      role: payload.role,
+    });
+    return NextResponse.json({ message: error.message }, { status: 400 });
+  }
+
+  if (!data.user) {
+    return NextResponse.json({ message: "Unable to create account." }, { status: 500 });
+  }
+
+  if (!data.session) {
+    return NextResponse.json(
+      {
+        message:
+          "Supabase email confirmation is enabled. Disable email confirmation for this MVP flow or confirm the account before continuing.",
+      },
+      { status: 409 },
+    );
+  }
+
+  const session = await buildAppSession(supabase, data.user);
+  return NextResponse.json({ session });
+}

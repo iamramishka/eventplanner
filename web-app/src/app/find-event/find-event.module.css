@@ -1,195 +1,193 @@
 .container {
-  display: flex;
   min-height: 100vh;
-  font-family: system-ui, -apple-system, sans-serif;
-  background-color: #faf9f8;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  display: grid;
+  place-items: center;
+  overflow-x: hidden;
+  padding: 32px;
+  background:
+    radial-gradient(circle at 16% 12%, rgba(255, 228, 233, 0.9), transparent 34%),
+    radial-gradient(circle at 84% 85%, rgba(255, 230, 235, 0.82), transparent 36%),
+    #fffaf9;
 }
 
 .searchCard {
-  background: white;
-  width: 100%;
-  max-width: 600px;
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.05);
-  padding: 40px;
+  width: calc(100vw - 32px);
+  max-width: 720px;
+  box-sizing: border-box;
+  padding: 50px;
   text-align: center;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #eadfe1;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 24px 70px rgba(63, 24, 33, 0.1);
 }
 
 .logoW {
-  font-size: 48px;
-  font-weight: bold;
-  color: #c2185b;
-  font-family: serif;
-  margin-bottom: 20px;
+  color: #c9164f;
+  font-family: var(--font-serif);
+  font-size: 58px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 0.85;
+  margin-bottom: 18px;
 }
 
 .title {
-  font-size: 32px;
-  font-family: serif;
-  margin-bottom: 12px;
-  color: #333;
+  color: #171113;
+  font-family: var(--font-serif);
+  font-size: clamp(38px, 4vw, 54px);
+  font-weight: 600;
+  margin-bottom: 14px;
 }
 
 .subtitle {
-  color: #666;
-  font-size: 16px;
-  margin-bottom: 40px;
-  line-height: 1.5;
+  max-width: 560px;
+  margin: 0 auto 38px;
+  color: #6d6669;
+  font-size: 17px;
+  line-height: 1.7;
 }
 
 .searchBox {
   position: relative;
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .searchIcon {
   position: absolute;
-  left: 20px;
-  color: #c2185b;
+  left: 22px;
+  top: 50%;
+  color: #cf1b55;
+  transform: translateY(-50%);
 }
 
 .searchInput {
   width: 100%;
-  padding: 16px 20px 16px 50px;
-  font-size: 16px;
-  border: 2px solid #eee;
-  border-radius: 12px;
+  box-sizing: border-box;
+  height: 66px;
+  border: 1px solid #ded8db;
+  border-radius: 16px;
+  color: #242024;
+  font-size: 17px;
+  padding: 0 22px 0 58px;
   outline: none;
-  transition: all 0.2s;
+  background: white;
 }
 
 .searchInput:focus {
-  border-color: #c2185b;
-  box-shadow: 0 0 0 3px rgba(194, 24, 91, 0.1);
+  border-color: #cf1b55;
+  box-shadow: 0 0 0 4px rgba(207, 27, 85, 0.1);
 }
 
 .searchBtn {
-  margin-top: 10px;
   width: 100%;
-  padding: 16px;
-  background-color: #c2185b;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-}
-
-.searchBtn:hover:not(:disabled) {
-  background-color: #a0144b;
+  gap: 12px;
+  border-radius: 16px;
+  color: white;
+  background: linear-gradient(135deg, #df1d5a 0%, #c9164f 100%);
+  box-shadow: 0 14px 30px rgba(201, 22, 79, 0.18);
+  font-size: 18px;
+  font-weight: 800;
 }
 
 .searchBtn:disabled {
-  opacity: 0.7;
+  opacity: 0.62;
   cursor: not-allowed;
 }
 
 .resultsArea {
-  margin-top: 40px;
+  margin-top: 42px;
   text-align: left;
 }
 
 .resultsTitle {
-  font-size: 18px;
+  color: #171113;
+  font-family: var(--font-serif);
+  font-size: 26px;
   font-weight: 600;
-  margin-bottom: 16px;
-  color: #333;
+  margin-bottom: 18px;
+}
+
+.resultsList {
+  display: grid;
+  gap: 16px;
 }
 
 .eventCard {
-  display: flex;
+  display: grid;
+  grid-template-columns: 68px 1fr auto;
+  gap: 18px;
   align-items: center;
-  padding: 20px;
-  border: 1px solid #eee;
-  border-radius: 12px;
-  margin-bottom: 16px;
-  transition: all 0.2s;
-  background: white;
-}
-
-.eventCard:hover {
-  border-color: #c2185b;
-  box-shadow: 0 4px 12px rgba(194, 24, 91, 0.05);
+  padding: 18px;
+  border: 1px solid #eadfe1;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(63, 24, 33, 0.06);
 }
 
 .eventAvatar {
-  width: 60px;
-  height: 60px;
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
   border-radius: 50%;
-  background-color: #fdf5f6;
-  color: #c2185b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-family: serif;
-  margin-right: 20px;
-  flex-shrink: 0;
+  color: #c9164f;
+  background: #fde9ee;
   object-fit: cover;
-}
-
-.eventInfo {
-  flex: 1;
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 800;
 }
 
 .eventTitle {
+  color: #171113;
   font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 4px;
-  color: #333;
+  font-weight: 800;
+  margin-bottom: 8px;
 }
 
 .eventDetails {
+  display: grid;
+  gap: 5px;
+  color: #6d6669;
   font-size: 14px;
-  color: #666;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .detailRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
 }
 
 .viewBtn {
-  padding: 10px 20px;
-  background-color: #fdf5f6;
-  color: #c2185b;
-  border: 1px solid #f8e1e5;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid #cf1b55;
+  border-radius: 12px;
+  color: #cf1b55;
+  background: #fff7f9;
+  font-weight: 800;
 }
 
 .viewBtn:hover {
-  background-color: #c2185b;
   color: white;
+  background: #cf1b55;
 }
 
 .noResults {
+  padding: 34px 22px;
   text-align: center;
-  padding: 40px 20px;
-  color: #666;
-  background: #fcfcfc;
-  border-radius: 12px;
-  border: 1px dashed #ddd;
+  color: #6d6669;
+  border: 1px dashed #e2d3d7;
+  border-radius: 18px;
+  background: #fff8f9;
 }
 
 .loadingSpinner {
@@ -197,26 +195,48 @@
 }
 
 @keyframes spin {
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
+  .container {
+    padding: 18px 16px;
+    place-items: start center;
+  }
+
   .searchCard {
-    padding: 30px 20px;
+    width: calc(100vw - 32px);
+    max-width: 720px;
+    min-width: 0;
+    padding: 34px 20px;
+    border-radius: 22px;
   }
+
+  .logoW {
+    font-size: 52px;
+  }
+
+  .title {
+    font-size: 38px;
+  }
+
+  .subtitle {
+    max-width: 100%;
+    margin-bottom: 30px;
+    font-size: 16px;
+  }
+
   .eventCard {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    justify-items: center;
     text-align: center;
-    gap: 15px;
   }
-  .eventAvatar {
-    margin-right: 0;
-  }
+
   .detailRow {
     justify-content: center;
   }
+
   .viewBtn {
     width: 100%;
-    margin-top: 10px;
   }
 }

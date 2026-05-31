@@ -1,0 +1,11 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="#F5F8F3"/>
+  <rect x="104" y="90" width="992" height="720" rx="40" fill="#FFFDFB"/>
+  <path d="M202 670C302 508 412 428 536 430C686 432 804 552 978 598" stroke="#97AC96" stroke-width="14" stroke-linecap="round"/>
+  <text x="332" y="294" fill="#2B2220" font-family="Georgia, serif" font-size="74">Sage Garden</text>
+  <text x="330" y="344" fill="#816D66" font-family="Arial, sans-serif" font-size="26">Fresh, calm, and crafted for outdoor celebrations.</text>
+  <rect x="232" y="430" width="736" height="216" rx="34" fill="#EFF3EC"/>
+  <circle cx="350" cy="538" r="56" fill="#FFFFFF"/>
+  <rect x="448" y="500" width="372" height="16" rx="8" fill="#2B2220" fill-opacity="0.88"/>
+  <rect x="448" y="538" width="286" height="10" rx="5" fill="#8A7770" fill-opacity="0.56"/>
+</svg>

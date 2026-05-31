@@ -1,39 +1,328 @@
-/* Sign-in page styles */
-.auth-shell { display:flex; min-height:100vh; background:var(--inv-bg); }
-.auth-panel { flex:1; padding:48px; color:var(--inv-rose-dark); background:linear-gradient(180deg,var(--inv-rose-tint),var(--inv-gold-tint)); display:flex; flex-direction:column; justify-content:center; gap:18px; }
-.auth-panel .brand { font-weight:700; font-size:1.25rem; }
-.auth-panel .panel-title { font-size:2rem; margin:0; }
-.auth-panel .panel-copy { color:var(--inv-text-soft); max-width:36rem; }
-.auth-panel .panel-illus { margin-top:18px; height:220px; border-radius:12px; background-image:url('/Public Website/Sign in.png'); background-size:cover; background-position:center; box-shadow:var(--shadow-soft); }
+.signInShell {
+  min-height: 100vh;
+  padding: 34px;
+  display: grid;
+  grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1.08fr);
+  background: radial-gradient(circle at 15% 8%, #fff6f7 0, transparent 34%), #fffaf9;
+}
 
-.auth-form-wrap { width:480px; max-width:100%; display:flex; align-items:center; justify-content:center; padding:48px; }
-.auth-box { width:100%; background:var(--inv-surface); border-radius:12px; padding:28px; box-shadow:var(--shadow-card); }
-.auth-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
-.auth-header h1 { margin:0; font-size:1.25rem; }
-.small-link { color:var(--inv-rose-dark); text-decoration:none; font-size:0.9rem; }
+.signInPanel,
+.signInFormPane {
+  min-height: calc(100vh - 68px);
+}
 
-.auth-form .field { display:block; margin-bottom:12px; }
-.auth-form .label { display:block; font-weight:600; margin-bottom:6px; color:var(--inv-text); }
-.auth-form input[type="email"], .auth-form input[type="password"], .auth-form input[type="text"] { width:100%; padding:10px 12px; border:1px solid var(--inv-border); border-radius:8px; font-size:1rem; background:var(--inv-input-bg); }
-.password-row { display:flex; gap:8px; align-items:center; }
-.password-row .toggle { background:transparent; border:1px solid var(--inv-border); padding:8px 10px; border-radius:8px; cursor:pointer; }
+.signInPanel {
+  padding: 64px 72px 0;
+  border-radius: 28px 0 0 28px;
+  background: linear-gradient(155deg, #fff5f6 0%, #fffaf9 56%, #fdecef 100%);
+  overflow: hidden;
+  border: 1px solid #f1dcdf;
+  border-right: 0;
+}
 
-.form-row.between { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
-.inline { display:flex; gap:8px; align-items:center; }
+.signInBrand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 58px;
+}
 
-.btn { display:inline-block; border-radius:8px; padding:10px 14px; text-decoration:none; text-align:center; cursor:pointer; }
-.btn.primary { background:var(--inv-rose); color:white; border:0; width:100%; font-weight:600; }
-.divider { text-align:center; margin:14px 0; color:var(--inv-text-soft); }
-.divider span { background:transparent; padding:0 8px; }
-.socials { display:flex; gap:8px; flex-direction:column; }
-.btn.social { border:1px solid var(--inv-border); background:transparent; }
-.btn.social.google { color:#1a73e8; }
-.btn.social.apple { color:#111; }
+.brandMark {
+  color: #c9164f;
+  font-family: var(--font-serif);
+  font-size: 52px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 0.8;
+}
 
-.security-note { margin-top:12px; color:var(--inv-text-soft); font-size:0.85rem; }
+.signInBrand strong {
+  display: block;
+  color: #111;
+  font-size: 28px;
+  line-height: 1;
+}
 
-@media (max-width:900px) {
-  .auth-shell { flex-direction:column; }
-  .auth-panel { order:2; padding:28px; }
-  .auth-form-wrap { width:100%; padding:24px; }
+.signInBrand small {
+  color: #6f686a;
+  font-size: 12px;
+}
+
+.signInPanel h1 {
+  color: #211719;
+  font-family: var(--font-serif);
+  font-size: clamp(42px, 4.8vw, 62px);
+  font-weight: 600;
+  line-height: 1.22;
+  margin: 0 0 34px;
+}
+
+.signInPanel h1 span {
+  color: #c9164f;
+}
+
+.panelRule {
+  height: 1px;
+  max-width: 380px;
+  background: #ead6d9;
+  margin-bottom: 34px;
+  position: relative;
+}
+
+.panelRule span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  background: #fff6f7;
+}
+
+.panelRule::after {
+  content: "♥";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -52%);
+  color: #c9164f;
+  font-size: 20px;
+}
+
+.signInPanel p {
+  max-width: 430px;
+  color: #6d6669;
+  font-size: 19px;
+  line-height: 1.7;
+}
+
+.signInPanel img {
+  width: min(100%, 560px);
+  height: 46vh;
+  min-height: 320px;
+  margin: 40px auto 0;
+  object-fit: cover;
+  object-position: center 35%;
+  border-radius: 32px 32px 0 0;
+}
+
+.signInFormPane {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 64px;
+  border: 1px solid #eadfe1;
+  border-radius: 0 28px 28px 0;
+  background: #fff;
+}
+
+.languagePill {
+  position: absolute;
+  top: 56px;
+  right: 64px;
+  border: 1px solid #e8e0e2;
+  border-radius: 999px;
+  padding: 12px 22px;
+  color: #302b2d;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(34, 18, 24, 0.04);
+}
+
+.signInCard {
+  width: min(100%, 560px);
+}
+
+.signInCard h2 {
+  margin: 0;
+  text-align: center;
+  color: #171113;
+  font-family: var(--font-serif);
+  font-size: clamp(34px, 3.6vw, 48px);
+  line-height: 1.15;
+}
+
+.signInCard > p {
+  margin: 22px 0 44px;
+  text-align: center;
+  color: #7b7376;
+  font-size: 19px;
+  line-height: 1.6;
+}
+
+.signInCard label {
+  display: block;
+  color: #121012;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 28px;
+}
+
+.signInCard label span {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.signInCard input[type="email"],
+.signInCard input[type="password"],
+.signInCard input[type="text"] {
+  width: 100%;
+  height: 66px;
+  border: 1px solid #ded8db;
+  border-radius: 14px;
+  color: #242024;
+  font-size: 17px;
+  padding: 0 22px;
+  outline: none;
+}
+
+.signInCard input:focus {
+  border-color: #cf1b55;
+  box-shadow: 0 0 0 4px rgba(207, 27, 85, 0.1);
+}
+
+.passwordField {
+  position: relative;
+}
+
+.passwordField button {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #696165;
+  font-weight: 600;
+}
+
+.signInOptions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -4px 0 34px;
+  color: #2b2528;
+}
+
+.signInOptions label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-weight: 400;
+}
+
+.signInOptions a,
+.authSwitch a {
+  color: #cf1b55;
+  font-weight: 700;
+}
+
+.primaryAction,
+.socialAction {
+  width: 100%;
+  height: 66px;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.primaryAction {
+  color: white;
+  background: linear-gradient(135deg, #df1d5a 0%, #c9164f 100%);
+  box-shadow: 0 14px 30px rgba(201, 22, 79, 0.2);
+}
+
+.orDivider {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  color: #827a7e;
+  justify-content: center;
+  margin: 42px 0 24px;
+}
+
+.orDivider::before,
+.orDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #eee7e9;
+}
+
+.socialAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #171113;
+  border: 1px solid #e6e0e2;
+  margin-top: 16px;
+}
+
+.secureNote {
+  display: grid;
+  gap: 6px;
+  margin-top: 42px;
+  padding: 28px 34px 28px 96px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fff7f8, #fff1f3);
+  color: #6d6669;
+  position: relative;
+}
+
+.secureNote::before {
+  content: "✓";
+  position: absolute;
+  left: 34px;
+  top: 26px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: #cf1b55;
+  background: #fde3e9;
+  font-weight: 800;
+}
+
+.secureNote strong {
+  color: #171113;
+}
+
+.authSwitch {
+  position: absolute;
+  bottom: 28px;
+  color: #6d6669;
+  font-size: 17px;
+}
+
+@media (max-width: 960px) {
+  .signInShell {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .signInPanel,
+  .signInFormPane {
+    min-height: auto;
+    border-radius: 24px;
+    border: 1px solid #f1dcdf;
+  }
+
+  .signInPanel {
+    padding: 34px 28px 0;
+  }
+
+  .signInPanel img {
+    height: 280px;
+    min-height: 0;
+  }
+
+  .signInFormPane {
+    margin-top: 18px;
+    padding: 88px 22px 82px;
+  }
+
+  .languagePill {
+    top: 22px;
+    right: 22px;
+  }
 }

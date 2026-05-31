@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, CalendarHeart, Loader2 } from 'lucide-react';
+import { Search, MapPin, CalendarHeart, Loader2, Heart } from 'lucide-react';
 import styles from './find-event.module.css';
 
 type EventResult = {
@@ -38,8 +38,7 @@ export default function FindEventPage() {
       } else {
         setResults([]);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       setResults([]);
     } finally {
       setLoading(false);
@@ -51,7 +50,7 @@ export default function FindEventPage() {
     try {
       const d = new Date(ds);
       return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    } catch (e) {
+    } catch {
       return ds;
     }
   }
@@ -59,10 +58,13 @@ export default function FindEventPage() {
   return (
     <main className={styles.container}>
       <div className={styles.searchCard}>
-        <div className={styles.logoW}>W</div>
+        <div className={styles.brandLockup} aria-label="WedPlan">
+          <div className={styles.logoW}><Heart size={22} fill="currentColor" aria-hidden="true" /></div>
+          <span>WedPlan</span>
+        </div>
         <h1 className={styles.title}>Find an Event</h1>
         <p className={styles.subtitle}>
-          Enter the couple's names, event code, or paste the invitation link to find their wedding details and RSVP.
+          Enter the couple&apos;s names, event code, or paste the invitation link to find their wedding details and RSVP.
         </p>
 
         <form onSubmit={handleSearch}>
@@ -91,7 +93,7 @@ export default function FindEventPage() {
 
             {results.length === 0 ? (
               <div className={styles.noResults}>
-                <p>We couldn't find any events matching "{query}".</p>
+                <p>We couldn&apos;t find any events matching {`"${query}"`}.</p>
                 <p style={{ marginTop: 8, fontSize: 14 }}>Please check the spelling or ask the couple for their exact event link.</p>
               </div>
             ) : (
@@ -99,6 +101,7 @@ export default function FindEventPage() {
                 {results.map((ev) => (
                   <div key={ev.id} className={styles.eventCard}>
                     {ev.profileImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- event avatars may be remote or data URLs from existing event data.
                       <img src={ev.profileImage} alt={ev.weddingTitle || `${ev.brideName} & ${ev.groomName}`} className={styles.eventAvatar} />
                     ) : (
                       <div className={styles.eventAvatar}>

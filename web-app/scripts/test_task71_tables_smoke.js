@@ -1,7 +1,7 @@
 // Basic smoke test for tables API
 // Usage: NODE_ENV=development node web-app/scripts/test_task71_tables_smoke.js
 
-const BASE = process.env.BASE_URL || 'http://localhost:3000';
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:3000';
 const weddingId = process.env.WEDDING_ID || 'w_1';
 
 async function run() {
@@ -13,9 +13,6 @@ async function run() {
     const table = json.data;
     console.log('Created table', table.id);
 
-    // find two guests to assign
-    res = await fetch(`${BASE}/api/weddings/${weddingId}`);
-    const weddingResp = await res.json();
     // fallback: assign known seeded guests g_1 g_2
     const guestIds = ['g_1','g_2','g_3'];
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
@@ -39,18 +39,16 @@ export default function InvitationEditorModule({ wedding, setWedding }: Props) {
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraft(createInvitationDraft(wedding));
     setError('');
     setDirty(false);
   }, [wedding.id]);
 
-  const messageBlocks = useMemo(() => renderMarkdownBlocks(draft.content.messageMarkdown), [draft.content.messageMarkdown]);
-  const detailsBlocks = useMemo(() => renderMarkdownBlocks(draft.content.detailsMarkdown), [draft.content.detailsMarkdown]);
-  const closingBlocks = useMemo(() => renderMarkdownBlocks(draft.content.closingMarkdown), [draft.content.closingMarkdown]);
-
   useEffect(() => {
     if (!dirty) return;
     const timer = window.setTimeout(() => {
+      // eslint-disable-next-line react-hooks/immutability
       void saveDraft();
     }, 900);
     return () => window.clearTimeout(timer);
@@ -226,7 +224,6 @@ export function InvitationPreview({ wedding }: { wedding: any }) {
   const content = wedding.invitationContent || {};
   const theme = normalizeInvitationTheme(wedding.theme);
   const messageBlocks = renderMarkdownBlocks(content.messageMarkdown || '');
-  const detailsBlocks = renderMarkdownBlocks(content.detailsMarkdown || '');
   const closingBlocks = renderMarkdownBlocks(content.closingMarkdown || '');
 
   return (

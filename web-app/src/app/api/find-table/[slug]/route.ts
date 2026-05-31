@@ -8,7 +8,10 @@ import {
 
 const GENERIC_ERROR = 'We could not verify those details. Please check your invitation link or ask the couple for help.';
 
-function safeTableResult(guest: any, wedding: any) {
+type TableGuest = NonNullable<ReturnType<typeof getGuestByToken>>;
+type TableWedding = NonNullable<ReturnType<typeof db.weddings.findUnique>>;
+
+function safeTableResult(guest: TableGuest, wedding: TableWedding) {
   const table = findTableForGuest(wedding.id, guest.id);
   const tableResult = table
     ? {
@@ -41,7 +44,7 @@ function genericVerificationError(status = 404) {
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params;
-    const wedding = db.weddings.findUnique((item: any) => item.slug === slug);
+    const wedding = db.weddings.findUnique(item => item.slug === slug);
     if (!wedding) return genericVerificationError();
 
     const body = await request.json().catch(() => ({}));

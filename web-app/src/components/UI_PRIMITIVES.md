@@ -1,6 +1,6 @@
 # UI Primitives
 
-This document describes the shared UI primitives (design tokens, buttons, inputs) used across the WedInvite app.
+This document describes the shared UI primitives (design tokens, buttons, inputs) used across the WedPlan app.
 
 Overview
 - Location: `src/components/ui`

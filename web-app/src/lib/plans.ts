@@ -1,3 +1,5 @@
+import { getAdminSettings } from './adminSettings';
+
 // src/lib/plans.ts
 export type PlanType = 'trial' | 'premium';
 
@@ -27,5 +29,6 @@ export const PLAN_FEATURES: Record<PlanType, Entitlements> = {
 };
 
 export function getEntitlements(plan: PlanType): Entitlements {
-  return PLAN_FEATURES[plan] || PLAN_FEATURES.trial;
+  const savedPlan = getAdminSettings().plans.find((item) => item.id === plan);
+  return savedPlan?.entitlements || PLAN_FEATURES[plan] || PLAN_FEATURES.trial;
 }

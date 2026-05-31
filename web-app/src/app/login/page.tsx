@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { signIn } from "next-auth/react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, Eye, EyeOff, Globe, ChevronDown, Heart, ShieldCheck, LogIn } from "lucide-react";
@@ -47,7 +48,7 @@ export default function LoginPage() {
       <div className={styles.leftPanel}>
         <div className={styles.leftContent}>
           <div className={styles.logoArea}>
-            <div className={styles.logoW}>W</div>
+            <div className={styles.logoW}><Heart size={22} fill="currentColor" aria-hidden="true" /></div>
             <div className={styles.logoText}>
               <span className={styles.logoTitle}>WedPlan</span>
               <span className={styles.logoSubtitle}>Plan Beautiful. Celebrate Forever.</span>
@@ -56,7 +57,7 @@ export default function LoginPage() {
           
           <div className={styles.welcomeText}>
             Welcome back,<br />
-            <span className={styles.highlightText}>Let's continue your<br />wedding journey</span>
+            <span className={styles.highlightText}>Let&apos;s continue your<br />wedding journey</span>
           </div>
 
           <div className={styles.divider}>
@@ -140,10 +141,10 @@ export default function LoginPage() {
 
           <div className={styles.socialBtns}>
             <button type="button" className={styles.socialBtn}>
-              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width="20" height="20" /> Continue with Google
+              <Image src="/public-site/google-mark.svg" alt="Google" width={20} height={20} /> Continue with Google
             </button>
             <button type="button" className={styles.socialBtn}>
-              <img src="https://www.svgrepo.com/show/511330/apple-173.svg" alt="Apple" width="20" height="20" /> Continue with Apple
+              <Image src="/public-site/apple-mark.svg" alt="Apple" width={20} height={20} /> Continue with Apple
             </button>
           </div>
 
@@ -157,7 +158,7 @@ export default function LoginPage() {
         </div>
         
         <div className={styles.signupPrompt}>
-          Don't have an account? <Link href="/register" className={styles.signupLink}>Sign Up</Link>
+          Don&apos;t have an account? <Link href="/register" className={styles.signupLink}>Sign Up</Link>
         </div>
       </div>
     </div>

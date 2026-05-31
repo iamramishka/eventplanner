@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+type RoleToken = {
+  role?: string;
+};
+
 /**
  * Protects admin routes by checking NextAuth JWT token and role.
  * - /couple -> COUPLE
@@ -23,7 +27,12 @@ export async function proxy(req: NextRequest) {
   }
 
   // allow public pages and login
-  if (pathname === "/" || pathname === "/login" || pathname === "/reset") {
+  if (
+    pathname === "/" ||
+    pathname === "/login" ||
+    pathname === "/reset" ||
+    pathname.startsWith("/vendor-register")
+  ) {
     return NextResponse.next();
   }
 
@@ -44,7 +53,7 @@ export async function proxy(req: NextRequest) {
       }
 
       const required = protectedMap[prefix];
-      const role = (token as any).role as string | undefined;
+      const role = (token as RoleToken).role;
       if (!role || role !== required) {
         return NextResponse.redirect(new URL("/", req.url));
       }

@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { 
   LayoutDashboard, Users, Briefcase, LayoutTemplate, CreditCard, Trash2, 
-  FileText, BarChart2, Settings, Scroll, ShieldCheck, ShieldOff, PanelLeftClose, User, 
+  Settings, ShieldCheck, ShieldOff, PanelLeftClose, User,
   Menu, ChevronRight, LogOut, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle, 
-  Bell, UserCheck, Globe, Banknote, Search, Plus, Save, Check, X, Star, Eye
+  Bell, UserCheck, Globe, Banknote, Search, Plus, Save, Check, X, Star, Eye, RefreshCw, Scroll
 } from 'lucide-react';
 import styles from './admin.module.css';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -21,7 +21,7 @@ function cn(...classes: (string | undefined | null | false)[]) {
     .join(' ');
 }
 
-export default function SuperAdminClient({ initialWeddings, initialCouples, initialVendors }: any) {
+export default function SuperAdminClient({ initialWeddings, initialCouples, initialVendors, initialSettings, initialPlans }: any) {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -33,7 +33,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
     setIsMobileOpen(false);
   };
   
-  const pendingVendors = initialVendors.filter((v: any) => v.status === 'pending').length;
+  const pendingVendors = initialVendors.filter((v: any) => v.status === 'pending' || v.status === 'pending_review').length;
   const labels: Record<string, string> = {
     dashboard: 'Dashboard', couples: 'Couples', vendors: 'Vendors',
     templates: 'Templates', plans: 'Plans', cleanup: 'Trial Cleanup',
@@ -49,7 +49,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
               <ShieldCheck size={20} />
             </div>
             <div className={cn("sidebar-brand")}>
-              <span className={cn("sidebar-brand-name")}>WedInvite</span>
+              <span className={cn("sidebar-brand-name")}>WedPlan</span>
               <span className={cn("sidebar-brand-role")}>Super Admin</span>
             </div>
           </div>
@@ -71,6 +71,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
           
           <div className={cn("nav-section-label")}>System</div>
           <NavItem id="settings" icon={<Settings size={18} />} label="Settings" active={activeModule} onClick={handleNavClick} />
+          <NavItem id="logs" icon={<Scroll size={18} />} label="Audit Logs" active={activeModule} onClick={handleNavClick} />
         </nav>
 
         <div className={cn("sidebar-footer")}>
@@ -118,10 +119,11 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
           {activeModule === 'dashboard' && <DashboardModule couples={simulateEmpty ? [] : initialCouples} vendors={simulateEmpty ? [] : initialVendors} weddings={simulateEmpty ? [] : initialWeddings} loading={simulateLoading} />}
           {activeModule === 'couples' && <CouplesModule couples={initialCouples} />}
           {activeModule === 'vendors' && <VendorsModule vendors={initialVendors} />}
-          {activeModule === 'templates' && <PlaceholderModule title="Templates" desc="Manage templates here." />}
-          {activeModule === 'plans' && <PlansModule />}
+          {activeModule === 'templates' && <TemplatesModule initialSettings={initialSettings} />}
+          {activeModule === 'plans' && <PlansModule initialPlans={initialPlans} />}
           {activeModule === 'cleanup' && <CleanupModule />}
-          {activeModule === 'settings' && <PlaceholderModule title="Settings" desc="System settings and branding." />}
+          {activeModule === 'settings' && <SettingsModule initialSettings={initialSettings} />}
+          {activeModule === 'logs' && <LogsModule />}
         </main>
       </div>
     </div>
@@ -138,7 +140,7 @@ function NavItem({ id, icon, label, active, onClick, badge }: any) {
   );
 }
 
-function DashboardModule({ couples, vendors, weddings, loading }: any) {
+function DashboardModule({ couples, vendors, loading }: any) {
   const activeTrials = loading ? null : couples.filter((c: any) => c.plan === 'trial' && new Date(c.trialEnds) >= new Date()).length;
   const expiredTrials = loading ? null : couples.filter((c: any) => c.plan === 'trial' && new Date(c.trialEnds) < new Date()).length;
   
@@ -182,7 +184,7 @@ function DashboardModule({ couples, vendors, weddings, loading }: any) {
             <div className={cn("activity-item")}>
               <div className={cn("activity-dot")} style={{ background: '#F59E0B' }}></div>
               <div className={cn("activity-content")}>
-                <div className={cn("activity-text")}>Vendor "SweetBites" pending approval</div>
+                <div className={cn("activity-text")}>Vendor &quot;SweetBites&quot; pending approval</div>
                 <div className={cn("activity-time")}>2 hours ago</div>
               </div>
             </div>
@@ -372,6 +374,7 @@ function VendorsModule({ vendors: initialVendors }: any) {
 
   let vendors = vendorsState;
   if (filter === 'featured') vendors = vendors.filter((v: any) => v.featured);
+  else if (filter === 'pending') vendors = vendors.filter((v: any) => v.status === 'pending' || v.status === 'pending_review');
   else if (filter !== 'all') vendors = vendors.filter((v: any) => v.status === filter);
 
   if (search) vendors = vendors.filter((v: any) => v.businessName.toLowerCase().includes(search.toLowerCase()) || v.category.toLowerCase().includes(search.toLowerCase()));
@@ -386,7 +389,7 @@ function VendorsModule({ vendors: initialVendors }: any) {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Review failed');
       const updated = data.data?.vendor;
-      if (updated) setVendorsState((prev: any[]) => prev.map(v => v.id === updated.id ? updated : v));
+      if (updated) setVendorsState((prev: any[]) => prev.map(v => v.id === updated.id ? { ...v, ...updated, contactName: v.contactName, email: v.email, featured: updated.onboardingStep === 'live' } : v));
       alert(`Vendor ${action}ed successfully.`);
     } catch (e: any) {
       console.error(e);
@@ -406,6 +409,24 @@ function VendorsModule({ vendors: initialVendors }: any) {
     } catch (e: any) {
       console.error(e);
       alert('Delete failed');
+    } finally { setLoading(false); }
+  };
+
+  const toggleFeatured = async (vendor: any) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/vendors/${vendor.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: !vendor.featured }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Update failed');
+      const updated = data.data?.vendor;
+      setVendorsState((prev: any[]) => prev.map(v => v.id === vendor.id ? { ...v, ...updated, contactName: v.contactName, email: v.email } : v));
+    } catch (e: any) {
+      console.error(e);
+      alert('Featured update failed');
     } finally { setLoading(false); }
   };
 
@@ -474,7 +495,7 @@ function VendorsModule({ vendors: initialVendors }: any) {
                           <button className={cn("action-btn", "action-reject")} onClick={async () => await handleReview(v.id, 'reject')} title="Reject"><X size={14}/></button>
                         </>
                       )}
-                      <button className={cn("action-btn", "action-star", v.featured && "starred")}><Star size={14}/></button>
+                      <button className={cn("action-btn", "action-star", v.featured && "starred")} onClick={async () => await toggleFeatured(v)} disabled={loading} title={v.featured ? 'Remove featured' : 'Mark featured'}><Star size={14}/></button>
                       <button className={cn("action-btn", "action-danger")} onClick={async () => await handleDeleteVendor(v.id)}><Trash2 size={14}/></button>
                     </div>
                   </td>
@@ -507,33 +528,41 @@ function PlaceholderModule({ title, desc }: any) {
   );
 }
 
-function PlansModule() {
-  const plans = [
-    {
-      id: 'trial',
-      name: 'Trial',
-      price: 'Free',
-      features: [
-        { name: 'Max Guests', value: '50', allowed: true },
-        { name: 'Digital Invitations', value: 'No', allowed: false },
-        { name: 'Custom Domain', value: 'No', allowed: false },
-        { name: 'Vendor Shortlist', value: 'Yes', allowed: true },
-        { name: 'Premium Templates', value: 'No', allowed: false },
-      ],
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: '$49 / one-time',
-      features: [
-        { name: 'Max Guests', value: 'Unlimited', allowed: true },
-        { name: 'Digital Invitations', value: 'Yes', allowed: true },
-        { name: 'Custom Domain', value: 'Yes', allowed: true },
-        { name: 'Vendor Shortlist', value: 'Yes', allowed: true },
-        { name: 'Premium Templates', value: 'Yes', allowed: true },
-      ],
+function PlansModule({ initialPlans }: any) {
+  const [plans, setPlans] = useState(initialPlans || []);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const updatePlan = (index: number, patch: any) => {
+    setPlans((prev: any[]) => prev.map((plan, i) => i === index ? { ...plan, ...patch } : plan));
+  };
+
+  const updateEntitlement = (index: number, key: string, value: any) => {
+    setPlans((prev: any[]) => prev.map((plan, i) => i === index ? {
+      ...plan,
+      entitlements: { ...plan.entitlements, [key]: value },
+    } : plan));
+  };
+
+  const savePlans = async (syncStripe = false) => {
+    setSaving(true);
+    setMessage('');
+    try {
+      const res = await fetch('/api/admin/plans', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plans, syncStripe }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to save plans');
+      setPlans(data.data.plans);
+      setMessage(data.data.stripeSynced ? 'Plans saved and Stripe billing synced.' : 'Plans saved.');
+    } catch (e: any) {
+      setMessage(e.message || 'Failed to save plans');
+    } finally {
+      setSaving(false);
     }
-  ];
+  };
 
   return (
     <section className={cn("module")}>
@@ -542,10 +571,19 @@ function PlansModule() {
           <h1 className={cn("module-title")}>Plans & Feature Gating</h1>
           <p className={cn("module-desc")}>Manage feature entitlements and platform pricing.</p>
         </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className={cn("btn", "btn-ghost")} onClick={() => savePlans(false)} disabled={saving}>
+            <Save size={16} /> {saving ? 'Saving...' : 'Save Plans'}
+          </button>
+          <button className={cn("btn", "btn-primary")} onClick={() => savePlans(true)} disabled={saving}>
+            <CreditCard size={16} /> Save & Sync Billing
+          </button>
+        </div>
       </div>
+      {message && <div style={{ marginTop: 12, color: message.includes('Failed') ? 'var(--adm-danger)' : 'var(--adm-success)' }}>{message}</div>}
       
       <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginTop: '1.5rem' }}>
-        {plans.map(plan => (
+        {plans.map((plan: any, index: number) => (
           <div key={plan.id} style={{ 
             flex: '1 1 300px', 
             background: 'var(--adm-bg-card)', 
@@ -553,33 +591,340 @@ function PlansModule() {
             borderRadius: '16px', 
             padding: '2rem' 
           }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--adm-text-primary)' }}>{plan.name}</h2>
-            <div style={{ fontSize: '1.25rem', fontWeight: 500, color: 'var(--adm-text-secondary)', marginTop: '0.5rem', marginBottom: '2rem' }}>
-              {plan.price}
+            <input className={cn("input")} value={plan.name} onChange={e => updatePlan(index, { name: e.target.value })} style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: 10 }} />
+            <input className={cn("input")} value={plan.price} onChange={e => updatePlan(index, { price: e.target.value })} style={{ marginBottom: 10 }} />
+            <input
+              className={cn("input")}
+              value={plan.billingPriceId || ''}
+              onChange={e => updatePlan(index, { billingPriceId: e.target.value })}
+              placeholder="Stripe price ID"
+              style={{ marginBottom: 10 }}
+            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+              <input
+                className={cn("input")}
+                value={plan.billingCurrency || 'usd'}
+                onChange={e => updatePlan(index, { billingCurrency: e.target.value })}
+                placeholder="Currency"
+              />
+              <select
+                className={cn("input")}
+                value={plan.billingInterval || 'month'}
+                onChange={e => updatePlan(index, { billingInterval: e.target.value })}
+              >
+                <option value="month">Monthly</option>
+                <option value="year">Yearly</option>
+              </select>
             </div>
+            <textarea className={cn("input")} value={plan.description || ''} onChange={e => updatePlan(index, { description: e.target.value })} rows={2} style={{ marginBottom: '1.5rem' }} />
             
             <h3 style={{ fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--adm-text-muted)', marginBottom: '1rem' }}>
               Entitlements Matrix
             </h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {plan.features.map(f => (
-                <li key={f.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                <span>Max Guests</span>
+                <input type="number" className={cn("input")} value={plan.entitlements.maxGuests} onChange={e => updateEntitlement(index, 'maxGuests', Number(e.target.value))} style={{ width: 120 }} />
+              </li>
+              {['digitalInvitations', 'customDomain', 'vendorShortlist', 'premiumTemplates'].map(key => (
+                <li key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: 'var(--adm-text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {f.allowed ? <Check size={16} color="var(--adm-success)" /> : <X size={16} color="var(--adm-danger)" />}
-                    {f.name}
+                    {plan.entitlements[key] ? <Check size={16} color="var(--adm-success)" /> : <X size={16} color="var(--adm-danger)" />}
+                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, char => char.toUpperCase())}
                   </span>
-                  <span style={{ fontWeight: 500, color: 'var(--adm-text-primary)' }}>{f.value}</span>
+                  <input type="checkbox" checked={Boolean(plan.entitlements[key])} onChange={e => updateEntitlement(index, key, e.target.checked)} />
                 </li>
               ))}
             </ul>
-            
-            <button className={cn("btn", plan.id === 'premium' ? "btn-primary" : "btn-outline")} style={{ width: '100%', marginTop: '2rem' }}>
-              Edit Configuration
-            </button>
           </div>
         ))}
       </div>
     </section>
+  );
+}
+
+function SettingsModule({ initialSettings }: any) {
+  const [settings, setSettings] = useState(initialSettings || {});
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const updateSection = (section: string, key: string, value: any) => {
+    setSettings((prev: any) => ({
+      ...prev,
+      [section]: {
+        ...(prev[section] || {}),
+        [key]: value,
+      },
+    }));
+  };
+
+  const updateTemplate = (index: number, key: string, value: any) => {
+    setSettings((prev: any) => ({
+      ...prev,
+      templates: (prev.templates || []).map((template: any, i: number) => i === index ? { ...template, [key]: value } : template),
+    }));
+  };
+
+  const saveSettings = async () => {
+    setSaving(true);
+    setMessage('');
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to save settings');
+      setSettings(data.data.settings);
+      setMessage('Settings saved.');
+    } catch (e: any) {
+      setMessage(e.message || 'Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className={cn("module")}>
+      <div className={cn("module-header")}>
+        <div>
+          <h1 className={cn("module-title")}>Platform Settings</h1>
+          <p className={cn("module-desc")}>Persistent branding, contact, public-site, CMS, and template controls.</p>
+        </div>
+        <button className={cn("btn", "btn-primary")} onClick={saveSettings} disabled={saving}>
+          <Save size={16} /> {saving ? 'Saving...' : 'Save Settings'}
+        </button>
+      </div>
+      {message && <div style={{ marginTop: 12, color: message.includes('Failed') ? 'var(--adm-danger)' : 'var(--adm-success)' }}>{message}</div>}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginTop: '1.5rem' }}>
+        <SettingsCard title="Branding">
+          <TextField label="Site Name" value={settings.branding?.siteName} onChange={(value: string) => updateSection('branding', 'siteName', value)} />
+          <TextField label="Logo URL" value={settings.branding?.logoUrl} onChange={(value: string) => updateSection('branding', 'logoUrl', value)} />
+          <TextField label="Primary Color" value={settings.branding?.primaryColor} onChange={(value: string) => updateSection('branding', 'primaryColor', value)} />
+          <TextField label="Public Tagline" value={settings.branding?.publicTagline} onChange={(value: string) => updateSection('branding', 'publicTagline', value)} />
+        </SettingsCard>
+
+        <SettingsCard title="Contact">
+          <TextField label="Phone" value={settings.contact?.phone} onChange={(value: string) => updateSection('contact', 'phone', value)} />
+          <TextField label="WhatsApp" value={settings.contact?.whatsapp} onChange={(value: string) => updateSection('contact', 'whatsapp', value)} />
+          <TextField label="Support Email" value={settings.contact?.supportEmail} onChange={(value: string) => updateSection('contact', 'supportEmail', value)} />
+        </SettingsCard>
+
+        <SettingsCard title="Public Site">
+          <TextField label="Hero Title" value={settings.publicSite?.heroTitle} onChange={(value: string) => updateSection('publicSite', 'heroTitle', value)} />
+          <TextArea label="Hero Subtitle" value={settings.publicSite?.heroSubtitle} onChange={(value: string) => updateSection('publicSite', 'heroSubtitle', value)} />
+          <TextField label="CTA Label" value={settings.publicSite?.ctaLabel} onChange={(value: string) => updateSection('publicSite', 'ctaLabel', value)} />
+          <TextField label="CTA Link" value={settings.publicSite?.ctaHref} onChange={(value: string) => updateSection('publicSite', 'ctaHref', value)} />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--adm-text-secondary)' }}>
+            <input type="checkbox" checked={Boolean(settings.publicSite?.maintenanceMode)} onChange={e => updateSection('publicSite', 'maintenanceMode', e.target.checked)} />
+            Maintenance Mode
+          </label>
+        </SettingsCard>
+
+        <SettingsCard title="CMS Blocks">
+          <TextArea label="Features Intro" value={settings.cmsBlocks?.featuresIntro} onChange={(value: string) => updateSection('cmsBlocks', 'featuresIntro', value)} />
+          <TextArea label="Templates Intro" value={settings.cmsBlocks?.templatesIntro} onChange={(value: string) => updateSection('cmsBlocks', 'templatesIntro', value)} />
+          <TextArea label="Footer Note" value={settings.cmsBlocks?.footerNote} onChange={(value: string) => updateSection('cmsBlocks', 'footerNote', value)} />
+        </SettingsCard>
+
+        <SettingsCard title="Templates">
+          {(settings.templates || []).map((template: any, index: number) => (
+            <div key={template.id} style={{ display: 'grid', gridTemplateColumns: '1fr 110px', gap: 8, alignItems: 'center' }}>
+              <input className={cn("input")} value={template.name} onChange={e => updateTemplate(index, 'name', e.target.value)} />
+              <select className={cn("input")} value={template.status} onChange={e => updateTemplate(index, 'status', e.target.value)}>
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+              </select>
+            </div>
+          ))}
+        </SettingsCard>
+      </div>
+    </section>
+  );
+}
+
+function TemplatesModule({ initialSettings }: any) {
+  const [templates, setTemplates] = useState(initialSettings?.templates || []);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const updateTemplate = (index: number, key: string, value: string) => {
+    setTemplates((prev: any[]) => prev.map((template, i) => i === index ? { ...template, [key]: value } : template));
+  };
+
+  const addTemplate = () => {
+    setTemplates((prev: any[]) => [
+      ...prev,
+      { id: `template-${Date.now().toString(36)}`, name: 'New Template', status: 'draft' },
+    ]);
+  };
+
+  const removeTemplate = (index: number) => {
+    setTemplates((prev: any[]) => prev.filter((_, i) => i !== index));
+  };
+
+  const saveTemplates = async () => {
+    setSaving(true);
+    setMessage('');
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: { templates } }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to save templates');
+      setTemplates(data.data.settings.templates || []);
+      setMessage('Templates saved.');
+    } catch (e: any) {
+      setMessage(e.message || 'Failed to save templates');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className={cn("module")}>
+      <div className={cn("module-header")}>
+        <div>
+          <h1 className={cn("module-title")}>Template Controls</h1>
+          <p className={cn("module-desc")}>Manage public template availability and labels.</p>
+        </div>
+        <div className={cn("module-actions")}>
+          <button className={cn("btn", "btn-outline")} onClick={addTemplate}><Plus size={16} /> Add Template</button>
+          <button className={cn("btn", "btn-primary")} onClick={saveTemplates} disabled={saving}><Save size={16} /> {saving ? 'Saving...' : 'Save Templates'}</button>
+        </div>
+      </div>
+      {message && <div style={{ marginTop: 12, color: message.includes('Failed') ? 'var(--adm-danger)' : 'var(--adm-success)' }}>{message}</div>}
+      <div className={cn("table-card")} style={{ marginTop: '1.5rem' }}>
+        <div className={cn("table-responsive")}>
+          <table className={cn("data-table")}>
+            <thead>
+              <tr>
+                <th>Template ID</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {templates.map((template: any, index: number) => (
+                <tr key={template.id}>
+                  <td><input className={cn("input")} value={template.id} onChange={e => updateTemplate(index, 'id', e.target.value)} /></td>
+                  <td><input className={cn("input")} value={template.name} onChange={e => updateTemplate(index, 'name', e.target.value)} /></td>
+                  <td>
+                    <select className={cn("input")} value={template.status} onChange={e => updateTemplate(index, 'status', e.target.value)}>
+                      <option value="active">Active</option>
+                      <option value="draft">Draft</option>
+                    </select>
+                  </td>
+                  <td>
+                    <button className={cn("action-btn", "action-danger")} onClick={() => removeTemplate(index)} title="Remove template">
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {templates.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>No templates configured.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LogsModule() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const loadLogs = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/logs?lines=50');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to load logs');
+      setLogs(data.data.lines || []);
+    } catch (e: any) {
+      setError(e.message || 'Failed to load logs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadLogs();
+  }, []);
+
+  return (
+    <section className={cn("module")}>
+      <div className={cn("module-header")}>
+        <div>
+          <h1 className={cn("module-title")}>Audit Logs</h1>
+          <p className={cn("module-desc")}>Recent sensitive Super Admin, billing, and webhook activity.</p>
+        </div>
+        <button className={cn("btn", "btn-outline")} onClick={loadLogs} disabled={loading}>
+          <RefreshCw size={16} /> {loading ? 'Loading...' : 'Refresh'}
+        </button>
+      </div>
+      {error && <div style={{ marginTop: 12, color: 'var(--adm-danger)' }}>{error}</div>}
+      <div className={cn("table-card")} style={{ marginTop: '1.5rem' }}>
+        <div className={cn("table-responsive")}>
+          <table className={cn("data-table")}>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Action</th>
+                <th>Target</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log, index) => (
+                <tr key={`${log.ts || index}-${index}`}>
+                  <td><span className={cn("text-muted")}>{log.ts ? new Date(log.ts).toLocaleString() : '-'}</span></td>
+                  <td>{log.action || log.event || log.raw || '-'}</td>
+                  <td>{log.targetId || log.sessionId || log.customerId || '-'}</td>
+                  <td><code style={{ whiteSpace: 'pre-wrap', fontSize: 11 }}>{JSON.stringify(log.data || log.rec || log.error || {}, null, 0)}</code></td>
+                </tr>
+              ))}
+              {logs.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>No audit records found.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SettingsCard({ title, children }: any) {
+  return (
+    <div style={{ background: 'var(--adm-bg-card)', border: '1px solid var(--adm-border)', borderRadius: '16px', padding: '1.25rem', display: 'grid', gap: 12 }}>
+      <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--adm-text-primary)' }}>{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function TextField({ label, value, onChange }: any) {
+  return (
+    <label style={{ display: 'grid', gap: 6, color: 'var(--adm-text-secondary)', fontSize: 13 }}>
+      {label}
+      <input className={cn("input")} value={value || ''} onChange={e => onChange(e.target.value)} />
+    </label>
+  );
+}
+
+function TextArea({ label, value, onChange }: any) {
+  return (
+    <label style={{ display: 'grid', gap: 6, color: 'var(--adm-text-secondary)', fontSize: 13 }}>
+      {label}
+      <textarea className={cn("input")} value={value || ''} onChange={e => onChange(e.target.value)} rows={3} />
+    </label>
   );
 }
 

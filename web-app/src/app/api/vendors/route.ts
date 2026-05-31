@@ -36,11 +36,17 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    vendors = vendors.slice().sort((a, b) => {
+      const featuredDelta = Number(Boolean(b.featured)) - Number(Boolean(a.featured));
+      if (featuredDelta) return featuredDelta;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
     return NextResponse.json({
       vendors: vendors.map(toPublicVendor),
       total: vendors.length,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[GET /api/vendors]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }

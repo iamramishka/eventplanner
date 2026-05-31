@@ -1,67 +1,66 @@
-# AGENT_TASK.md - QA Automation Agent
+# AGENT_TASK.md - Design System Agent
 
 ## Branch And Worktree
 
-- Branch: `codex/qa-smoke-browser`
-- Worktree: `C:\Users\ramis\Downloads\wed-plan-worktrees\wed-plan-wt-10-qa-automation`
+- Branch: `codex/design-system-branding`
+- Worktree: `C:\Users\ramis\Downloads\wed-plan-worktrees\wed-plan-wt-09-design-system`
 - Base branch: `dev`
 - Production app: `web-app`
 
 ## Agent Role
 
-QA Automation Agent.
+Design System Agent.
 
 ## Skills
 
-- QA/Release
-- Flow Testing
+- Logo & Branding Placement
+- UI/UX Alignment
 - Image Comparing
 
 ## Mission
 
-Create repeatable QA automation and Browser verification so the project has clear pass/fail signals.
+Consolidate brand and shared visual rules so public, couple, vendor, and super-admin surfaces feel like one product.
 
 ## Primary Responsibilities
 
-- Stabilize the smoke runner.
-- Use explicit ports and avoid duplicate dev server assumptions.
-- Add a repeatable command for smoke/regression checks.
-- Add Browser screenshot capture guidance or automation for key pages.
-- Cover public, auth, couple, vendor, super admin, billing, RSVP, table finder, and invitation flows.
-- Produce clear QA output that can be used by release docs.
+- Consolidate WedPlan/WedInvite naming to WedPlan unless owner supplies a different brand later.
+- Normalize logo placement across public, auth, couple, vendor, and super-admin surfaces.
+- Review and align shared design tokens.
+- Resolve admin palette direction consistently.
+- Update favicon or logo references if needed.
+- Avoid feature logic changes.
 
 ## Ownership Boundaries
 
-You may touch QA scripts, test harnesses, docs for test commands, and lightweight test fixtures.
+You may touch shared CSS/tokens, branding text, logo/favicons, navigation brand labels, and visual constants.
 
 ## Do Not Touch
 
-- Do not implement feature behavior except test harness support.
-- Do not rewrite app architecture.
-- Do not change production UI except to add stable test hooks when necessary.
+- Do not implement business logic or migrations.
+- Do not rewrite page workflows.
+- Do not change API contracts.
 - Do not revert work from other branches or worktrees.
 
 ## Coordination Notes
 
-- Coordinate with feature agents for stable selectors and routes.
-- Coordinate with Security Reviewer for auth/privacy test cases.
-- Coordinate with Docs/Release Agent for final QA evidence.
+- Coordinate with Public Site UI Agent for public/auth pages.
+- Coordinate with Super Admin Backend Agent for admin-editable branding.
+- Coordinate with Couple and Vendor agents for dashboard brand labels.
 
 ## Verification Checklist
 
-- One command runs the main smoke/regression suite.
-- Tests use explicit base URL or port.
-- Failure output clearly identifies the failed flow.
-- Browser screenshots cover desktop and mobile for key surfaces.
-- QA docs explain how to rerun checks.
+- WedPlan/WedInvite inconsistency is resolved or documented.
+- Logo placement is consistent across main surfaces.
+- Shared tokens do not break page readability.
+- Desktop/mobile spot checks show no obvious overlap or text clipping.
 
 ## Exit Gate
 
-One repeatable QA command produces clear pass/fail output.
+Brand is consistent across public, admin, vendor, and couple surfaces.
 
 ## Final Report Requirements
 
 - List changed files.
-- Provide exact QA commands.
-- Report sample output or expected output shape.
-- List flows covered and not covered.
+- Summarize final brand decision.
+- Report surfaces checked.
+- Note any remaining design-system debt.

@@ -19,7 +19,7 @@ export default function ShortlistPage() {
         }));
         if (!mounted) return;
         setVendors(fetched.filter(Boolean));
-      } catch (e) { setVendors([]); }
+      } catch { setVendors([]); }
     })();
     return () => { mounted = false; };
   }, [list]);

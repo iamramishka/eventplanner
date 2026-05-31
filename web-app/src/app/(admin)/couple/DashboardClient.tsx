@@ -7,12 +7,12 @@ import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, Settings, Users, CheckSquare,
   Menu, Bell, Heart, CheckCircle, UserPlus,
-  Save, Users as UsersIcon, Clock, ArrowRight, ArrowUp, ArrowDown, Sparkles,
-  CalendarDays, Image as ImageIcon, PartyPopper, ClipboardList,
+  Save, Users as UsersIcon, Clock, ArrowUp, ArrowDown,
+  CalendarDays, Image as ImageIcon, ClipboardList,
   Palette, Music, Grid3x3, Wallet, ListChecks, Store,
-  MapPin, Phone, Mail, ExternalLink, TrendingUp,
+  MapPin, Mail, TrendingUp, ExternalLink,
   ChevronRight, Send, Edit3, Calendar, DollarSign,
-  Eye, AlertCircle, X, Check, Minus, Plus,
+  Eye, AlertCircle, X, Check, Plus,
   UserCircle, LogOut, HelpCircle, Diamond, RefreshCw,
   Home, Upload, Download, Trash2, GripVertical, Printer, Copy, FileText
 } from 'lucide-react';
@@ -32,7 +32,6 @@ interface NavItem {
   icon: any;
   label: string;
   badge?: number;
-  comingSoon?: boolean;
 }
 
 type GalleryImageRecord = {
@@ -142,11 +141,14 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'invitation',   icon: Edit3,            label: 'Invitation Editor' },
   { id: 'theme',        icon: Palette,          label: 'Theme & Design' },
   { id: 'gallery',      icon: Grid3x3,          label: 'Gallery' },
+  { id: 'music',        icon: Music,            label: 'Music' },
   { id: 'agenda',       icon: CalendarDays,     label: 'Agenda' },
   { id: 'tables',       icon: Home,             label: 'Tables & Seating' },
   { id: 'budget',       icon: Wallet,           label: 'Budget' },
   { id: 'checklist',    icon: ListChecks,       label: 'Checklist' },
-  { id: 'vendors',      icon: Store,            label: 'Vendors',          comingSoon: true },
+  { id: 'vendors',      icon: Store,            label: 'Vendors' },
+  { id: 'notifications', icon: Bell,            label: 'Notifications' },
+  { id: 'account',      icon: UserCircle,       label: 'Account' },
 ];
 
 /* ─── Helpers ─── */
@@ -203,6 +205,17 @@ const lkrFormatter = new Intl.NumberFormat('en-LK', {
 
 function formatCurrency(value: number) {
   return lkrFormatter.format(Number(value || 0));
+}
+
+async function patchWeddingRecord(weddingId: string, payload: Record<string, any>) {
+  const res = await fetch(`/api/weddings/${weddingId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error || 'Unable to save wedding changes.');
+  return json;
 }
 
 function calculateClientBudget(items: BudgetItemRecord[], categories: string[] = BUDGET_CATEGORY_OPTIONS): Pick<BudgetResponse, 'categoryTotals' | 'totals'> {
@@ -296,8 +309,7 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleNavigate = (module: string, comingSoon?: boolean) => {
-    if (comingSoon) return;
+  const handleNavigate = (module: string) => {
     setActiveModule(module);
     setSidebarOpen(false);
   };
@@ -309,8 +321,8 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
         {/* Brand */}
         <div className="sidebar-header">
           <div className="sidebar-brand">
-            <Heart style={{ color: '#C45A74', width: 20, height: 20 }} />
-            <span className="brand-name">WedInvite</span>
+            <Heart style={{ color: 'var(--brand-mark)', width: 20, height: 20 }} />
+            <span className="brand-name">WedPlan</span>
           </div>
         </div>
 
@@ -328,13 +340,12 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
               <li key={item.id}>
                 <a
                   href="#"
-                  className={`nav-item ${activeModule === item.id ? 'active' : ''} ${item.comingSoon ? 'nav-item-soon' : ''}`}
-                  onClick={e => { e.preventDefault(); handleNavigate(item.id, item.comingSoon); }}
-                  title={item.comingSoon ? `${item.label} — coming soon` : item.label}
+                  className={`nav-item ${activeModule === item.id ? 'active' : ''}`}
+                  onClick={e => { e.preventDefault(); handleNavigate(item.id); }}
+                  title={item.label}
                 >
                   <item.icon size={17} />
                   <span>{item.label}</span>
-                  {item.comingSoon && <span className="soon-pill">Soon</span>}
                 </a>
               </li>
             ))}
@@ -388,7 +399,7 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
               Trial &nbsp;<span>12 days left</span>
             </div>
             {/* Notifications */}
-            <button className="icon-btn" aria-label="Notifications">
+            <button className="icon-btn" aria-label="Notifications" onClick={() => handleNavigate('notifications')}>
               <Bell size={18} />
               <span className="notif-dot" />
             </button>
@@ -408,13 +419,13 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
                   <div className="user-dropdown-header">
                     <div className="wedding-avatar" style={{ width: 40, height: 40, margin: '0 auto 0.5rem', fontSize: '0.8rem' }}>{initials}</div>
                     <div className="user-dropdown-name">{wedding?.brideName} &amp; {wedding?.groomName}</div>
-                    <div className="user-dropdown-email">{wedding?.contactEmail || 'hello@wedinvite.com'}</div>
+                    <div className="user-dropdown-email">{wedding?.contactEmail || 'hello@wedplan.lk'}</div>
                   </div>
                   <div className="user-dropdown-divider" />
                   <button className="user-dropdown-item" onClick={() => { handleNavigate('settings'); setUserDropdownOpen(false); }}>
                     <Settings size={15} /> Wedding Settings
                   </button>
-                  <button className="user-dropdown-item">
+                  <button className="user-dropdown-item" onClick={() => { handleNavigate('account'); setUserDropdownOpen(false); }}>
                     <UserCircle size={15} /> Account
                   </button>
                   <div className="user-dropdown-divider" />
@@ -438,12 +449,16 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
           {activeModule === 'invitation' && <InvitationEditorModule wedding={wedding} setWedding={setWedding} />}
           {activeModule === 'theme'      && <ThemeDesignModule wedding={wedding} setWedding={setWedding} />}
           {activeModule === 'gallery'    && <GalleryModule wedding={wedding} />}
+          {activeModule === 'music'      && <MusicModule wedding={wedding} setWedding={setWedding} />}
           {activeModule === 'agenda'     && <AgendaModule wedding={wedding} agenda={agenda} setAgenda={setAgenda} />}
           {activeModule === 'budget'     && <BudgetModule wedding={wedding} initialBudget={budget} setBudget={setBudget} />}
           {activeModule === 'checklist'  && <ChecklistModule wedding={wedding} checklist={checklist} setChecklist={setChecklist} />}
           {activeModule === 'guests'    && <GuestsModule    wedding={wedding} guests={guests} setGuests={setGuests} rsvps={rsvps} onNavigate={handleNavigate} />}
           {activeModule === 'rsvps'     && <RsvpsModule     guests={guests} rsvps={rsvps} onNavigate={handleNavigate} />}
           {activeModule === 'tables'    && <TablesModule    wedding={wedding} guests={guests} />}
+          {activeModule === 'vendors'   && <VendorsModule   wedding={wedding} setWedding={setWedding} />}
+          {activeModule === 'notifications' && <NotificationsModule wedding={wedding} guests={guests} rsvps={rsvps} checklist={checklist} budget={budget} setWedding={setWedding} onNavigate={handleNavigate} />}
+          {activeModule === 'account'   && <AccountModule   wedding={wedding} onNavigate={handleNavigate} />}
         </div>
       </main>
     </div>
@@ -492,10 +507,10 @@ function OverviewModule({ wedding, guests, rsvps, agenda, budget, checklist, onN
   const quickActions = [
     { icon: UserPlus,     label: 'Add Guest',       action: 'guests' },
     { icon: Send,         label: 'Send Invitations', action: 'guests' },
-    { icon: Edit3,        label: 'Edit Invitation',  action: 'invitation', soon: true },
+    { icon: Edit3,        label: 'Edit Invitation',  action: 'invitation' },
     { icon: Calendar,     label: 'Add Agenda',       action: 'agenda' },
     { icon: DollarSign,   label: 'Add Expense',      action: 'budget' },
-    { icon: Home,         label: 'Create Table',     action: 'tables',     soon: true },
+    { icon: Home,         label: 'Create Table',     action: 'tables' },
     { icon: Eye,          label: 'Preview Website',  action: 'preview' },
   ];
 
@@ -544,7 +559,7 @@ function OverviewModule({ wedding, guests, rsvps, agenda, budget, checklist, onN
           colorClass="kpi-orange"
           value={0}
           label="Tables Created"
-          sub={<a href="#" onClick={e => { e.preventDefault(); onNavigate('tables', true); }} className="kpi-link">View seating <ChevronRight size={12} /></a>}
+          sub={<a href="#" onClick={e => { e.preventDefault(); onNavigate('tables'); }} className="kpi-link">View seating <ChevronRight size={12} /></a>}
         />
       </div>
 
@@ -836,23 +851,21 @@ function OverviewModule({ wedding, guests, rsvps, agenda, budget, checklist, onN
           {quickActions.map((qa, i) => (
             <button
               key={i}
-              className={`quick-action-btn ${qa.soon ? 'quick-action-soon' : ''}`}
+              className="quick-action-btn"
               onClick={() => {
-                if (qa.soon) return;
                 if (qa.action === 'preview') {
                   window.open(`/invitation/${wedding?.slug}`, '_blank');
                   return;
                 }
                 onNavigate(qa.action);
               }}
-              title={qa.soon ? `${qa.label} — coming soon` : qa.label}
+              title={qa.label}
               id={`qa-${qa.label.toLowerCase().replace(/\s+/g, '-')}`}
             >
               <div className="quick-action-icon">
                 <qa.icon size={22} />
               </div>
               <span>{qa.label}</span>
-              {qa.soon && <span className="soon-tag">Soon</span>}
             </button>
           ))}
         </div>
@@ -1181,7 +1194,7 @@ function buildThemeSpecMarkdown(wedding: any, theme: InvitationTheme) {
 
   return `# ${title} Theme Spec
 
-Generated from WedInvite Theme & Design on ${new Date().toLocaleString()}.
+Generated from WedPlan Theme & Design on ${new Date().toLocaleString()}.
 
 ## Selected Presets
 
@@ -2341,7 +2354,7 @@ function SettingsModule({ wedding, setWedding }: any) {
 /* ════════════════════════════════════════
    GUESTS MODULE
 ════════════════════════════════════════ */
-function GuestsModule({ wedding, guests, setGuests, rsvps, onNavigate }: any) {
+function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
   const [filter, setFilter] = useState<'all' | 'bride' | 'groom' | 'confirmed' | 'pending' | 'declined'>('all');
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -2956,6 +2969,429 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
           </div>
         </div>
       )}
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════
+   VENDORS MODULE
+════════════════════════════════════════ */
+function VendorsModule({ wedding, setWedding }: any) {
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('All');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [plan, setPlan] = useState<any>(wedding.vendorPlan || { savedVendorIds: [], customVendors: [] });
+  const [customForm, setCustomForm] = useState({ businessName: '', category: 'Photography', contact: '', quote: '', notes: '' });
+
+  useEffect(() => {
+    let mounted = true;
+    fetch('/api/vendors')
+      .then(res => res.ok ? res.json() : Promise.reject(new Error('Unable to load vendor marketplace.')))
+      .then(json => { if (mounted) setVendors(json.vendors || []); })
+      .catch(err => { if (mounted) setError(err.message || 'Unable to load vendors.'); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, []);
+
+  const categories = ['All', ...Array.from(new Set(vendors.map(v => v.category).filter(Boolean)))];
+  const savedIds: string[] = plan.savedVendorIds || [];
+  const customVendors: any[] = plan.customVendors || [];
+  const filteredVendors = vendors.filter(v => {
+    const q = query.toLowerCase();
+    const matchesQuery = !q || [v.businessName, v.category, v.location, v.description].some(value => String(value || '').toLowerCase().includes(q));
+    const matchesCategory = category === 'All' || v.category === category;
+    return matchesQuery && matchesCategory;
+  });
+
+  async function savePlan(nextPlan: any, successText: string) {
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await patchWeddingRecord(wedding.id, { vendorPlan: nextPlan });
+      setWedding(updated);
+      setPlan(nextPlan);
+      setMessage(successText);
+    } catch (err: any) {
+      setError(err.message || 'Unable to save vendor plan.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function toggleSaved(vendorId: string) {
+    const nextIds = savedIds.includes(vendorId) ? savedIds.filter(id => id !== vendorId) : [...savedIds, vendorId];
+    savePlan({ ...plan, savedVendorIds: nextIds }, savedIds.includes(vendorId) ? 'Vendor removed from shortlist.' : 'Vendor saved to shortlist.');
+  }
+
+  function addCustomVendor(e: React.FormEvent) {
+    e.preventDefault();
+    if (!customForm.businessName.trim()) return;
+    const nextVendor = {
+      id: `custom_${Date.now()}`,
+      ...customForm,
+      status: 'researching',
+      createdAt: new Date().toISOString(),
+    };
+    savePlan({ ...plan, customVendors: [nextVendor, ...customVendors] }, 'Custom vendor added.');
+    setCustomForm({ businessName: '', category: 'Photography', contact: '', quote: '', notes: '' });
+  }
+
+  function updateCustomVendor(id: string, patch: any) {
+    const next = customVendors.map(v => v.id === id ? { ...v, ...patch } : v);
+    savePlan({ ...plan, customVendors: next }, 'Vendor details updated.');
+  }
+
+  const savedMarketplace = vendors.filter(v => savedIds.includes(v.id));
+  const bookedCount = customVendors.filter(v => v.status === 'booked').length;
+
+  return (
+    <section className="module">
+      <div className="module-header">
+        <div>
+          <p className="eyebrow">Planning</p>
+          <h1 className="module-title">Vendor Management</h1>
+          <p className="module-subtitle">Browse approved vendors, shortlist options, and track custom quotes without entering the vendor portal.</p>
+        </div>
+      </div>
+
+      {(message || error) && <div className={`module-alert ${error ? 'module-alert-error' : 'module-alert-success'}`}>{error || <><Check size={16} /> {message}</>}</div>}
+
+      <div className="kpi-grid6">
+        <KpiCard icon={<Store size={20} />} colorClass="kpi-rose" value={vendors.length} label="Marketplace" sub="Approved vendors" />
+        <KpiCard icon={<Heart size={20} />} colorClass="kpi-green" value={savedIds.length} label="Shortlisted" sub="Saved from marketplace" />
+        <KpiCard icon={<ClipboardList size={20} />} colorClass="kpi-purple" value={customVendors.length} label="Custom Vendors" sub="Your private tracker" />
+        <KpiCard icon={<CheckCircle size={20} />} colorClass="kpi-amber" value={bookedCount} label="Booked" sub="Marked confirmed" />
+      </div>
+
+      <div className="vendor-workspace-grid">
+        <div className="card">
+          <div className="panel-header">
+            <h3>Marketplace Browse</h3>
+            {saving && <span className="text-muted">Saving...</span>}
+          </div>
+          <div className="module-toolbar">
+            <input className="form-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search vendor, category, location" />
+            <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
+              {categories.map(item => <option key={item}>{item}</option>)}
+            </select>
+          </div>
+          {loading ? (
+            <div className="empty-hint">Loading vendors...</div>
+          ) : filteredVendors.length === 0 ? (
+            <EmptyStatePanel icon={<Store size={36} />} title="No vendors match" description="Try a broader search or add a custom vendor below." />
+          ) : (
+            <div className="vendor-card-list">
+              {filteredVendors.map(v => (
+                <div className="vendor-card" key={v.id}>
+                  <div>
+                    <strong>{v.businessName}</strong>
+                    <span>{v.category} · {v.location || 'Location TBD'}</span>
+                    <p>{v.description}</p>
+                  </div>
+                  <div className="vendor-card-actions">
+                    <span className="badge badge-slate">{formatCurrency(v.basePrice || 0)}</span>
+                    {v.website && <a className="btn-ghost-sm" href={v.website} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Site</a>}
+                    <button className="btn btn-outline" onClick={() => toggleSaved(v.id)} disabled={saving}>
+                      {savedIds.includes(v.id) ? 'Saved' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <div className="panel-header"><h3>Shortlist</h3><span className="text-muted">{savedMarketplace.length} saved</span></div>
+          {savedMarketplace.length === 0 ? (
+            <EmptyStatePanel icon={<Heart size={34} />} title="No saved vendors" description="Save marketplace vendors to compare them here." />
+          ) : (
+            <div className="compact-list">
+              {savedMarketplace.map(v => (
+                <div className="compact-row" key={v.id}>
+                  <div><strong>{v.businessName}</strong><span>{v.category}</span></div>
+                  <button className="table-action-btn" title="Remove" onClick={() => toggleSaved(v.id)}><Trash2 size={14} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="panel-header"><h3>Private Vendor Tracker</h3><span className="text-muted">Quotes, notes, and booking status</span></div>
+        <form className="vendor-custom-form" onSubmit={addCustomVendor}>
+          <input className="form-input" value={customForm.businessName} onChange={e => setCustomForm(f => ({ ...f, businessName: e.target.value }))} placeholder="Business name" />
+          <select className="form-input" value={customForm.category} onChange={e => setCustomForm(f => ({ ...f, category: e.target.value }))}>
+            {['Venue', 'Catering', 'Photography', 'Decor', 'Makeup', 'Music', 'Cake', 'Jewelry', 'Transport', 'Other'].map(item => <option key={item}>{item}</option>)}
+          </select>
+          <input className="form-input" value={customForm.contact} onChange={e => setCustomForm(f => ({ ...f, contact: e.target.value }))} placeholder="Phone, email, or URL" />
+          <input className="form-input" value={customForm.quote} onChange={e => setCustomForm(f => ({ ...f, quote: e.target.value }))} placeholder="Quote / estimate" />
+          <button className="btn btn-primary" disabled={saving || !customForm.businessName.trim()}><Plus size={14} /> Add</button>
+        </form>
+
+        {customVendors.length === 0 ? (
+          <div className="empty-hint">Add vendors you are considering outside the marketplace.</div>
+        ) : (
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead><tr><th>Vendor</th><th>Category</th><th>Status</th><th>Quote</th><th>Notes</th><th>Contact</th></tr></thead>
+              <tbody>
+                {customVendors.map(v => (
+                  <tr key={v.id}>
+                    <td><strong>{v.businessName}</strong></td>
+                    <td>{v.category}</td>
+                    <td>
+                      <select className="form-input compact-input" value={v.status} onChange={e => updateCustomVendor(v.id, { status: e.target.value })}>
+                        <option value="researching">Researching</option>
+                        <option value="quoted">Quoted</option>
+                        <option value="booked">Booked</option>
+                        <option value="declined">Declined</option>
+                      </select>
+                    </td>
+                    <td>{v.quote || '-'}</td>
+                    <td><input className="form-input compact-input" value={v.notes || ''} onChange={e => updateCustomVendor(v.id, { notes: e.target.value })} placeholder="Notes" /></td>
+                    <td>{v.contact ? <a href={v.contact.startsWith('http') ? v.contact : `mailto:${v.contact}`}>{v.contact}</a> : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════
+   MUSIC MODULE
+════════════════════════════════════════ */
+function MusicModule({ wedding, setWedding }: any) {
+  const [form, setForm] = useState({
+    enabled: wedding.music?.enabled !== false && wedding.sections?.music !== false,
+    track: wedding.music?.track || '',
+    sourceUrl: wedding.music?.sourceUrl || '',
+    muteDefault: wedding.music?.muteDefault !== false,
+  });
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function saveMusic(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const music = { ...form };
+      const updated = await patchWeddingRecord(wedding.id, { music, sections: { ...(wedding.sections || {}), music: form.enabled } });
+      setWedding(updated);
+      setMessage('Music settings saved.');
+    } catch (err: any) {
+      setError(err.message || 'Unable to save music settings.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function previewTrack() {
+    if (!form.sourceUrl) {
+      setMessage('Add an MP3 URL to preview. The invitation will still show the selected track name.');
+      return;
+    }
+    const audio = new Audio(form.sourceUrl);
+    audio.volume = 0.45;
+    audio.play().catch(() => setError('Browser blocked playback. Click preview again or check the audio URL.'));
+  }
+
+  return (
+    <section className="module">
+      <div className="module-header">
+        <div>
+          <p className="eyebrow">Invitation Experience</p>
+          <h1 className="module-title">Music Settings</h1>
+          <p className="module-subtitle">Control background music for the public invitation. Playback only starts after a guest interacts with the invitation.</p>
+        </div>
+      </div>
+      {(message || error) && <div className={`module-alert ${error ? 'module-alert-error' : 'module-alert-success'}`}>{error || <><Check size={16} /> {message}</>}</div>}
+      <form className="card music-settings-card" onSubmit={saveMusic}>
+        <label className="toggle-row">
+          <span><strong>Enable music section</strong><small>Show the floating music control on the invitation.</small></span>
+          <input type="checkbox" checked={form.enabled} onChange={e => setForm(f => ({ ...f, enabled: e.target.checked }))} />
+        </label>
+        <label className="form-field">
+          <span>Track title</span>
+          <input className="form-input" value={form.track} onChange={e => setForm(f => ({ ...f, track: e.target.value }))} placeholder="A Thousand Years" />
+        </label>
+        <label className="form-field">
+          <span>MP3 URL</span>
+          <input className="form-input" value={form.sourceUrl} onChange={e => setForm(f => ({ ...f, sourceUrl: e.target.value }))} placeholder="https://cdn.example.com/song.mp3" />
+        </label>
+        <label className="toggle-row">
+          <span><strong>Mute by default</strong><small>Recommended so guests choose when audio starts.</small></span>
+          <input type="checkbox" checked={form.muteDefault} onChange={e => setForm(f => ({ ...f, muteDefault: e.target.checked }))} />
+        </label>
+        <div className="module-actions">
+          <button className="btn btn-outline" type="button" onClick={previewTrack}><Music size={15} /> Preview</button>
+          <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Music'}</button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════
+   NOTIFICATIONS MODULE
+════════════════════════════════════════ */
+function NotificationsModule({ wedding, guests, rsvps, checklist, budget, setWedding, onNavigate }: any) {
+  const pending = Math.max(0, guests.length - rsvps.length);
+  const dueSoon = getChecklistStats(checklist || []).dueSoon;
+  const overBudget = (budget?.totals?.remaining || 0) < 0;
+  const [prefs, setPrefs] = useState(wedding.notificationPreferences || { email: true, whatsapp: true, planningReminders: true });
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const alerts = [
+    pending > 0 && { id: 'pending-rsvps', icon: Clock, title: `${pending} RSVP${pending === 1 ? '' : 's'} pending`, detail: 'Send reminders from the Guests module.', action: 'guests' },
+    dueSoon > 0 && { id: 'due-soon', icon: AlertCircle, title: `${dueSoon} checklist item${dueSoon === 1 ? '' : 's'} due soon`, detail: 'Review upcoming planning tasks.', action: 'checklist' },
+    overBudget && { id: 'budget', icon: Wallet, title: 'Budget needs attention', detail: 'Actuals are above the estimated total.', action: 'budget' },
+    !(wedding.sections?.music) && { id: 'music-off', icon: Music, title: 'Invitation music is disabled', detail: 'Turn it on from Music Settings if needed.', action: 'music' },
+  ].filter(Boolean) as any[];
+
+  async function savePrefs() {
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await patchWeddingRecord(wedding.id, { notificationPreferences: prefs });
+      setWedding(updated);
+      setMessage('Notification preferences saved.');
+    } catch (err: any) {
+      setError(err.message || 'Unable to save notification preferences.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="module">
+      <div className="module-header">
+        <div>
+          <p className="eyebrow">Feedback</p>
+          <h1 className="module-title">Notifications</h1>
+          <p className="module-subtitle">A couple-facing notification center for planning alerts and RSVP follow-up prompts.</p>
+        </div>
+      </div>
+      {(message || error) && <div className={`module-alert ${error ? 'module-alert-error' : 'module-alert-success'}`}>{error || <><Check size={16} /> {message}</>}</div>}
+      <div className="notifications-grid">
+        <div className="card">
+          <div className="panel-header"><h3>Action Center</h3><span className="text-muted">{alerts.length} active</span></div>
+          {alerts.length === 0 ? (
+            <EmptyStatePanel icon={<Bell size={36} />} title="All clear" description="No urgent planning notifications right now." />
+          ) : (
+            <div className="compact-list">
+              {alerts.map(item => (
+                <button className="notification-row" key={item.id} onClick={() => onNavigate(item.action)}>
+                  <item.icon size={18} />
+                  <span><strong>{item.title}</strong><small>{item.detail}</small></span>
+                  <ChevronRight size={15} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="card">
+          <div className="panel-header"><h3>Preferences</h3><span className="text-muted">Local v1</span></div>
+          {[
+            ['email', 'Email updates', 'Receive account and planning notices by email.'],
+            ['whatsapp', 'WhatsApp reminders', 'Use WhatsApp where guest opt-in data is available.'],
+            ['planningReminders', 'Planning reminders', 'Surface checklist, RSVP, and budget prompts.'],
+          ].map(([key, title, copy]) => (
+            <label className="toggle-row" key={key}>
+              <span><strong>{title}</strong><small>{copy}</small></span>
+              <input type="checkbox" checked={!!prefs[key]} onChange={e => setPrefs((p: any) => ({ ...p, [key]: e.target.checked }))} />
+            </label>
+          ))}
+          <button className="btn btn-primary" onClick={savePrefs} disabled={saving}>{saving ? 'Saving...' : 'Save Preferences'}</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════
+   ACCOUNT MODULE
+════════════════════════════════════════ */
+function AccountModule({ wedding, onNavigate }: any) {
+  const [billing, setBilling] = useState<any>(null);
+  const [billingConfig, setBillingConfig] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const email = wedding.contactEmail || 'test+couple@local';
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      fetch('/api/payments/subscriptions').then(res => res.ok ? res.json() : null).catch(() => null),
+      fetch(`/api/payments/billing/${encodeURIComponent(email)}`).then(res => res.ok ? res.json() : null).catch(() => null),
+    ]).then(([config, record]) => {
+      if (!mounted) return;
+      setBillingConfig(config);
+      setBilling(record);
+    }).finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, [email]);
+
+  const status = billing?.status || 'trial';
+  const planLabel = status === 'active' ? 'Premium active' : 'Trial / free workspace';
+
+  return (
+    <section className="module">
+      <div className="module-header">
+        <div>
+          <p className="eyebrow">Account</p>
+          <h1 className="module-title">Account & Subscription</h1>
+          <p className="module-subtitle">Review account details, subscription status, limits, and support links.</p>
+        </div>
+      </div>
+      <div className="account-grid">
+        <div className="card">
+          <div className="panel-header"><h3>Couple Account</h3><span className="badge badge-slate">{planLabel}</span></div>
+          <div className="settings-list">
+            <div><span>Wedding</span><strong>{wedding.weddingTitle || `${wedding.brideName} & ${wedding.groomName}`}</strong></div>
+            <div><span>Email</span><strong>{email}</strong></div>
+            <div><span>WhatsApp</span><strong>{wedding.contactWhatsApp || 'Not set'}</strong></div>
+            <div><span>Public slug</span><strong>{wedding.slug}</strong></div>
+          </div>
+          <div className="module-actions">
+            <button className="btn btn-outline" onClick={() => onNavigate('settings')}><Settings size={15} /> Wedding Settings</button>
+            <button className="btn btn-outline" onClick={() => window.open(`/invitation/${wedding.slug}`, '_blank')}><Eye size={15} /> Preview</button>
+          </div>
+        </div>
+        <div className="card">
+          <div className="panel-header"><h3>Subscription</h3>{loading && <span className="text-muted">Loading...</span>}</div>
+          <div className="settings-list">
+            <div><span>Status</span><strong>{status}</strong></div>
+            <div><span>Customer</span><strong>{billing?.customerId || 'Not attached'}</strong></div>
+            <div><span>Subscription</span><strong>{billing?.subscriptionId || 'No active subscription'}</strong></div>
+            <div><span>Billing config</span><strong>{billingConfig?.priceId ? 'Configured' : 'Sandbox mode'}</strong></div>
+          </div>
+          <div className="module-actions">
+            <a className="btn btn-primary" href={`/account/checkout?email=${encodeURIComponent(email)}`}>Manage Upgrade</a>
+            <a className="btn btn-outline" href="mailto:support@wedplan.lk"><HelpCircle size={15} /> Support</a>
+          </div>
+        </div>
+        <div className="card">
+          <div className="panel-header"><h3>Feature Limits</h3><span className="text-muted">v1 guidance</span></div>
+          <div className="compact-list">
+            <div className="compact-row"><div><strong>Guests</strong><span>Unlimited in this demo workspace</span></div><CheckCircle size={16} /></div>
+            <div className="compact-row"><div><strong>Invitation editor</strong><span>Enabled for all couples</span></div><CheckCircle size={16} /></div>
+            <div className="compact-row"><div><strong>Premium media uploads</strong><span>Use hosted URLs until storage is connected</span></div><AlertCircle size={16} /></div>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { auditLog } from '../../../../lib/audit';
-import { POST as webhookPOST } from '../../webhooks/stripe/route';
+import { auditLog } from '@/lib/audit';
+import { POST as webhookPOST } from '@/app/api/webhooks/stripe/route';
 
 export async function POST(req: Request) {
   try {
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     const resp = await webhookPOST(fakeReq);
     return resp || NextResponse.json({ ok: true });
-  } catch (e: any) {
+  } catch (e: unknown) {
     await auditLog({ event: 'sandbox.webhook.error', error: String(e) });
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
