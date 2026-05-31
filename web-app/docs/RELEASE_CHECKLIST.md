@@ -1,40 +1,73 @@
-# Release Checklist
+# Release Checklist — WedPlan v1.0
 
-This checklist documents the minimal steps and verification performed for the current release candidate.
+Last updated: 2026-05-30
 
-1. Code & build
-   - [x] Run `npm run build` (verify build succeeds locally).
-   - [x] Confirm server starts in dev (`npm run dev`) and routes compile.
+## ✅ Gates Passed
 
-2. Database & migrations
-   - [x] Prisma generate/migrate applied in local dev (SQLite used for local verification).
-   - [ ] For production, run `npx prisma migrate deploy` against Postgres and `npm run prisma:seed` if needed.
+### 1. Build
+- [x] `npm run build` passes — 42 routes, TypeScript clean, 0 errors
+- [x] `npm run lint` passes — 0 errors (291 warnings documented as debt, see Bug Log)
 
-3. End-to-end tests (smoke/regression)
-   - [x] Invitation smoke suite (test_task45) — passed
-   - [x] RSVP token (test_task51) — passed
-   - [x] Gallery flows (test_task52/53) — passed
-   - [x] Sprint 5 QA (test_task54) — passed
-   - [x] Planning tools (test_task61-65) — passed
-   - [x] Table/Seating flows (test_task72-74) — passed
-   - [x] Vendor onboarding & approval (test_task81-85) — passed
-   - [x] Billing smoke (test_task91) — passed
+### 2. Full E2E Regression — `npm run test:e2e`
+**29 / 29 suites PASS** — total time 285s
 
-4. Billing & payments
-   - [x] Sandbox Stripe flows tested and webhook persistence implemented.
-   - [ ] Ensure `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are configured in production and webhooks are registered.
+| Sprint | Suites | Result |
+|---|---|---|
+| Sprint 2 | Super Admin couple management | ✅ |
+| Sprint 3 | Guest CRUD, RSVP, cleanup, data integrity | ✅ |
+| Sprint 4 | Public invitation route, invitation smoke | ✅ |
+| Sprint 5 | RSVP token, gallery, countdown, sprint QA | ✅ |
+| Sprint 6 | Checklist, budget, agenda, planning tools QA | ✅ |
+| Sprint 7 | Table creation, guest assignments, Find My Table, seating regression | ✅ |
+| Sprint 8 | Vendor onboarding, approval, profile/listings, browse, lifecycle QA | ✅ |
+| Sprint 9 | Billing smoke, plan entitlements, notifications | ✅ |
+| Sprint 10 | Public site static QA | ✅ |
 
-5. Logging & monitoring
-   - [x] `web-app/logs/audit.log` contains recent smoke test traces.
+### 3. Database & Migrations
+- [x] Prisma schema exists and migrations tested with SQLite locally
+- [ ] **TODO (production)**: run `npx prisma migrate deploy` against Postgres + `npm run prisma:seed`
 
-6. Release artifacts
-   - [x] `web-app/data/billing.json` updated by smoke tests (sandbox).
-   - [x] Smoke test artifacts validated.
+### 4. Authentication
+- [x] NextAuth credentials provider tested — COUPLE, VENDOR, SUPER_ADMIN roles
+- [x] Route protection middleware blocks unauthenticated + wrong-role access
+- [x] JWT sessions include role; protected routes reject wrong-owner access
 
-7. Post-release steps
-   - [ ] Run full regression on a CI environment with production-like env (Postgres, Stripe test keys).
-   - [ ] Deploy to staging and run manual exploratory QA on critical user journeys.
+### 5. Billing
+- [x] Stripe sandbox checkout, webhook persistence, and subscription state tested
+- [x] Plan entitlements (trial/pro/premium) enforced via `/api/admin/plans/entitlements`
+- [ ] **TODO (production)**: configure `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` in env
 
-Notes:
-- Local dev used a SQLite-compatible Prisma schema for migrations and smoke tests. Production requires Postgres.
-- PowerShell execution policy may block `npm` scripts on Windows; CI or developer machines should run `npm` directly or use `-ExecutionPolicy Bypass` when necessary.
+### 6. Notifications
+- [x] Email invite generation tested (template rendered)
+- [x] WhatsApp opt-in respected (blocked for opted-out guests)
+- [ ] **TODO (production)**: configure real email provider (SMTP/SendGrid) and WhatsApp API keys
+
+### 7. Open PRs (merge before release)
+| PR | Branch | What |
+|---|---|---|
+| #10 | `codex/stabilize-build-lint` | Build + lint fixes |
+| #11 | `codex/public-site-design-align` | Landing page CSS mockups |
+| #12 | `codex/qa-smoke-browser` | E2E regression suite 29/29 |
+
+---
+
+## 🔲 Pre-Production Checklist (not yet done)
+
+- [ ] Merge PRs #10, #11, #12 into `main`
+- [ ] Set `DATABASE_URL` to production Postgres
+- [ ] Run Prisma migrations on production DB
+- [ ] Configure Stripe production keys + register webhooks
+- [ ] Configure email provider credentials
+- [ ] Set `NEXTAUTH_SECRET` to a strong random value
+- [ ] Set `NEXTAUTH_URL` to production domain
+- [ ] Deploy to staging and run manual exploratory QA
+- [ ] Run `npm run test:e2e` against staging URL (`BASE_URL=https://staging.wedplan.com`)
+- [ ] Review Dependabot security alerts (20 open: 9 high, 9 moderate, 2 low)
+- [ ] Resolve `no-explicit-any` lint debt (291 warnings — see Bug Log)
+
+---
+
+## Notes
+- Local dev uses SQLite (`web-app/prisma/dev_sqlite.db`). Production requires Postgres.
+- PowerShell execution policy may block `npm` scripts on Windows — use `node scripts/*.js` directly.
+- Brand name is **WedPlan** everywhere (verify no "WedInvite" references remain in UI copy).
