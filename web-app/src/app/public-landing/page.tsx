@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   Bell,
   CheckCircle2,
@@ -108,14 +107,21 @@ export default function PublicLanding() {
           </div>
         </div>
         <div className="heroVisual" aria-label="WedPlan dashboard and invitation preview">
-          <Image
-            className="heroReferenceImage"
-            src="/public-site/landing-hero-devices.png"
-            alt="WedPlan dashboard on a laptop with mobile wedding invitation preview"
-            width={690}
-            height={292}
-            priority
-          />
+          <div className="heroMockup" aria-hidden="true">
+            <div className="mockupCard mockupCardMain">
+              <div className="mockupBar"><span /><span /><span /></div>
+              <div className="mockupRow"><strong>Guests</strong><em>248 confirmed</em></div>
+              <div className="mockupRow"><strong>RSVPs</strong><em>189 / 248</em></div>
+              <div className="mockupRow"><strong>Budget</strong><em>LKR 2.4M tracked</em></div>
+              <div className="mockupProgress"><span style={{width:'76%'}} /></div>
+            </div>
+            <div className="mockupCard mockupCardInvite">
+              <div className="mockupInviteHeart">♥</div>
+              <div className="mockupInviteName">Priya &amp; Kasun</div>
+              <div className="mockupInviteDate">15 August 2026</div>
+              <div className="mockupInviteVenue">Grand Ballroom, Colombo</div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -141,13 +147,12 @@ export default function PublicLanding() {
             </article>
           ))}
         </div>
-        <Image
-          className="stepsImage"
-          src="/public-site/landing-couple-card.png"
-          alt="Couple embracing at their wedding"
-          width={280}
-          height={165}
-        />
+        <div className="stepsImagePlaceholder" aria-hidden="true">
+          <div className="coupleCardVisual">
+            <span className="coupleHeart">♥</span>
+            <strong>Your perfect day awaits</strong>
+          </div>
+        </div>
       </section>
 
       <section id="templates" className="templatesSection">
@@ -158,13 +163,11 @@ export default function PublicLanding() {
           <Link href="/register">Explore Templates</Link>
         </div>
         <div className="templateShowcase">
-          <Image
-            className="templateStripImage"
-            src="/public-site/landing-template-strip.png"
-            alt="Five WedPlan invitation template previews"
-            width={665}
-            height={115}
-          />
+          <div className="templateStripMock" aria-label="Invitation template previews">
+            {['Classic Rose','Garden Bloom','Golden Hour','Ivory Lace','Midnight Blue'].map((name) => (
+              <div key={name} className="templateThumb"><span>{name}</span></div>
+            ))}
+          </div>
           <div className="templateDots" aria-hidden="true"><span /><span /><span className="active" /><span /></div>
         </div>
       </section>

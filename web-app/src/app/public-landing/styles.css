@@ -825,4 +825,140 @@
   .testimonialArrow {
     display: none;
   }
+
+  .heroMockup { flex-direction: column; gap: 12px; }
+  .templateStripMock { gap: 8px; }
+}
+
+/* ── Hero mockup (CSS-based dashboard + invite card) ── */
+.heroMockup {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+}
+
+.mockupCard {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(176, 48, 82, 0.12);
+  padding: 20px;
+  flex: 1;
+}
+
+.mockupCardMain { max-width: 260px; }
+
+.mockupBar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.mockupBar span {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #f8d7da;
+}
+.mockupBar span:nth-child(2) { background: #fde2c6; }
+.mockupBar span:nth-child(3) { background: #d4edda; }
+
+.mockupRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5eff0;
+  font-size: 0.8rem;
+}
+.mockupRow strong { color: #5a2a3a; }
+.mockupRow em { color: #c9164f; font-style: normal; font-weight: 600; }
+
+.mockupProgress {
+  height: 6px;
+  background: #f8eaec;
+  border-radius: 3px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.mockupProgress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #e24b6d, #d4af37);
+  border-radius: 3px;
+}
+
+.mockupCardInvite {
+  max-width: 180px;
+  text-align: center;
+  background: linear-gradient(160deg, #fff5f7 0%, #fff 100%);
+  border: 1px solid #f9d0d8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+}
+.mockupInviteHeart {
+  font-size: 1.6rem;
+  color: #e24b6d;
+  line-height: 1;
+}
+.mockupInviteName {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  color: #5a2a3a;
+  font-weight: 600;
+}
+.mockupInviteDate, .mockupInviteVenue {
+  font-size: 0.72rem;
+  color: #8e6f7a;
+}
+
+/* ── Steps couple card placeholder ── */
+.stepsImagePlaceholder {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+.coupleCardVisual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(160deg, #fff5f7, #fff);
+  border: 1px solid #f9d0d8;
+  border-radius: 16px;
+  padding: 28px 40px;
+  box-shadow: 0 4px 20px rgba(176, 48, 82, 0.08);
+}
+.coupleHeart {
+  font-size: 2rem;
+  color: #e24b6d;
+}
+.coupleCardVisual strong {
+  font-family: var(--font-serif);
+  color: #5a2a3a;
+  font-size: 1.1rem;
+}
+
+/* ── Template strip mock ── */
+.templateStripMock {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 0 4px;
+}
+.templateThumb {
+  flex: 0 0 120px;
+  height: 80px;
+  background: linear-gradient(135deg, #fff5f7, #fde9ee);
+  border: 1px solid #f9d0d8;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #8e6f7a;
+  text-align: center;
+  padding: 8px;
+  font-weight: 500;
 }
