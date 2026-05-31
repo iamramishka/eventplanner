@@ -278,6 +278,16 @@ async function run() {
     ok('Returns 404', status === 404, `got ${status}`);
   }
 
+  // ── Teardown: restore seed vendor to original state ─────────
+  await hit('PUT', `/api/vendors/${VENDOR_ID}`, {
+    businessName: 'Lumina Studios',
+    description: 'Professional wedding photography and videography in Sri Lanka.',
+    location: 'Colombo, Sri Lanka',
+    basePrice: 150000,
+    seoTitle: 'Lumina Studios | Wedding Photography Sri Lanka',
+    seoDescription: 'Professional wedding photography and videography in Sri Lanka.',
+  });
+
   // ── Results ─────────────────────────────────────────────────
   console.log(`\n${'─'.repeat(55)}`);
   console.log(`  Results: ${passed} passed, ${failed} failed`);

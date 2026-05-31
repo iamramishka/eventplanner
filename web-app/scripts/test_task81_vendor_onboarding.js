@@ -62,6 +62,15 @@ async function runTests() {
   console.log(`\n🔍 Task 8.1 — Vendor Registration & Onboarding Smoke Tests`);
   console.log(`   Target: ${BASE_URL}\n`);
 
+  // Pre-test: restore seed vendor to original state (guard against prior test pollution)
+  await hit('PUT', '/api/vendors/vnd_seed_001', {
+    businessName: 'Lumina Studios',
+    description: 'Professional wedding photography and videography in Sri Lanka.',
+    location: 'Colombo, Sri Lanka',
+    basePrice: 150000,
+    status: 'approved',
+  }).catch(() => {});
+
   /* ── Vendor Register Page ── */
   console.log('📄 Vendor Registration Page');
   {
