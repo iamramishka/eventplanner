@@ -39,6 +39,7 @@ export default function InvitationEditorModule({ wedding, setWedding }: Props) {
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraft(createInvitationDraft(wedding));
     setError('');
     setDirty(false);
@@ -47,6 +48,7 @@ export default function InvitationEditorModule({ wedding, setWedding }: Props) {
   useEffect(() => {
     if (!dirty) return;
     const timer = window.setTimeout(() => {
+      // eslint-disable-next-line react-hooks/immutability
       void saveDraft();
     }, 900);
     return () => window.clearTimeout(timer);

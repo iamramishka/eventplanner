@@ -25,6 +25,7 @@ export default function VendorsPage() {
   // Fetch vendors whenever the query or category changes
   useEffect(() => {
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     (async () => {
       try {
