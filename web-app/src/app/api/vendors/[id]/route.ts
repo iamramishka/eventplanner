@@ -59,6 +59,16 @@ export async function PUT(
       'aboutMarkdown', 'faqMarkdown',
     ];
 
+    // Media size limits (prevent memory exhaustion via large base64 payloads)
+    const MAX_LOGO_B64 = 1 * 1024 * 1024;
+    const MAX_COVER_B64 = 5 * 1024 * 1024;
+    if (body.logoBase64 !== undefined && body.logoBase64 !== null && String(body.logoBase64).length > MAX_LOGO_B64) {
+      return NextResponse.json({ error: "Logo image must be under 1 MB." }, { status: 400 });
+    }
+    if (body.coverImageBase64 !== undefined && body.coverImageBase64 !== null && String(body.coverImageBase64).length > MAX_COVER_B64) {
+      return NextResponse.json({ error: "Cover image must be under 5 MB." }, { status: 400 });
+    }
+
     // Validate required editable fields
     if (body.businessName !== undefined && !String(body.businessName || '').trim()) {
       return NextResponse.json({ error: 'Business name cannot be empty.' }, { status: 400 });
