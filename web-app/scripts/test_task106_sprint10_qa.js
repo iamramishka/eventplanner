@@ -45,7 +45,7 @@ async function runQaChecks() {
       'What works today',
       'From setup to celebration in three steady steps',
       'href="/find-event"',
-      'href="/priya-and-kasun"',
+      'href="/invitation/priya-and-kasun"',
     ]);
     await checkFileExcludes('src/app/page.tsx', [
       '1,250+',
