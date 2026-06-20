@@ -55,6 +55,13 @@ const TEST_PLAN = [
 
   // Sprint 10: Public site
   { script: 'test_task106_sprint10_qa.js',      label: 'Sprint 10 — Public site static QA' },
+
+  // Sprint 11: Email, Cloudinary, Analytics
+  { script: 'test_task113_analytics.js',        label: 'Sprint 11 — Super Admin analytics API' },
+  { script: 'test_task114_couple_analytics.js', label: 'Sprint 11 — Couple analytics API' },
+
+  // Task 9.4: End-to-end journey regression
+  { script: 'test_task94_e2e_regression.js',   label: 'Task 9.4 — Full E2E journey regression' },
 ];
 
 // ── Runner ──────────────────────────────────────────────────────────────
