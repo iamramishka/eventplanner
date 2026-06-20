@@ -10,6 +10,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      NEXTAUTH_SECRET: ci-smoke-secret
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      SMOKE_API_KEY: wedplan-smoke-dev-2026
     defaults:
       run:
         working-directory: web-app
@@ -39,5 +43,19 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Start app
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3000 > /tmp/wedplan-next.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000 >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/wedplan-next.log
+          exit 1
+
       - name: End-to-end smoke tests
         run: npm run test:e2e
+        env:
+          BASE_URL: http://127.0.0.1:3000
