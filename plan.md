@@ -46,7 +46,7 @@ A comprehensive SaaS platform consisting of four main domains:
 				- `npx prisma generate`
 				- `npx prisma migrate deploy` (or `npx prisma migrate dev --name init` for dev)
 				- `npm run prisma:seed`
-- **Task 1.4**: Implement authentication and RBAC. Considerations: session strategy, role permissions, secure routes, account recovery, and auth flow docs. Acceptance: users can sign in, roles restrict protected routes, and unauthenticated access is blocked.
+- **Task 1.4 ✅**: Implement authentication and RBAC. Considerations: session strategy, role permissions, secure routes, account recovery, and auth flow docs. Acceptance: users can sign in, roles restrict protected routes, and unauthenticated access is blocked.
 	- Configure sign-in and session handling.
 	- Add role checks for protected routes.
 	- Document account recovery and auth behavior.
@@ -72,7 +72,7 @@ A comprehensive SaaS platform consisting of four main domains:
 			3. Visit `/login`, sign in with credentials, and verify access to `/couple`, `/vendor`, or `/super` based on role.
 		- Acceptance: server-side middleware redirects unauthenticated users to `/login` and prevents role-mismatched access.
 		- Emoji: ✅
-- **Task 1.5**: Sprint 1 QA and setup verification. Considerations: install/run checks, env validation, basic smoke tests, and confirm the base app boots correctly. Acceptance: local setup passes smoke checks and core pages load without runtime errors.
+- **Task 1.5 ✅**: Sprint 1 QA and setup verification. Considerations: install/run checks, env validation, basic smoke tests, and confirm the base app boots correctly. Acceptance: local setup passes smoke checks and core pages load without runtime errors.
 	- Run install and startup checks.
 	- Verify environment variables and base routes.
 	- Record smoke test results and fix blocking issues.
@@ -360,7 +360,7 @@ A comprehensive SaaS platform consisting of four main domains:
 
 ### Epic 6: Public Website Experience
 **Sprint 10: Public Website, Auth & Event Discovery Designs**
-- **Task 10.1**: Build the Public Website landing page design from `Public Website/Public Website.png`. Considerations: WedPlan brand header and navigation, hero messaging, CTA hierarchy, feature cards, templates, stats, testimonials, vendor logos, footer, newsletter area, responsive desktop/mobile behavior, and visual consistency with the rose/pink wedding theme and existing design system. Acceptance: the public landing page matches the provided design direction and presents the complete marketing journey clearly across desktop and mobile.
+- **Task 10.1 ✅**: Build the Public Website landing page design from `Public Website/Public Website.png`. Considerations: WedPlan brand header and navigation, hero messaging, CTA hierarchy, feature cards, templates, stats, testimonials, vendor logos, footer, newsletter area, responsive desktop/mobile behavior, and visual consistency with the rose/pink wedding theme and existing design system. Acceptance: the public landing page matches the provided design direction and presents the complete marketing journey clearly across desktop and mobile.
 	- Build the public header, navigation, login CTA, and Start Free Trial CTA.
 	- Create the hero section with dashboard/mobile preview imagery, supporting copy, and primary/secondary actions.
 	- Add feature cards, how-it-works steps, invitation templates, trust stats, testimonials, vendor logos, final CTA, footer, and newsletter signup sections.
