@@ -1,7 +1,9 @@
+import { notFound } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 
 export default function UIPrimitivesPage() {
+  if (process.env.NODE_ENV === 'production') notFound();
   return (
     <main style={{ padding: '2rem', maxWidth: 900, margin: '0 auto' }}>
       <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', marginBottom: '1rem' }}>UI Primitives Preview</h1>
