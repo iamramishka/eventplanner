@@ -21,25 +21,43 @@ export default function FindEventPage() {
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [results, setResults] = useState<EventResult[]>([]);
+  const [error, setError] = useState('');
+
+  function getSearchTerm(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+
+    try {
+      const url = new URL(trimmed);
+      const parts = url.pathname.split('/').filter(Boolean);
+      return parts.at(-1) || trimmed;
+    } catch {
+      return trimmed.replace(/^\/?(invitation\/)?/, '').replace(/\/$/, '');
+    }
+  }
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (!query.trim() || query.length < 2) return;
+    const searchTerm = getSearchTerm(query);
+    if (searchTerm.length < 2) return;
     
     setLoading(true);
     setHasSearched(true);
     setResults([]);
+    setError('');
 
     try {
-      const res = await fetch(`/api/events/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`/api/events/search?q=${encodeURIComponent(searchTerm)}`);
       const data = await res.json();
-      if (data.ok) {
+      if (res.ok && data.ok) {
         setResults(data.events || []);
       } else {
         setResults([]);
+        setError(data.error || 'Search is temporarily unavailable. Please try again.');
       }
     } catch {
       setResults([]);
+      setError('Search is temporarily unavailable. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -88,13 +106,18 @@ export default function FindEventPage() {
         {hasSearched && !loading && (
           <div className={styles.resultsArea}>
             <h2 className={styles.resultsTitle}>
-              {results.length > 0 ? `Found ${results.length} event${results.length === 1 ? '' : 's'}` : 'No events found'}
+              {error ? 'Search problem' : results.length > 0 ? `Found ${results.length} event${results.length === 1 ? '' : 's'}` : 'No events found'}
             </h2>
 
-            {results.length === 0 ? (
+            {error ? (
+              <div className={styles.noResults} role="alert">
+                <p>{error}</p>
+                <p className={styles.resultHint}>Try again in a moment, or ask the couple for the direct invitation link.</p>
+              </div>
+            ) : results.length === 0 ? (
               <div className={styles.noResults}>
                 <p>We couldn&apos;t find any events matching {`"${query}"`}.</p>
-                <p style={{ marginTop: 8, fontSize: 14 }}>Please check the spelling or ask the couple for their exact event link.</p>
+                <p className={styles.resultHint}>Please check the spelling or ask the couple for their exact event link.</p>
               </div>
             ) : (
               <div className={styles.resultsList}>
