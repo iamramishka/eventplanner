@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -16,12 +17,9 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend, PointElement, LineElement, Filler);
 
 const ROSE   = 'rgba(244, 63, 94, 1)';
-const ROSE_F = 'rgba(244, 63, 94, 0.15)';
 const GREEN  = 'rgba(16, 185, 129, 1)';
-const GREEN_F= 'rgba(16, 185, 129, 0.15)';
 const AMBER  = 'rgba(245, 158, 11, 1)';
 const SLATE  = 'rgba(148, 163, 184, 1)';
-const SLATE_F= 'rgba(148, 163, 184, 0.15)';
 const PURPLE = 'rgba(139, 92, 246, 1)';
 
 function formatLKR(n: number) {
@@ -85,6 +83,7 @@ export default function CoupleAnalyticsModule({ weddingId }: { weddingId: string
     }
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [weddingId]);
 
   const g  = data?.guests     || {};

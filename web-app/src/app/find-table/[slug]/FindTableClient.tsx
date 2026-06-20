@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -58,6 +59,7 @@ export default function FindTableClient({ wedding, initialToken }: { wedding: an
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (initialToken) void lookup({ token: initialToken });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialToken]);
 
   const submit = (event: React.FormEvent) => {

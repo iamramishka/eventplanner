@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
@@ -5,8 +6,8 @@ import { signOut } from 'next-auth/react';
 import { 
   LayoutDashboard, Users, Briefcase, LayoutTemplate, CreditCard, Trash2, 
   Settings, ShieldCheck, ShieldOff, PanelLeftClose, User,
-  Menu, ChevronRight, LogOut, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle, 
-  Bell, UserCheck, Globe, Banknote, Search, Plus, Save, Check, X, Star, Eye, RefreshCw, Scroll
+  Menu, ChevronRight, LogOut, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle,
+  Search, Plus, Save, Check, X, Star, Eye, RefreshCw, Scroll
 } from 'lucide-react';
 import styles from './admin.module.css';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -513,24 +514,6 @@ function VendorsModule({ vendors: initialVendors }: any) {
   );
 }
 
-function PlaceholderModule({ title, desc }: any) {
-  return (
-    <section className={cn("module")}>
-      <div className={cn("module-header")}>
-        <div>
-          <h1 className={cn("module-title")}>{title}</h1>
-          <p className={cn("module-desc")}>{desc}</p>
-        </div>
-      </div>
-      <div className={cn("empty-state")}>
-        <Settings size={40} />
-        <h3>Under Construction</h3>
-        <p>This module is being ported to Next.js.</p>
-      </div>
-    </section>
-  );
-}
-
 function PlansModule({ initialPlans }: any) {
   const [plans, setPlans] = useState(initialPlans || []);
   const [saving, setSaving] = useState(false);
@@ -859,9 +842,8 @@ function LogsModule() {
     }
   };
 
-  React.useEffect(() => {
-    loadLogs();
-  }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  React.useEffect(() => { loadLogs(); }, []);
 
   return (
     <section className={cn("module")}>

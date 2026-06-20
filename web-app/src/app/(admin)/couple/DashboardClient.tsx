@@ -1,6 +1,5 @@
-"use client";
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { signOut } from 'next-auth/react';
@@ -1845,6 +1844,7 @@ function GalleryModule({ wedding }: any) {
           {images.map((image, index) => (
             <article key={image.id} className="card settings-card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ position: 'relative', aspectRatio: '4 / 3', background: '#f8ebe4' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={image.imageUrl}
                   alt={image.altText || 'Wedding gallery image'}

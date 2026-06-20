@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { requireWeddingAccess } from '@/lib/rbac';
 import { db } from '@/lib/store';

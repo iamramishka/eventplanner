@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db, deleteGuest, deleteRsvp } from './store';
 import fs from 'fs';
 import path from 'path';

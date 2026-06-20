@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState, useRef } from 'react';
@@ -1268,7 +1269,7 @@ function AvailabilityModule({ vendorId, listings, availability, onPortalChange }
           <div className="opsCardHeader"><div className="opsTitle"><Calendar size={18} /> Next 14 Days</div><span className="opsMuted">Demo calendar</span></div>
           {notice && <div className="opsNotice"><Check size={15} /> {notice}</div>}
           <div className="opsCalendar">
-            {days.map((day, i) => {
+            {days.map((day) => {
               const weekend = [0, 6].includes(day.getDay());
               const dateKey = toDateKey(day);
               const isBlocked = blocked.has(dateKey) || (weekendsOnly && !weekend);

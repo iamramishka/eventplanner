@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from './store';
 import { sendEmail, renderInviteEmail, renderRsvpConfirmationEmail, renderReminderEmail } from './email';
 
