@@ -99,6 +99,13 @@
   cursor: not-allowed;
 }
 
+.searchBtn:focus-visible,
+.searchInput:focus-visible,
+.viewBtn:focus-visible {
+  outline: 3px solid rgba(207, 27, 85, 0.24);
+  outline-offset: 3px;
+}
+
 .resultsArea {
   margin-top: 42px;
   text-align: left;
@@ -188,6 +195,11 @@
   border: 1px dashed #e2d3d7;
   border-radius: 18px;
   background: #fff8f9;
+}
+
+.resultHint {
+  margin-top: 8px;
+  font-size: 14px;
 }
 
 .loadingSpinner {

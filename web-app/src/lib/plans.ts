@@ -28,6 +28,10 @@ export const PLAN_FEATURES: Record<PlanType, Entitlements> = {
   },
 };
 
+export function normalizePlan(plan: string | undefined | null): PlanType {
+  return plan === 'premium' ? 'premium' : 'trial';
+}
+
 export function getEntitlements(plan: PlanType): Entitlements {
   const savedPlan = getAdminSettings().plans.find((item) => item.id === plan);
   return savedPlan?.entitlements || PLAN_FEATURES[plan] || PLAN_FEATURES.trial;
