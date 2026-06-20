@@ -11,6 +11,7 @@
     "prisma:seed": "node prisma/seed.js",
     "build": "next build",
     "start": "next start",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "test:invitation-smoke": "node scripts/test_task45_invitation_smoke.js",
     "test:rsvp-token": "node scripts/test_task51_rsvp_token.js",
