@@ -20,27 +20,22 @@
 
 ---
 
-## 🔲 Remaining Work
+## ✅ All sprint tasks complete
 
 ### Task 9.4 — End-to-End Testing, Bug Squashing & UI Polish
-- Status: **NOT STARTED**
-- Branch: `codex/qa-smoke-browser`
-- Work: full E2E test coverage across all journeys, visual regression, bug log, release checklist
-- Acceptance: critical user journeys pass E2E and UI issues are resolved
+- Status: **DONE** — PR #23 merged
+- `scripts/test_task94_e2e_regression.js` — journey-level E2E suite (public routes, auth gating, couple/seating/vendor/admin/notification journeys)
+- `scripts/e2e_regression_suite.js` — updated to include analytics + journey tests
+- `npm run test:e2e` runs the full regression gate
 
-### Task 10.1 — Public Website Landing Page (full design match)
-- Status: **PR #11 OPEN** — broken images fixed with CSS mockups
-- Remaining: real hero screenshot when app is deployed; template thumbnails from actual designs
-- Branch: `codex/public-site-design-align`
+### Task 10.1 — Public Website Landing Page
+- Status: **DONE** — modern redesign merged in PR #17
 
 ---
 
-## Open PRs (pending merge)
+## Open PRs
 
-| PR | Branch | What |
-|---|---|---|
-| #10 | `codex/stabilize-build-lint` | Build + lint fixes |
-| #11 | `codex/public-site-design-align` | Landing page broken image fix |
+None.
 
 ---
 
