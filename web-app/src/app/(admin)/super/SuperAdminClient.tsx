@@ -11,6 +11,7 @@ import {
 import styles from './admin.module.css';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import CoupleDetailModal from '@/components/CoupleDetailModal';
+import AnalyticsModule from './AnalyticsModule';
 
 function cn(...classes: (string | undefined | null | false)[]) {
   return classes
@@ -36,7 +37,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
   const pendingVendors = initialVendors.filter((v: any) => v.status === 'pending' || v.status === 'pending_review').length;
   const labels: Record<string, string> = {
     dashboard: 'Dashboard', couples: 'Couples', vendors: 'Vendors',
-    templates: 'Templates', plans: 'Plans', cleanup: 'Trial Cleanup',
+    templates: 'Templates', analytics: 'Analytics', plans: 'Plans', cleanup: 'Trial Cleanup',
     cms: 'Content CMS', reports: 'Reports', settings: 'Settings', logs: 'Logs'
   };
   
@@ -64,7 +65,8 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
           <NavItem id="couples" icon={<Users size={18} />} label="Couples" active={activeModule} onClick={handleNavClick} />
           <NavItem id="vendors" icon={<Briefcase size={18} />} label="Vendors" active={activeModule} onClick={handleNavClick} badge={pendingVendors} />
           <NavItem id="templates" icon={<LayoutTemplate size={18} />} label="Templates" active={activeModule} onClick={handleNavClick} />
-          
+          <NavItem id="analytics" icon={<TrendingUp size={18} />} label="Analytics" active={activeModule} onClick={handleNavClick} />
+
           <div className={cn("nav-section-label")}>Commerce</div>
           <NavItem id="plans" icon={<CreditCard size={18} />} label="Plans" active={activeModule} onClick={handleNavClick} />
           <NavItem id="cleanup" icon={<Trash2 size={18} />} label="Trial Cleanup" active={activeModule} onClick={handleNavClick} />
@@ -124,6 +126,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
           {activeModule === 'cleanup' && <CleanupModule />}
           {activeModule === 'settings' && <SettingsModule initialSettings={initialSettings} />}
           {activeModule === 'logs' && <LogsModule />}
+          {activeModule === 'analytics' && <AnalyticsModule />}
         </main>
       </div>
     </div>
