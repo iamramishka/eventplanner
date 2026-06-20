@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   CheckCircle2,
   ClipboardList,
+  Grid3x3,
   Heart,
   Mail,
   MapPin,
@@ -31,7 +32,7 @@ const primaryFeatures = [
     copy: 'Manage guest records, RSVP status, meal details, and attendance updates from the couple dashboard.',
   },
   {
-    icon: Users,
+    icon: Grid3x3,
     title: 'Seating tools',
     copy: 'Create tables, assign guests, and let attendees find their table when the event page is enabled.',
   },
@@ -145,7 +146,7 @@ export default function Home() {
               <div className="mockupInviteName">Priya &amp; Kasun</div>
               <div className="mockupInviteDate">15 August 2026</div>
               <div className="mockupInviteVenue"><MapPin size={13} /> Grand Ballroom, Colombo</div>
-              <Link href="/priya-and-kasun">Preview invitation</Link>
+              <Link href="/invitation/priya-and-kasun">Preview invitation</Link>
             </div>
           </div>
         </div>
@@ -195,7 +196,7 @@ export default function Home() {
         </div>
         <div className="workflowList">
           <Link href="/find-event"><Search size={18} /> Search an event</Link>
-          <Link href="/priya-and-kasun"><Mail size={18} /> View sample invitation</Link>
+          <Link href="/invitation/priya-and-kasun"><Mail size={18} /> View sample invitation</Link>
           <Link href="/vendors"><Heart size={18} /> Browse vendors</Link>
         </div>
       </section>
@@ -230,7 +231,7 @@ export default function Home() {
           <strong>Account</strong>
           <Link href="/register">Start free</Link>
           <Link href="/login">Sign in</Link>
-          <Link href="/sign-in">Alternate sign in</Link>
+          <Link href="/vendors">Vendor portal</Link>
         </div>
         <div>
           <strong>Guest tools</strong>
