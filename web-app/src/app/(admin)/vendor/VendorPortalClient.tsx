@@ -490,6 +490,7 @@ function ProfileModule({ vendor: initialVendor, onVendorSaved }: any) {
                 <div className="imgUploadBox" onClick={() => logoInputRef.current?.click()}>
                   {logoPreview ? (
                     <>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL upload preview */}
                       <img src={logoPreview} alt="Logo" className="imgPreview" />
                       <button className="imgRemoveBtn" onClick={e => { e.stopPropagation(); setLogoPreview(null); change('logoBase64', null); }}><X size={14} /></button>
                     </>
@@ -504,6 +505,7 @@ function ProfileModule({ vendor: initialVendor, onVendorSaved }: any) {
                 <div className="imgUploadBox" onClick={() => coverInputRef.current?.click()}>
                   {coverPreview ? (
                     <>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL upload preview */}
                       <img src={coverPreview} alt="Cover" className="imgPreview" style={{ objectFit: 'cover' }} />
                       <button className="imgRemoveBtn" onClick={e => { e.stopPropagation(); setCoverPreview(null); change('coverImageBase64', null); }}><X size={14} /></button>
                     </>
@@ -522,6 +524,7 @@ function ProfileModule({ vendor: initialVendor, onVendorSaved }: any) {
             <div className="portfolioGrid">
               {portfolioPreviews.map((src, i) => (
                 <div key={i} className="portfolioThumb">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL upload preview */}
                   <img src={src} alt={`Portfolio ${i + 1}`} />
                   <button className="imgRemoveBtn" style={{ top: '.35rem', right: '.35rem' }} onClick={() => removePortfolioImage(i)} title="Remove"><X size={12} /></button>
                 </div>
@@ -849,6 +852,7 @@ function ListingsModule({ vendorId, listings: initial, onListingsChange }: any) 
         ) : filtered.map((l: any) => (
           <div key={l.id} className={`lstCard ${!l.active ? 'inactive' : ''}`}>
             <div className="lstCover">
+              {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL listing cover preview */}
               {l.coverImageBase64 ? <img src={l.coverImageBase64} alt={l.title} /> : <ImageOff size={24} />}
             </div>
             <div style={{ minWidth: 0 }}>
@@ -962,6 +966,7 @@ function ListingsModule({ vendorId, listings: initial, onListingsChange }: any) 
                   <div className="lstFormImgBox" onClick={() => coverRef.current?.click()}>
                     {coverPreview ? (
                       <>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL upload preview */}
                         <img src={coverPreview} alt="Cover" className="lstFormImgPreview" />
                         <button className="lstFormImgRemove" onClick={e => { e.stopPropagation(); setCoverPreview(null); setForm((f: any) => ({ ...f, coverImageBase64: null })); }}><X size={12} /></button>
                       </>
@@ -980,6 +985,7 @@ function ListingsModule({ vendorId, listings: initial, onListingsChange }: any) 
                   <div className="lstGalleryGrid">
                     {galleryPreviews.map((src, i) => (
                       <div key={i} className="lstGalleryThumb">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL upload preview */}
                         <img src={src} alt="" />
                         <button className="lstFormImgRemove" style={{ top: '.25rem', right: '.25rem' }} onClick={() => {
                           const n = galleryPreviews.filter((_, j) => j !== i);

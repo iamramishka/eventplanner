@@ -426,6 +426,7 @@ export default function VendorRegisterPage() {
             <Field label="Business Logo (optional)" error={errors.logoBase64}>
               <label id="logo-upload-area" style={S.uploadZone}>
                 {logoPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- base64 data URL upload preview; next/image cannot optimize data URIs
                   <img src={logoPreview} alt="Logo preview" style={{ width: 100, height: 100, objectFit: 'cover', borderRadius: 12 }} />
                 ) : (
                   <div style={S.uploadPlaceholder}>
@@ -447,6 +448,7 @@ export default function VendorRegisterPage() {
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                 {portfolioPreviews.map((src, i) => (
                   <div key={i} style={{ position: 'relative' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- base64 data URL upload preview */}
                     <img src={src} alt={`Portfolio ${i + 1}`} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: '2px solid #e5e7eb' }} />
                     <button type="button" style={S.imgRemoveBtn} onClick={() => removePortfolio(i)}>×</button>
                   </div>
