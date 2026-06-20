@@ -7,7 +7,7 @@ import CountdownTimer from './CountdownTimer';
 import GalleryImageTile from './GalleryImageTile';
 import { formatEventDateTime } from './invitation-date';
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 type WeddingRecord = {
   id: string; slug: string; weddingTitle?: string; brideName?: string; groomName?: string;
@@ -58,8 +58,10 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-export default async function InvitationPage({ params }: Props) {
+export default async function InvitationPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const sp = await searchParams;
+  const guestToken = typeof sp.token === 'string' ? sp.token : undefined;
   const weddingOrNull = db.weddings.findUnique((w: WeddingRecord) => w.slug === slug) as WeddingRecord | null;
   if (!weddingOrNull) notFound();
   const wedding = weddingOrNull as WeddingRecord;
@@ -322,7 +324,7 @@ export default async function InvitationPage({ params }: Props) {
           )}
           <div className="inv-hero-ctas">
             {sec('rsvp') && (
-              <a href={`/rsvp/${wedding.slug}`} className="inv-btn-primary">
+              <a href={guestToken ? `/rsvp/${guestToken}` : `#rsvp`} className="inv-btn-primary">
                 ✉ RSVP Now
               </a>
             )}
@@ -523,14 +525,22 @@ export default async function InvitationPage({ params }: Props) {
 
           {/* RSVP CTA */}
           {sec('rsvp') && (
-            <div className="inv-cta-banner rsvp" data-testid="public-rsvp-cta">
+            <div className="inv-cta-banner rsvp" data-testid="public-rsvp-cta" id="rsvp">
               <h2 className="inv-section-title">We&apos;d love to know you&apos;re coming.</h2>
               <p className="inv-section-body">
-                Your response helps us prepare seating, meals, and a warm welcome for you and your family.
+                {guestToken
+                  ? 'Your response helps us prepare seating, meals, and a warm welcome for you and your family.'
+                  : 'Please use the personal link shared with you to RSVP, or contact the couple directly.'}
               </p>
-              <a href={`/rsvp/${wedding.slug}`} className="inv-btn-primary">
-                ✉ Respond to Invitation
-              </a>
+              {guestToken ? (
+                <a href={`/rsvp/${guestToken}`} className="inv-btn-primary">
+                  ✉ Respond to Invitation
+                </a>
+              ) : (
+                <p style={{color:'rgba(255,255,255,0.80)',fontSize:'.9rem'}}>
+                  Your invite link contains your personal RSVP access.
+                </p>
+              )}
             </div>
           )}
 

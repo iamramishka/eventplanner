@@ -14,11 +14,13 @@ import {
   ChevronRight, Send, Edit3, Calendar, DollarSign,
   Eye, AlertCircle, X, Check, Plus,
   UserCircle, LogOut, HelpCircle, Diamond, RefreshCw,
-  Home, Upload, Download, Trash2, GripVertical, Printer, Copy, FileText
+  Home, Upload, Download, Trash2, GripVertical, Printer, Copy, FileText,
+  BarChart2,
 } from 'lucide-react';
 import './dashboard.css';
 import InvitationEditorModule, { InvitationPreview } from './InvitationEditorModule';
 import TablesModule from './TablesModule';
+import CoupleAnalyticsModule from './CoupleAnalyticsModule';
 import {
   FONT_PRESETS,
   InvitationTheme,
@@ -138,6 +140,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'settings',     icon: Settings,         label: 'Wedding Settings' },
   { id: 'guests',       icon: Users,            label: 'Guests' },
   { id: 'rsvps',        icon: CheckSquare,      label: 'RSVPs' },
+  { id: 'analytics',   icon: BarChart2,         label: 'Analytics' },
   { id: 'invitation',   icon: Edit3,            label: 'Invitation Editor' },
   { id: 'theme',        icon: Palette,          label: 'Theme & Design' },
   { id: 'gallery',      icon: Grid3x3,          label: 'Gallery' },
@@ -455,6 +458,7 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
           {activeModule === 'checklist'  && <ChecklistModule wedding={wedding} checklist={checklist} setChecklist={setChecklist} />}
           {activeModule === 'guests'    && <GuestsModule    wedding={wedding} guests={guests} setGuests={setGuests} rsvps={rsvps} onNavigate={handleNavigate} />}
           {activeModule === 'rsvps'     && <RsvpsModule     guests={guests} rsvps={rsvps} onNavigate={handleNavigate} />}
+          {activeModule === 'analytics' && <CoupleAnalyticsModule weddingId={wedding?.id} />}
           {activeModule === 'tables'    && <TablesModule    wedding={wedding} guests={guests} />}
           {activeModule === 'vendors'   && <VendorsModule   wedding={wedding} setWedding={setWedding} />}
           {activeModule === 'notifications' && <NotificationsModule wedding={wedding} guests={guests} rsvps={rsvps} checklist={checklist} budget={budget} setWedding={setWedding} onNavigate={handleNavigate} />}
@@ -2362,6 +2366,26 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ name: '', side: 'Groom', whatsapp: '', type: 'Individual', maxMembers: 1, notes: '' });
   const [errorMsg, setErrorMsg] = useState('');
+  const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
+
+  function copyInviteLink(guestToken: string, guestId: string) {
+    const link = `${window.location.origin}/invitation/${wedding?.slug}?token=${guestToken}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopiedGuestId(guestId);
+      setTimeout(() => setCopiedGuestId(null), 2000);
+      // Mark the invite as sent so status column reflects it
+      fetch(`/api/guests/${guestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteSentAt: new Date().toISOString() }),
+      }).then(async res => {
+        if (res.ok) {
+          const updated = await res.json();
+          setGuests((prev: any[]) => prev.map((g: any) => g.id === guestId ? { ...g, ...updated } : g));
+        }
+      }).catch(() => {/* non-blocking */});
+    });
+  }
 
   const filtered = guests.filter((g: any) => {
     const matchSearch = !search || g.name.toLowerCase().includes(search.toLowerCase());
@@ -2528,6 +2552,7 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
                   <th>WhatsApp</th>
                   <th>Type</th>
                   <th>Max Members</th>
+                  <th>Invite</th>
                   <th>RSVP</th>
                   <th>Actions</th>
                 </tr>
@@ -2546,6 +2571,13 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
                       <td><span className="badge badge-slate">{g.type}</span></td>
                       <td>{g.maxMembers}</td>
                       <td>
+                        {g.inviteSentAt ? (
+                          <span className="badge badge-green" title={`Sent ${new Date(g.inviteSentAt).toLocaleDateString()}`}>Sent</span>
+                        ) : (
+                          <span className="badge badge-slate">Not sent</span>
+                        )}
+                      </td>
+                      <td>
                         {rsvp ? (
                           <span className={`badge ${rsvp.attending ? 'badge-green' : 'badge-red'}`}>
                             {rsvp.attending ? 'Confirmed' : 'Declined'}
@@ -2556,13 +2588,34 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
                       </td>
                       <td>
                         <div className="table-actions">
-                          <button className="table-action-btn" title="Send invite via WhatsApp" onClick={() => {
-                            const rsvpUrl = `${window.location.origin}/rsvp/${g.token}`;
-                            const message = `Hi ${g.name}, you're invited to ${wedding?.weddingTitle || `${wedding?.brideName} & ${wedding?.groomName}`}. Please RSVP here: ${rsvpUrl}`;
-                            window.open(`https://wa.me/${g.whatsapp.replace('+', '')}?text=${encodeURIComponent(message)}`, '_blank');
-                          }}>
-                            <Send size={14} />
+                          <button
+                            className="table-action-btn"
+                            title={copiedGuestId === g.id ? 'Copied!' : 'Copy invite link'}
+                            onClick={() => copyInviteLink(g.token, g.id)}
+                            style={copiedGuestId === g.id ? { color: '#16a34a' } : undefined}
+                          >
+                            {copiedGuestId === g.id ? <Check size={14} /> : <Copy size={14} />}
                           </button>
+                          {g.whatsapp && (
+                            <button className="table-action-btn" title="Send invite via WhatsApp" onClick={() => {
+                              const inviteUrl = `${window.location.origin}/invitation/${wedding?.slug}?token=${g.token}`;
+                              const message = `Hi ${g.name}, you're invited to ${wedding?.weddingTitle || `${wedding?.brideName} & ${wedding?.groomName}`}! Please RSVP here: ${inviteUrl}`;
+                              window.open(`https://wa.me/${g.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+                              // Mark invite sent
+                              fetch(`/api/guests/${g.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ inviteSentAt: new Date().toISOString() }),
+                              }).then(async res => {
+                                if (res.ok) {
+                                  const updated = await res.json();
+                                  setGuests((prev: any[]) => prev.map((gg: any) => gg.id === g.id ? { ...gg, ...updated } : gg));
+                                }
+                              }).catch(() => {/* non-blocking */});
+                            }}>
+                              <Send size={14} />
+                            </button>
+                          )}
                           <button className="table-action-btn" title="Edit guest" onClick={() => openModal(g)}>
                             <Edit3 size={14} />
                           </button>
