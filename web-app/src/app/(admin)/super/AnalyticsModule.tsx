@@ -424,10 +424,12 @@ function ConvRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 }
 
 function ChartSkeleton() {
+  const heights = [42, 68, 51, 76, 58, 84, 47, 70, 63, 88, 55, 73];
+
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: '100%', padding: '8px 0' }}>
-      {Array.from({ length: 12 }).map((_, i) => (
-        <div key={i} className={cn('skeleton')} style={{ flex: 1, height: `${30 + Math.random() * 60}%`, borderRadius: 4, opacity: 0.6 }} />
+      {heights.map((height, i) => (
+        <div key={i} className={cn('skeleton')} style={{ flex: 1, height: `${height}%`, borderRadius: 4, opacity: 0.6 }} />
       ))}
     </div>
   );
