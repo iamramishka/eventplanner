@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -43,6 +44,7 @@ export default function InvitationEditorModule({ wedding, setWedding }: Props) {
     setDraft(createInvitationDraft(wedding));
     setError('');
     setDirty(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding.id]);
 
   useEffect(() => {

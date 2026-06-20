@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { db, getAgendaEventsByWedding, getGalleryImagesByWedding } from '@/lib/store';
 import { notFound } from 'next/navigation';
 import { getInvitationContent, renderMarkdownBlocks, type InvitationContent } from '@/lib/invitation-content';
@@ -569,7 +570,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
             {wedding.venueName && <span>{wedding.venueName}</span>}
           </p>
           <p style={{marginTop:16}}>
-            Created with <a href="/">WedPlan</a>
+            Created with <Link href="/">WedPlan</Link>
           </p>
         </footer>
 

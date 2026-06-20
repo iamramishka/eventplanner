@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/rbac';
 import { getAdminCouples } from '@/lib/adminCouples';
