@@ -8,765 +8,576 @@ import GalleryImageTile from './GalleryImageTile';
 import { formatEventDateTime } from './invitation-date';
 
 type Props = { params: Promise<{ slug: string }> };
+
 type WeddingRecord = {
-  id: string;
-  slug: string;
-  weddingTitle?: string;
-  brideName?: string;
-  groomName?: string;
-  date?: string;
-  time?: string;
-  timezone?: string;
-  venueName?: string;
-  venueAddress?: string;
-  profileImage?: string | null;
-  rsvpDeadline?: string;
-  story?: string;
-  sections?: Record<string, boolean>;
-  invitationContent?: Partial<InvitationContent>;
+  id: string; slug: string; weddingTitle?: string; brideName?: string; groomName?: string;
+  date?: string; time?: string; timezone?: string; venueName?: string; venueAddress?: string;
+  venueMapLink?: string; profileImage?: string | null; rsvpDeadline?: string; story?: string;
+  sections?: Record<string, boolean>; invitationContent?: Partial<InvitationContent>;
+  theme?: { primaryColor?: string; secondaryColor?: string; accentColor?: string };
 };
-type GalleryImageRecord = {
-  id: string;
-  imageType?: string;
-  imageUrl?: string;
-  altText?: string;
-  caption?: string;
-  width?: number;
-  height?: number;
-};
-type AgendaEventRecord = {
-  id: string;
-  weddingId: string;
-  icon?: string;
-  iconKey?: string;
-  title: string;
-  startTime?: string;
-  endTime?: string;
-  time?: string;
-  duration?: number;
-  durationMinutes?: number;
-  timezone?: string;
-  location?: string;
-  description?: string;
-  sortOrder?: number;
-};
+type GalleryImageRecord = { id: string; imageType?: string; imageUrl?: string; altText?: string; caption?: string; width?: number; height?: number };
+type AgendaEventRecord = { id: string; weddingId: string; icon?: string; iconKey?: string; title: string; startTime?: string; endTime?: string; time?: string; duration?: number; timezone?: string; location?: string; description?: string; sortOrder?: number };
 
 const AGENDA_ICON_LABELS: Record<string, string> = {
-  CalendarDays: 'date',
-  Calendar: 'date',
-  Clock: 'time',
-  Clock4: 'time',
-  GlassWater: 'toast',
-  PartyPopper: 'party',
-  Music: 'music',
-  MapPin: 'place',
-  Utensils: 'meal',
-  Camera: 'photo',
-  Gift: 'gift',
-  Mic2: 'mic',
-  Sparkles: 'star',
+  CalendarDays: '📅', Calendar: '📅', Clock: '⏰', Clock4: '⏰',
+  GlassWater: '🥂', PartyPopper: '🎉', Music: '🎵', MapPin: '📍',
+  Utensils: '🍽️', Camera: '📷', Gift: '🎁', Mic2: '🎤', Sparkles: '✨', Ring: '💍',
 };
+
+function renderAgendaIcon(item: AgendaEventRecord) {
+  const key = String(item.icon || item.iconKey || '').trim();
+  return AGENDA_ICON_LABELS[key] ?? '✦';
+}
+
+function formatTime(t?: string) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function formatDate(d?: string) {
+  if (!d) return '';
+  try { return new Date(`${d}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); } catch { return d; }
+}
 
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: Props) {
-  // `params` may be a Promise in some Next runtime shapes — unwrap it safely
-  const resolvedParams = (await params) as { slug: string };
-  const slug = resolvedParams.slug;
-  // Use findUnique for clarity
+  const { slug } = await params;
   const wedding = db.weddings.findUnique((w: WeddingRecord) => w.slug === slug) as WeddingRecord | null;
-  if (!wedding) {
-    notFound();
-  }
-
+  if (!wedding) notFound();
   const title = wedding.weddingTitle || `${wedding.brideName} & ${wedding.groomName}`;
-  const description = `Join ${wedding.brideName} and ${wedding.groomName} on ${wedding.date} at ${wedding.venueName}`;
+  const description = `Join ${wedding.brideName} and ${wedding.groomName} on ${formatDate(wedding.date)} at ${wedding.venueName}`;
   return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      images: [
-        {
-          url: `/invitation/${slug}/opengraph-image`,
-          alt: title,
-        },
-      ],
-      type: 'website',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [`/invitation/${slug}/twitter-image`],
-    },
+    title, description,
+    openGraph: { title, description, images: [{ url: `/invitation/${slug}/opengraph-image`, alt: title }], type: 'website' },
+    twitter: { card: 'summary_large_image', title, description, images: [`/invitation/${slug}/twitter-image`] },
   };
 }
 
 export default async function InvitationPage({ params }: Props) {
-  const resolvedParams = (await params) as { slug: string };
-  const { slug } = resolvedParams;
-  const wedding = db.weddings.findUnique((w: WeddingRecord) => w.slug === slug) as WeddingRecord | null;
-  if (!wedding) {
-    notFound();
-  }
+  const { slug } = await params;
+  const weddingOrNull = db.weddings.findUnique((w: WeddingRecord) => w.slug === slug) as WeddingRecord | null;
+  if (!weddingOrNull) notFound();
+  const wedding = weddingOrNull as WeddingRecord;
 
   const title = wedding.weddingTitle || `${wedding.brideName} & ${wedding.groomName}`;
-  const description = `Join ${wedding.brideName} and ${wedding.groomName} on ${wedding.date} at ${wedding.venueName}`;
+  const description = `Join ${wedding.brideName} and ${wedding.groomName} on ${formatDate(wedding.date)} at ${wedding.venueName}`;
   const content = getInvitationContent(wedding);
   const messageBlocks = renderMarkdownBlocks(content.messageMarkdown);
   const detailsBlocks = renderMarkdownBlocks(content.detailsMarkdown);
   const closingBlocks = renderMarkdownBlocks(content.closingMarkdown);
-  const sectionEnabled = (key: string) => wedding.sections?.[key] !== false;
-  const galleryImages = getGalleryImagesByWedding(wedding.id)
-    .filter((image: GalleryImageRecord) => (image.imageType || 'gallery') === 'gallery') as GalleryImageRecord[];
+  const sec = (key: string) => wedding.sections?.[key] !== false;
+  const galleryImages = getGalleryImagesByWedding(wedding.id).filter((img: GalleryImageRecord) => (img.imageType || 'gallery') === 'gallery') as GalleryImageRecord[];
   const agenda = getAgendaEventsByWedding(wedding.id) as AgendaEventRecord[];
   const eventLabel = formatEventDateTime(wedding.date, wedding.time, wedding.timezone || 'UTC');
 
-  return (
-    <main style={{fontFamily:'Georgia,serif',background:'linear-gradient(180deg, #fffaf7 0%, #f8ebe4 100%)',minHeight:'100vh'}}>
-      <section
-        style={{
-          maxWidth: 1200,
-          margin: '0 auto',
-          padding: '24px clamp(16px, 4vw, 40px) 40px',
-          display: 'grid',
-          gap: 24,
-        }}
-      >
-        {sectionEnabled('hero') ? (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: 24,
-              alignItems: 'stretch',
-            }}
-          >
-            <div
-              style={{
-                borderRadius: 28,
-                padding: 28,
-                background: 'rgba(255,255,255,0.78)',
-                border: '1px solid rgba(153, 90, 109, 0.15)',
-                boxShadow: '0 20px 60px rgba(122, 71, 88, 0.10)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                gap: 24,
-              }}
-            >
-              <div
-                style={{
-                  width: 100,
-                  height: 76,
-                  position: 'relative',
-                  borderRadius: 12,
-                  background: '#fff',
-                  border: '2px solid #d6a6b3',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'linear-gradient(135deg, transparent 49%, #d6a6b3 50%, transparent 51%), linear-gradient(225deg, transparent 49%, #d6a6b3 50%, transparent 51%)',
-                  }}
-                />
-              </div>
-              <div>
-                <div style={{ letterSpacing: 4, textTransform: 'uppercase', color: '#9a5a6d', fontSize: 12 }}>You are invited</div>
-                <h1 style={{ margin: '10px 0 0', fontSize: 'clamp(2.3rem, 6vw, 4.9rem)', lineHeight: 1.02, color: '#4b2230' }}>{title}</h1>
-                <p style={{ margin: '16px 0 0', color: '#6b4a56', fontSize: 'clamp(1rem, 2.8vw, 1.2rem)', lineHeight: 1.6 }}>
-                  {content.intro}
-                </p>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                <a href={`/rsvp/${wedding.slug}`} style={bannerButtonStyle}>Open RSVP</a>
-                <a
-                  href={`https://maps.google.com/?q=${encodeURIComponent(wedding.venueName || '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '12px 18px',
-                    borderRadius: 999,
-                    background: 'rgba(255,255,255,0.82)',
-                    color: '#6d2f42',
-                    textDecoration: 'none',
-                    border: '1px solid rgba(109, 47, 66, 0.15)',
-                  }}
-                >
-                  View Map
-                </a>
-              </div>
-            </div>
+  const primary = wedding.theme?.primaryColor || '#C45A74';
+  const gold = wedding.theme?.secondaryColor || '#C9A574';
+  const sage = wedding.theme?.accentColor || '#8FA98F';
 
-            <div
-              style={{
-                borderRadius: 28,
-                padding: 18,
-                background: 'linear-gradient(135deg, rgba(196,90,116,0.12), rgba(201,165,116,0.12))',
-                border: '1px solid rgba(153, 90, 109, 0.12)',
-                minHeight: 340,
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 340, borderRadius: 22, overflow: 'hidden', background: '#f7ece7' }}>
-                {wedding.profileImage ? (
-                  <Image
-                    src={wedding.profileImage}
-                    alt={title}
-                    fill
-                    priority
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    style={{ objectFit: 'cover' }}
-                  />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: '#8f6873', textAlign: 'center', padding: 24 }}>
+  return (
+    <>
+      <style>{`
+        :root {
+          --inv-primary: ${primary};
+          --inv-gold: ${gold};
+          --inv-sage: ${sage};
+          --inv-bg: #FCF8F6;
+          --inv-surface: rgba(255,255,255,0.82);
+          --inv-text: #2A1A1F;
+          --inv-muted: #6b4a56;
+          --inv-subtle: rgba(196,90,116,0.10);
+          --inv-border: rgba(196,90,116,0.15);
+          --inv-radius: 20px;
+          --inv-shadow: 0 8px 32px rgba(100,50,70,0.10);
+        }
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        .inv-root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--inv-bg);color:var(--inv-text);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+        /* ── Hero ── */
+        .inv-hero{
+          position:relative;min-height:100svh;display:flex;flex-direction:column;
+          align-items:center;justify-content:flex-end;overflow:hidden;
+          padding:0 16px 56px;text-align:center;
+        }
+        .inv-hero-bg{
+          position:absolute;inset:0;
+          background:linear-gradient(160deg,#1a0a0e 0%,#3d1a27 40%,#6b2a41 70%,#c45a74 100%);
+        }
+        .inv-hero-bg::after{
+          content:'';position:absolute;inset:0;
+          background:radial-gradient(ellipse 80% 60% at 50% 100%, rgba(201,165,116,0.18) 0%, transparent 70%);
+        }
+        .inv-hero-img{position:absolute;inset:0;object-fit:cover;opacity:0.32;mix-blend-mode:luminosity}
+        .inv-hero-decoration{
+          position:absolute;top:0;left:0;right:0;height:100%;
+          background:radial-gradient(ellipse 60% 40% at 50% 0%, rgba(201,165,116,0.10) 0%, transparent 70%);
+          pointer-events:none;
+        }
+        .inv-hero-eyebrow{
+          position:relative;z-index:1;
+          letter-spacing:.35em;text-transform:uppercase;font-size:.72rem;
+          color:rgba(255,255,255,0.55);margin-bottom:20px;font-weight:500;
+        }
+        .inv-hero-names{
+          position:relative;z-index:1;
+          font-family:Georgia,'Times New Roman',serif;
+          font-size:clamp(3rem,12vw,8rem);font-weight:400;line-height:1;
+          color:#fff;letter-spacing:-.02em;margin-bottom:24px;
+        }
+        .inv-hero-names span{
+          display:block;font-size:.38em;letter-spacing:.2em;
+          text-transform:uppercase;color:var(--inv-gold);
+          margin:.5em 0;font-family:inherit;font-weight:300;
+        }
+        .inv-hero-date{
+          position:relative;z-index:1;
+          font-size:clamp(.9rem,2.2vw,1.1rem);color:rgba(255,255,255,0.72);
+          letter-spacing:.08em;margin-bottom:36px;
+        }
+        .inv-hero-ctas{position:relative;z-index:1;display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+        .inv-btn-primary{
+          display:inline-flex;align-items:center;gap:8px;
+          padding:14px 32px;border-radius:999px;
+          background:linear-gradient(135deg,var(--inv-primary),color-mix(in srgb,var(--inv-primary) 70%,var(--inv-gold)));
+          color:#fff;text-decoration:none;font-size:.95rem;font-weight:600;
+          letter-spacing:.02em;border:none;cursor:pointer;
+          box-shadow:0 8px 24px rgba(196,90,116,0.40);
+          transition:transform .15s,box-shadow .15s;
+        }
+        .inv-btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(196,90,116,0.50)}
+        .inv-btn-secondary{
+          display:inline-flex;align-items:center;gap:8px;
+          padding:14px 28px;border-radius:999px;
+          background:rgba(255,255,255,0.14);backdrop-filter:blur(8px);
+          color:#fff;text-decoration:none;font-size:.95rem;font-weight:500;
+          border:1px solid rgba(255,255,255,0.28);
+          transition:background .15s;
+        }
+        .inv-btn-secondary:hover{background:rgba(255,255,255,0.22)}
+        .inv-scroll-hint{
+          position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+          z-index:1;display:flex;flex-direction:column;align-items:center;
+          gap:6px;color:rgba(255,255,255,0.40);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+        }
+        .inv-scroll-hint::after{
+          content:'';display:block;width:1px;height:32px;
+          background:linear-gradient(to bottom,rgba(255,255,255,0.40),transparent);
+        }
+
+        /* ── Layout ── */
+        .inv-body{max-width:840px;margin:0 auto;padding:0 16px 80px;display:grid;gap:28px}
+        @media(min-width:600px){.inv-body{padding:0 32px 80px}}
+
+        /* ── Cards ── */
+        .inv-card{
+          background:var(--inv-surface);backdrop-filter:blur(8px);
+          border:1px solid var(--inv-border);border-radius:var(--inv-radius);
+          box-shadow:var(--inv-shadow);padding:28px 24px;
+        }
+        .inv-section-label{
+          letter-spacing:.3em;text-transform:uppercase;font-size:.68rem;
+          color:var(--inv-primary);font-weight:600;margin-bottom:14px;
+        }
+        .inv-section-title{
+          font-family:Georgia,serif;font-size:clamp(1.8rem,5vw,2.6rem);
+          font-weight:400;color:var(--inv-text);line-height:1.15;margin-bottom:12px;
+        }
+        .inv-section-body{color:var(--inv-muted);line-height:1.75;font-size:.97rem}
+
+        /* ── Details strip ── */
+        .inv-details-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+        .inv-detail-pill{
+          display:flex;align-items:flex-start;gap:12px;
+          padding:16px 18px;border-radius:14px;
+          background:rgba(196,90,116,0.06);border:1px solid var(--inv-border);
+        }
+        .inv-detail-icon{font-size:1.3rem;flex-shrink:0;margin-top:2px}
+        .inv-detail-label{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--inv-primary);font-weight:600;margin-bottom:4px}
+        .inv-detail-value{font-size:.97rem;color:var(--inv-text);font-weight:500;line-height:1.4}
+        .inv-detail-sub{font-size:.85rem;color:var(--inv-muted);margin-top:2px}
+
+        /* ── Countdown ── */
+        .inv-countdown-card{
+          text-align:center;
+          background:linear-gradient(135deg,rgba(196,90,116,0.08),rgba(201,165,116,0.10));
+          border:1px solid rgba(201,165,116,0.25);
+        }
+
+        /* ── Story ── */
+        .inv-story-card{padding:32px 28px;line-height:1.85}
+        .inv-story-card p{color:var(--inv-muted);font-size:1rem;margin-bottom:1em}
+        .inv-story-card h3{font-family:Georgia,serif;font-size:1.4rem;font-weight:400;color:var(--inv-text);margin-bottom:.6em}
+
+        /* ── Agenda ── */
+        .inv-agenda-track{display:grid;gap:0;position:relative;padding-left:40px}
+        .inv-agenda-track::before{
+          content:'';position:absolute;left:19px;top:24px;bottom:24px;width:2px;
+          background:linear-gradient(to bottom,transparent,var(--inv-gold) 10%,var(--inv-gold) 90%,transparent);
+          opacity:.4;
+        }
+        .inv-agenda-entry{
+          display:grid;grid-template-columns:auto 1fr;gap:0 16px;
+          padding-bottom:28px;position:relative;
+        }
+        .inv-agenda-entry:last-child{padding-bottom:0}
+        .inv-agenda-dot{
+          width:40px;height:40px;border-radius:50%;
+          background:#fff;border:2px solid var(--inv-gold);
+          display:flex;align-items:center;justify-content:center;
+          font-size:1.1rem;flex-shrink:0;box-shadow:0 4px 14px rgba(201,165,116,0.25);
+          position:relative;z-index:1;
+        }
+        .inv-agenda-content{padding-top:8px;min-width:0}
+        .inv-agenda-time{font-size:.8rem;color:var(--inv-primary);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+        .inv-agenda-title{font-size:1.05rem;font-weight:600;color:var(--inv-text);margin-bottom:4px}
+        .inv-agenda-desc{font-size:.87rem;color:var(--inv-muted);line-height:1.6}
+        .inv-agenda-loc{font-size:.8rem;color:var(--inv-muted);margin-top:6px;display:flex;align-items:center;gap:4px}
+
+        /* ── Gallery ── */
+        .inv-gallery-grid{
+          display:grid;gap:12px;
+          grid-template-columns:repeat(2,1fr);
+        }
+        @media(min-width:520px){.inv-gallery-grid{grid-template-columns:repeat(3,1fr)}}
+        .inv-gallery-grid > *:first-child{grid-column:1/-1}
+        @media(min-width:520px){.inv-gallery-grid > *:first-child{grid-column:auto}}
+        .inv-gallery-empty{
+          min-height:200px;display:grid;place-items:center;text-align:center;
+          padding:40px 24px;border-radius:16px;
+          border:2px dashed rgba(196,90,116,0.20);
+          background:rgba(196,90,116,0.04);
+        }
+        .inv-gallery-empty-icon{font-size:2.5rem;margin-bottom:12px;opacity:.4}
+        .inv-gallery-empty-text{color:var(--inv-muted);font-size:.92rem;line-height:1.6}
+
+        /* ── CTA banners ── */
+        .inv-cta-banner{
+          border-radius:var(--inv-radius);padding:36px 28px;text-align:center;
+          display:flex;flex-direction:column;align-items:center;gap:20px;
+        }
+        .inv-cta-banner.rsvp{
+          background:linear-gradient(135deg,var(--inv-primary),color-mix(in srgb,var(--inv-primary) 60%,var(--inv-gold)));
+          box-shadow:0 12px 40px rgba(196,90,116,0.35);
+        }
+        .inv-cta-banner.rsvp *{color:#fff}
+        .inv-cta-banner.rsvp .inv-btn-primary{
+          background:rgba(255,255,255,0.22);
+          border:1px solid rgba(255,255,255,0.40);
+          box-shadow:none;
+        }
+        .inv-cta-banner.rsvp .inv-btn-primary:hover{background:rgba(255,255,255,0.32)}
+        .inv-cta-banner.table{background:var(--inv-surface);border:1px solid var(--inv-border)}
+        .inv-cta-banner .inv-section-title{margin-bottom:8px}
+        .inv-cta-banner .inv-section-body{max-width:480px}
+
+        /* ── Map link ── */
+        .inv-map-link{
+          display:inline-flex;align-items:center;gap:8px;
+          padding:11px 20px;border-radius:999px;
+          background:rgba(196,90,116,0.08);border:1px solid var(--inv-border);
+          color:var(--inv-primary);text-decoration:none;font-size:.88rem;font-weight:600;
+          transition:background .15s;
+        }
+        .inv-map-link:hover{background:rgba(196,90,116,0.14)}
+
+        /* ── Footer ── */
+        .inv-footer{
+          text-align:center;padding:32px 16px 48px;
+          border-top:1px solid var(--inv-border);
+          color:var(--inv-muted);font-size:.82rem;line-height:1.7;
+        }
+        .inv-footer a{color:var(--inv-primary);text-decoration:none}
+        .inv-footer-brand{font-family:Georgia,serif;font-size:1.5rem;color:var(--inv-text);margin-bottom:8px;font-weight:400}
+
+        /* ── Reduced motion ── */
+        @media(prefers-reduced-motion:reduce){
+          *{animation:none!important;transition:none!important}
+        }
+      `}</style>
+
+      <div className="inv-root">
+
+        {/* ─── HERO ─── */}
+        <header className="inv-hero">
+          <div className="inv-hero-bg" aria-hidden="true" />
+          <div className="inv-hero-decoration" aria-hidden="true" />
+          {wedding.profileImage && (
+            <Image src={wedding.profileImage} alt={title} fill className="inv-hero-img" priority sizes="100vw" />
+          )}
+          <p className="inv-hero-eyebrow">You are warmly invited to celebrate</p>
+          <h1 className="inv-hero-names">
+            {wedding.brideName}
+            <span>&amp;</span>
+            {wedding.groomName}
+          </h1>
+          {(wedding.date || wedding.venueName) && (
+            <p className="inv-hero-date">
+              {formatDate(wedding.date)}{wedding.date && wedding.venueName ? ' · ' : ''}{wedding.venueName}
+            </p>
+          )}
+          <div className="inv-hero-ctas">
+            {sec('rsvp') && (
+              <a href={`/rsvp/${wedding.slug}`} className="inv-btn-primary">
+                ✉ RSVP Now
+              </a>
+            )}
+            {wedding.venueName && (
+              <a
+                href={wedding.venueMapLink || `https://maps.google.com/?q=${encodeURIComponent(wedding.venueName)}`}
+                target="_blank" rel="noreferrer"
+                className="inv-btn-secondary"
+              >
+                📍 View Venue
+              </a>
+            )}
+          </div>
+          <div className="inv-scroll-hint" aria-hidden="true">Scroll</div>
+        </header>
+
+        {/* ─── BODY ─── */}
+        <div className="inv-body">
+
+          {/* Event Details */}
+          {sec('details') && (
+            <section>
+              <p className="inv-section-label">Event Details</p>
+              <div className="inv-details-grid">
+                {wedding.date && (
+                  <div className="inv-detail-pill">
+                    <span className="inv-detail-icon">📅</span>
                     <div>
-                      <div style={{ fontSize: 18, letterSpacing: 4, textTransform: 'uppercase' }}>Invitation cover</div>
-                      <div style={{ marginTop: 12, fontSize: 22 }}>The full hero image will appear here.</div>
+                      <p className="inv-detail-label">Date</p>
+                      <p className="inv-detail-value">{formatDate(wedding.date)}</p>
+                      {wedding.time && <p className="inv-detail-sub">{formatTime(wedding.time)}</p>}
+                    </div>
+                  </div>
+                )}
+                {wedding.venueName && (
+                  <div className="inv-detail-pill">
+                    <span className="inv-detail-icon">📍</span>
+                    <div>
+                      <p className="inv-detail-label">Venue</p>
+                      <p className="inv-detail-value">{wedding.venueName}</p>
+                      {wedding.venueAddress && <p className="inv-detail-sub">{wedding.venueAddress}</p>}
+                    </div>
+                  </div>
+                )}
+                {wedding.rsvpDeadline && (
+                  <div className="inv-detail-pill">
+                    <span className="inv-detail-icon">⏳</span>
+                    <div>
+                      <p className="inv-detail-label">RSVP By</p>
+                      <p className="inv-detail-value">{formatDate(wedding.rsvpDeadline)}</p>
+                    </div>
+                  </div>
+                )}
+                {wedding.venueAddress && (
+                  <div className="inv-detail-pill">
+                    <span className="inv-detail-icon">🗺️</span>
+                    <div>
+                      <p className="inv-detail-label">Directions</p>
+                      <a
+                        href={wedding.venueMapLink || `https://maps.google.com/?q=${encodeURIComponent(wedding.venueAddress)}`}
+                        target="_blank" rel="noreferrer" className="inv-map-link" style={{marginTop:4}}
+                      >
+                        Open in Maps →
+                      </a>
                     </div>
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-        ) : (
-          <section style={{ borderRadius: 28, padding: 28, background: 'rgba(255,255,255,0.78)', border: '1px solid rgba(153, 90, 109, 0.15)' }}>
-            <div style={{ letterSpacing: 4, textTransform: 'uppercase', color: '#9a5a6d', fontSize: 12 }}>You are invited</div>
-            <h1 style={{ margin: '10px 0 0', fontSize: 'clamp(2.2rem, 6vw, 4.4rem)', lineHeight: 1.02, color: '#4b2230' }}>{title}</h1>
-            <p style={{ margin: '16px 0 0', color: '#6b4a56', lineHeight: 1.6 }}>{content.intro}</p>
-          </section>
-        )}
-
-        {sectionEnabled('details') && (
-          <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
-            <article style={cardStyle}>
-              <div style={eyebrowStyle}>Wedding details</div>
-              <div style={infoLineStyle}>{wedding.date} • {wedding.time}</div>
-              <div style={infoLineStyle}>{wedding.venueName}</div>
-              <div style={mutedStyle}>{wedding.venueAddress}</div>
-            </article>
-            {sectionEnabled('countdown') && (
-              <article style={cardStyle}>
-                <div style={eyebrowStyle}>Countdown</div>
-                <CountdownTimer date={wedding.date} time={wedding.time} timezone={wedding.timezone || 'UTC'} />
-              </article>
-            )}
-            <article style={cardStyle}>
-              <div style={eyebrowStyle}>Quick note</div>
-              <div style={mutedStyle}>Please arrive a little early so you can settle in before the ceremony begins.</div>
-            </article>
-          </section>
-        )}
-
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-          {sectionEnabled('message') && (
-            <article style={contentCardStyle}>
-              {messageBlocks.map((block, index) => renderBlock(block, index))}
-            </article>
+            </section>
           )}
-          {sectionEnabled('venueMap') && (
-            <article style={contentCardStyle}>
-              {detailsBlocks.map((block, index) => renderBlock(block, index))}
-            </article>
-          )}
-          {sectionEnabled('specialMessage') && (
-            <article style={contentCardStyle}>
-              {closingBlocks.map((block, index) => renderBlock(block, index))}
-            </article>
-          )}
-        </section>
 
-        {sectionEnabled('agenda') && agenda.length > 0 && (
-          <section data-testid="public-agenda" className="public-agenda-panel">
-            <style>{agendaCss}</style>
-            <div>
-              <div style={eyebrowStyle}>The day</div>
-              <h2 style={{ margin: '8px 0 0', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', color: '#4b2230' }}>Day&apos;s Schedule</h2>
-              <p style={{ margin: '10px 0 0', color: '#6b4a56', lineHeight: 1.7, maxWidth: 680 }}>
-                The celebration timeline, shared from the couple&apos;s planning dashboard.
+          {/* Countdown */}
+          {sec('countdown') && wedding.date && (
+            <section className="inv-card inv-countdown-card">
+              <p className="inv-section-label" style={{marginBottom:6}}>Counting down to</p>
+              <h2 className="inv-section-title" style={{textAlign:'center',marginBottom:20}}>{eventLabel}</h2>
+              <CountdownTimer date={wedding.date} time={wedding.time} timezone={wedding.timezone || 'UTC'} />
+            </section>
+          )}
+
+          {/* Message / Story */}
+          {sec('message') && (
+            <section className="inv-card inv-story-card">
+              <p className="inv-section-label">A message from us</p>
+              {messageBlocks.map((block, i) => {
+                if (block.type === 'heading') return <h3 key={i}>{block.text}</h3>;
+                if (block.type === 'list') return (
+                  <ul key={i} style={{paddingLeft:'1.4em',color:'var(--inv-muted)',fontSize:'.97rem',lineHeight:1.75}}>
+                    {(block.items || []).map((item, j) => <li key={j}>{item}</li>)}
+                  </ul>
+                );
+                return <p key={i}>{block.text}</p>;
+              })}
+            </section>
+          )}
+
+          {/* Couple story from profile */}
+          {sec('story') && wedding.story && (
+            <section className="inv-card inv-story-card">
+              <p className="inv-section-label">Our story</p>
+              <p>{wedding.story}</p>
+            </section>
+          )}
+
+          {/* Details / venue content */}
+          {sec('venueMap') && detailsBlocks.length > 0 && (
+            <section className="inv-card inv-story-card">
+              {detailsBlocks.map((block, i) => {
+                if (block.type === 'heading') return <h3 key={i}>{block.text}</h3>;
+                if (block.type === 'list') return (
+                  <ul key={i} style={{paddingLeft:'1.4em',color:'var(--inv-muted)',fontSize:'.97rem',lineHeight:1.75}}>
+                    {(block.items || []).map((item, j) => <li key={j}>{item}</li>)}
+                  </ul>
+                );
+                return <p key={i}>{block.text}</p>;
+              })}
+            </section>
+          )}
+
+          {/* Agenda */}
+          {sec('agenda') && agenda.length > 0 && (
+            <section className="inv-card" data-testid="public-agenda">
+              <p className="inv-section-label">The day</p>
+              <h2 className="inv-section-title">Day&apos;s Schedule</h2>
+              <p className="inv-section-body" style={{marginBottom:28}}>
+                The celebration timeline — we can&apos;t wait to share these moments with you.
               </p>
-            </div>
-
-            <div className="public-agenda-timeline" data-testid="public-agenda-list" role="list">
-              {agenda.map((item) => {
-                const timeLabel = formatAgendaTimeRange(item);
-                const durationLabel = formatAgendaDuration(item);
-                const iconValue = String(item.icon || item.iconKey || '').trim();
-                return (
-                  <article
-                    key={item.id}
-                    className="public-agenda-item"
-                    data-testid="public-agenda-item"
-                    data-agenda-id={item.id}
-                    role="listitem"
-                  >
-                    <time className="public-agenda-time" data-testid="public-agenda-time" dateTime={item.startTime || item.time || ''}>
-                      {timeLabel}
-                    </time>
-                    <div
-                      className="public-agenda-dot"
-                      data-testid="public-agenda-icon"
-                      data-icon-key={iconValue}
-                      data-icon-mode={getAgendaIconMode(item)}
-                    >
-                      {renderAgendaIcon(item)}
-                    </div>
-                    <div className="public-agenda-card">
-                      <h3 className="public-agenda-title clamp-one" data-testid="public-agenda-title" title={item.title}>{item.title}</h3>
-                      {item.description && (
-                        <p className="public-agenda-desc clamp-two" data-testid="public-agenda-description" title={item.description}>
-                          {item.description}
+              <div className="inv-agenda-track" data-testid="public-agenda-list" role="list">
+                {agenda.map((item) => (
+                  <article key={item.id} className="inv-agenda-entry" data-testid="public-agenda-item" role="listitem">
+                    <div className="inv-agenda-dot" data-testid="public-agenda-icon">{renderAgendaIcon(item)}</div>
+                    <div className="inv-agenda-content">
+                      <time className="inv-agenda-time" dateTime={item.startTime || item.time || ''} data-testid="public-agenda-time">
+                        {formatTime(item.startTime || item.time)}
+                        {item.endTime ? ` – ${formatTime(item.endTime)}` : ''}
+                      </time>
+                      <h3 className="inv-agenda-title" data-testid="public-agenda-title">{item.title}</h3>
+                      {item.description && <p className="inv-agenda-desc" data-testid="public-agenda-description">{item.description}</p>}
+                      {item.location && (
+                        <p className="inv-agenda-loc" data-testid="public-agenda-location">
+                          <span>📍</span>{item.location}
                         </p>
-                      )}
-                      {(durationLabel || item.location) && (
-                        <div className="public-agenda-meta">
-                          {durationLabel && <span data-testid="public-agenda-duration">Duration: {durationLabel}</span>}
-                          {item.location && <span data-testid="public-agenda-location" title={item.location}>Location: {item.location}</span>}
-                        </div>
                       )}
                     </div>
                   </article>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {sectionEnabled('gallery') && (
-          <section
-            data-testid="public-gallery"
-            style={{
-              ...sectionPanelStyle,
-              display: 'grid',
-              gap: 22,
-            }}
-          >
-            <div>
-              <div style={eyebrowStyle}>Gallery</div>
-              <h2 style={{ margin: '8px 0 0', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', color: '#4b2230' }}>Favorite moments</h2>
-              <p style={{ margin: '10px 0 0', color: '#6b4a56', lineHeight: 1.7, maxWidth: 680 }}>
-                A few memories from the couple, shared for family and friends ahead of {eventLabel}.
-              </p>
-            </div>
-
-            {galleryImages.length > 0 ? (
-              <div
-                data-testid="public-gallery-grid"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                  gap: 18,
-                  alignItems: 'start',
-                }}
-              >
-                {galleryImages.map((image) => (
-                  <GalleryImageTile
-                    key={image.id}
-                    src={image.imageUrl}
-                    alt={image.altText || image.caption || 'Wedding gallery image'}
-                    width={Number(image.width || 0)}
-                    height={Number(image.height || 0)}
-                    caption={image.altText || image.caption || ''}
-                  />
                 ))}
               </div>
-            ) : (
-              <div data-testid="public-gallery-empty" style={galleryEmptyStyle}>
-                <div style={{ fontSize: 13, letterSpacing: 4, textTransform: 'uppercase', color: '#9a5a6d' }}>Photos coming soon</div>
-                <p style={{ margin: '10px auto 0', color: '#6b4a56', lineHeight: 1.7, maxWidth: 520 }}>
-                  The couple has not added gallery photos yet. Please check back closer to the celebration.
-                </p>
-              </div>
-            )}
-          </section>
-        )}
+            </section>
+          )}
 
-        {sectionEnabled('tableFinder') && (
-          <section data-testid="public-table-finder" style={tableFinderBannerStyle}>
-            <div>
-              <div style={eyebrowStyle}>Seating</div>
-              <h2 style={{ margin: '8px 0 0', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', color: '#4b2230' }}>Find your table.</h2>
-              <p style={{ margin: '10px 0 0', color: '#6b4a56', lineHeight: 1.7, maxWidth: 620 }}>
-                Verify your invitation to see your table assignment.
+          {/* Gallery */}
+          {sec('gallery') && (
+            <section className="inv-card" data-testid="public-gallery">
+              <p className="inv-section-label">Gallery</p>
+              <h2 className="inv-section-title">Favourite Moments</h2>
+              <p className="inv-section-body" style={{marginBottom:20}}>
+                A few memories the couple has shared ahead of the celebration.
               </p>
-            </div>
-            <a href={`/find-table/${wedding.slug}`} style={bannerButtonStyle}>Find My Table</a>
-          </section>
-        )}
+              {galleryImages.length > 0 ? (
+                <div className="inv-gallery-grid" data-testid="public-gallery-grid">
+                  {galleryImages.map((img) => (
+                    <GalleryImageTile
+                      key={img.id}
+                      src={img.imageUrl}
+                      alt={img.altText || img.caption || 'Wedding photo'}
+                      width={Number(img.width || 0)}
+                      height={Number(img.height || 0)}
+                      caption={img.altText || img.caption || ''}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="inv-gallery-empty" data-testid="public-gallery-empty">
+                  <div className="inv-gallery-empty-icon">🌸</div>
+                  <p className="inv-gallery-empty-text">
+                    The couple will be adding their gallery soon.<br />
+                    Please check back closer to the celebration.
+                  </p>
+                </div>
+              )}
+            </section>
+          )}
 
-        {sectionEnabled('rsvp') && (
-          <section style={rsvpBannerStyle}>
-            <div>
-              <div style={eyebrowStyle}>RSVP</div>
-              <h2 style={{ margin: '8px 0 0', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', color: '#4b2230' }}>We’d love to know you’re coming.</h2>
-              <p style={{ margin: '10px 0 0', color: '#6b4a56', lineHeight: 1.7, maxWidth: 640 }}>
-                Your response helps us prepare the right seating, meals, and welcome details for the celebration.
+          {/* Closing / special message */}
+          {sec('specialMessage') && closingBlocks.length > 0 && (
+            <section className="inv-card inv-story-card">
+              {closingBlocks.map((block, i) => {
+                if (block.type === 'heading') return <h3 key={i}>{block.text}</h3>;
+                if (block.type === 'list') return (
+                  <ul key={i} style={{paddingLeft:'1.4em',color:'var(--inv-muted)',fontSize:'.97rem',lineHeight:1.75}}>
+                    {(block.items || []).map((item, j) => <li key={j}>{item}</li>)}
+                  </ul>
+                );
+                return <p key={i}>{block.text}</p>;
+              })}
+            </section>
+          )}
+
+          {/* RSVP CTA */}
+          {sec('rsvp') && (
+            <div className="inv-cta-banner rsvp" data-testid="public-rsvp-cta">
+              <h2 className="inv-section-title">We&apos;d love to know you&apos;re coming.</h2>
+              <p className="inv-section-body">
+                Your response helps us prepare seating, meals, and a warm welcome for you and your family.
               </p>
+              <a href={`/rsvp/${wedding.slug}`} className="inv-btn-primary">
+                ✉ Respond to Invitation
+              </a>
             </div>
-            <a href={`/rsvp/${wedding.slug}`} style={bannerButtonStyle}>Respond now</a>
-          </section>
-        )}
+          )}
 
-        {/* JSON-LD for enhanced SEO and rich results */}
+          {/* Find My Table CTA */}
+          {sec('tableFinder') && (
+            <div className="inv-cta-banner table" data-testid="public-table-finder">
+              <p className="inv-section-label">Seating</p>
+              <h2 className="inv-section-title">Find Your Table</h2>
+              <p className="inv-section-body">
+                After RSVPs close, you can look up your seat assignment here.
+              </p>
+              <a href={`/find-table/${wedding.slug}`} className="inv-btn-primary">
+                🪑 Find My Table
+              </a>
+            </div>
+          )}
+
+        </div>
+
+        {/* ─── FOOTER ─── */}
+        <footer className="inv-footer">
+          <p className="inv-footer-brand">{title}</p>
+          <p>
+            {wedding.date && <span>{formatDate(wedding.date)}</span>}
+            {wedding.date && wedding.venueName && <span> · </span>}
+            {wedding.venueName && <span>{wedding.venueName}</span>}
+          </p>
+          <p style={{marginTop:16}}>
+            Created with <a href="/">WedPlan</a>
+          </p>
+        </footer>
+
+        {/* JSON-LD */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Event',
-              name: title,
+              '@context': 'https://schema.org', '@type': 'Event',
+              name: title, description: wedding.story || description,
               startDate: wedding.date && wedding.time ? `${wedding.date}T${wedding.time}` : wedding.date,
-              location: {
-                '@type': 'Place',
-                name: wedding.venueName,
-                address: wedding.venueAddress || undefined,
-              },
+              location: { '@type': 'Place', name: wedding.venueName, address: wedding.venueAddress || undefined },
               image: wedding.profileImage || undefined,
-              description: wedding.story || description,
-              organizer: {
-                '@type': 'Organization',
-                name: `${wedding.brideName} & ${wedding.groomName}`,
-              },
+              organizer: { '@type': 'Person', name: title },
             }),
           }}
         />
-      </section>
-    </main>
-  );
-}
-
-const cardStyle: React.CSSProperties = {
-  borderRadius: 24,
-  padding: 20,
-  background: 'rgba(255,255,255,0.76)',
-  border: '1px solid rgba(153, 90, 109, 0.12)',
-  boxShadow: '0 14px 40px rgba(122, 71, 88, 0.08)',
-};
-
-const contentCardStyle: React.CSSProperties = {
-  ...cardStyle,
-  padding: 24,
-  lineHeight: 1.7,
-  color: '#5a3947',
-};
-
-const sectionPanelStyle: React.CSSProperties = {
-  borderRadius: 28,
-  padding: '24px clamp(20px, 4vw, 32px)',
-  background: 'rgba(255,255,255,0.72)',
-  border: '1px solid rgba(153, 90, 109, 0.12)',
-  boxShadow: '0 14px 40px rgba(122, 71, 88, 0.07)',
-};
-
-const agendaCss = `
-.public-agenda-panel {
-  border-radius: 28px;
-  padding: 24px clamp(20px, 4vw, 32px);
-  background: rgba(255,255,255,0.72);
-  border: 1px solid rgba(153, 90, 109, 0.12);
-  box-shadow: 0 14px 40px rgba(122, 71, 88, 0.07);
-  display: grid;
-  gap: 28px;
-}
-.public-agenda-timeline {
-  position: relative;
-  display: grid;
-  gap: 26px;
-  max-width: 860px;
-  margin: 0 auto;
-  width: 100%;
-}
-.public-agenda-timeline::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 8px;
-  bottom: 8px;
-  width: 1.5px;
-  background: linear-gradient(to bottom, transparent, #c9a574 12%, #c9a574 88%, transparent);
-  transform: translateX(-50%);
-  opacity: 0.58;
-}
-.public-agenda-item {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr);
-  gap: 20px;
-  align-items: center;
-  min-width: 0;
-}
-.public-agenda-item:nth-child(odd) .public-agenda-time {
-  justify-self: end;
-  text-align: right;
-}
-.public-agenda-item:nth-child(odd) .public-agenda-card {
-  text-align: left;
-  order: 3;
-}
-.public-agenda-item:nth-child(even) .public-agenda-time {
-  justify-self: start;
-  text-align: left;
-  order: 3;
-}
-.public-agenda-item:nth-child(even) .public-agenda-card {
-  text-align: right;
-  order: 1;
-}
-.public-agenda-item:nth-child(even) .public-agenda-dot {
-  order: 2;
-}
-.public-agenda-time {
-  display: inline-flex;
-  max-width: 100%;
-  color: #9a5a6d;
-  font-size: clamp(1rem, 1.8vw, 1.18rem);
-  font-weight: 700;
-  line-height: 1.3;
-  overflow-wrap: anywhere;
-}
-.public-agenda-dot {
-  z-index: 1;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid #c9a574;
-  box-shadow: 0 10px 24px rgba(201, 165, 116, 0.20);
-  color: #9a5a6d;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.28rem;
-}
-.public-agenda-card {
-  min-width: 0;
-  padding: 16px 18px;
-  background: rgba(255,255,255,0.9);
-  border: 1px solid rgba(153, 90, 109, 0.12);
-  border-radius: 12px;
-  box-shadow: 0 10px 26px rgba(122, 71, 88, 0.08);
-}
-.public-agenda-title {
-  margin: 0;
-  color: #4b2230;
-  font-size: 1.12rem;
-  line-height: 1.25;
-}
-.public-agenda-desc {
-  margin: 6px 0 0;
-  color: #6b4a56;
-  line-height: 1.6;
-  font-size: 0.92rem;
-}
-.public-agenda-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-top: 12px;
-  color: #6b4a56;
-  font-size: 0.82rem;
-}
-.public-agenda-item:nth-child(even) .public-agenda-meta {
-  justify-content: flex-end;
-}
-.public-agenda-meta span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-  max-width: 100%;
-}
-.clamp-one,
-.clamp-two {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.clamp-one { -webkit-line-clamp: 1; line-clamp: 1; }
-.clamp-two { -webkit-line-clamp: 2; line-clamp: 2; }
-@media (max-width: 760px) {
-  .public-agenda-timeline::before {
-    left: 28px;
-  }
-  .public-agenda-item {
-    grid-template-columns: 56px minmax(0, 1fr);
-    gap: 14px;
-    align-items: start;
-  }
-  .public-agenda-item .public-agenda-time {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: start;
-    text-align: left;
-    order: 1;
-  }
-  .public-agenda-item .public-agenda-dot {
-    grid-column: 1;
-    grid-row: 1 / 3;
-    order: 0;
-  }
-  .public-agenda-item .public-agenda-card {
-    grid-column: 2;
-    grid-row: 2;
-    text-align: left;
-    order: 2;
-  }
-  .public-agenda-item:nth-child(even) .public-agenda-time {
-    justify-self: start;
-    text-align: left;
-    order: 1;
-  }
-  .public-agenda-item:nth-child(even) .public-agenda-card {
-    text-align: left;
-    order: 2;
-  }
-  .public-agenda-item:nth-child(even) .public-agenda-dot {
-    order: 0;
-  }
-  .public-agenda-item:nth-child(even) .public-agenda-meta {
-    justify-content: flex-start;
-  }
-}`;
-
-const galleryEmptyStyle: React.CSSProperties = {
-  minHeight: 220,
-  display: 'grid',
-  placeItems: 'center',
-  textAlign: 'center',
-  padding: 24,
-  borderRadius: 18,
-  background: 'linear-gradient(135deg, rgba(196,90,116,0.08), rgba(201,165,116,0.12))',
-  border: '1px dashed rgba(153, 90, 109, 0.22)',
-};
-
-const eyebrowStyle: React.CSSProperties = {
-  letterSpacing: 4,
-  textTransform: 'uppercase',
-  color: '#9a5a6d',
-  fontSize: 12,
-};
-
-const infoLineStyle: React.CSSProperties = {
-  marginTop: 12,
-  fontSize: 18,
-  color: '#4b2230',
-};
-
-const mutedStyle: React.CSSProperties = {
-  marginTop: 12,
-  color: '#6b4a56',
-};
-
-const rsvpBannerStyle: React.CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: 18,
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '24px clamp(20px, 4vw, 32px)',
-  borderRadius: 28,
-  background: 'linear-gradient(135deg, rgba(196,90,116,0.14), rgba(201,165,116,0.14))',
-  border: '1px solid rgba(153, 90, 109, 0.14)',
-};
-
-const tableFinderBannerStyle: React.CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: 18,
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '24px clamp(20px, 4vw, 32px)',
-  borderRadius: 28,
-  background: 'rgba(255,255,255,0.72)',
-  border: '1px solid rgba(153, 90, 109, 0.12)',
-  boxShadow: '0 14px 40px rgba(122, 71, 88, 0.07)',
-};
-
-const bannerButtonStyle: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '13px 20px',
-  borderRadius: 999,
-  background: '#4b2230',
-  color: '#fff',
-  textDecoration: 'none',
-  boxShadow: '0 14px 30px rgba(75, 34, 48, 0.2)',
-};
-
-function formatAgendaClock(timeStr?: string) {
-  if (!timeStr) return '';
-  const [h, m] = timeStr.split(':').map(Number);
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  return `${h % 12 || 12}:${String(m || 0).padStart(2, '0')} ${ampm}`;
-}
-
-function formatAgendaTimeRange(item: AgendaEventRecord) {
-  const start = item.startTime || item.time || '';
-  const end = item.endTime || '';
-  if (start && end && start !== end) return `${formatAgendaClock(start)} - ${formatAgendaClock(end)}`;
-  return formatAgendaClock(start);
-}
-
-function formatAgendaDuration(item: AgendaEventRecord) {
-  const duration = Number(item.duration || item.durationMinutes || 0);
-  if (!duration) return '';
-  if (duration < 60) return `${duration} min`;
-  const hours = Math.floor(duration / 60);
-  const minutes = duration % 60;
-  return minutes ? `${hours} hr ${minutes} min` : `${hours} hr`;
-}
-
-function isEmojiIcon(value: string) {
-  return /[^\u0000-\u007F]/.test(value);
-}
-
-function getAgendaIconMode(item: AgendaEventRecord) {
-  const iconValue = String(item.icon || item.iconKey || '').trim();
-  if (iconValue && isEmojiIcon(iconValue)) return 'emoji';
-  return AGENDA_ICON_LABELS[iconValue] ? 'mapped' : 'fallback';
-}
-
-function renderAgendaIcon(item: AgendaEventRecord) {
-  const iconValue = String(item.icon || item.iconKey || '').trim();
-  if (iconValue && isEmojiIcon(iconValue)) {
-    return <span aria-hidden="true">{iconValue}</span>;
-  }
-  return <span aria-hidden="true">{AGENDA_ICON_LABELS[iconValue] || 'date'}</span>;
-}
-
-function renderBlock(block: { type: 'heading' | 'paragraph' | 'list'; text?: string; items?: string[] }, index: number) {
-  if (block.type === 'heading') {
-    return (
-      <h3 key={`${block.type}-${index}`} style={{ margin: index === 0 ? 0 : '0 0 12px', color: '#4b2230', fontSize: 22 }}>
-        {block.text}
-      </h3>
-    );
-  }
-
-  if (block.type === 'list') {
-    return (
-      <ul key={`${block.type}-${index}`} style={{ margin: '12px 0 0', paddingLeft: 18 }}>
-        {block.items?.map((item, itemIndex) => (
-          <li key={itemIndex} style={{ marginTop: itemIndex === 0 ? 0 : 8 }}>
-            {item}
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  return (
-    <p key={`${block.type}-${index}`} style={{ margin: index === 0 ? 0 : '12px 0 0' }}>
-      {block.text}
-    </p>
+      </div>
+    </>
   );
 }

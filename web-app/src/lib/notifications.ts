@@ -1,4 +1,5 @@
 import { db } from './store';
+import { sendEmail, renderInviteEmail, renderRsvpConfirmationEmail, renderReminderEmail } from './email';
 
 export type NotificationType = 'invite' | 'rsvp_confirmation' | 'reminder';
 
@@ -16,17 +17,11 @@ export interface NotificationResult {
   messageId?: string;
   error?: string;
   attempts?: number;
+  /** WhatsApp channel only — open this URL in browser to share via wa.me */
+  whatsappShareUrl?: string;
 }
 
 const TEMPLATES = {
-  email: {
-    invite: (weddingName: string, guestName: string, link: string, imagePlaceholder: string) => 
-      `Subject: You're invited to ${weddingName}'s Wedding!\n\nDear ${guestName},\n\nWe would be honored to have you at our wedding. ${imagePlaceholder}\n\nPlease RSVP here: ${link}`,
-    rsvp_confirmation: (weddingName: string, guestName: string) => 
-      `Subject: RSVP Confirmed for ${weddingName}\n\nThank you, ${guestName}! Your RSVP has been received.`,
-    reminder: (weddingName: string, guestName: string, link: string) => 
-      `Subject: Reminder: RSVP for ${weddingName}\n\nHi ${guestName}, please don't forget to RSVP for our upcoming wedding! ${link}`,
-  },
   whatsapp: {
     invite: (weddingName: string, guestName: string, link: string, imagePlaceholder: string) => 
       `Dear ${guestName}, you're invited to ${weddingName}'s Wedding! ${imagePlaceholder} RSVP: ${link}`,
@@ -37,22 +32,10 @@ const TEMPLATES = {
   }
 };
 
-/**
- * Simulates an external API call with retries and potential random failures.
- */
-async function simulateExternalDelivery(payload: any, maxRetries = 3): Promise<boolean> {
-  let attempt = 0;
-  while (attempt < maxRetries) {
-    attempt++;
-    // Simulate network delay
-    await new Promise(r => setTimeout(r, 100));
-    // 80% chance of success
-    if (Math.random() > 0.2) {
-      return true;
-    }
-    console.warn(`[Notifications] Delivery attempt ${attempt} failed, retrying...`);
-  }
-  return false;
+// Build a wa.me share URL — opens WhatsApp with a pre-filled message on the recipient's device.
+function buildWhatsAppUrl(phone: string, body: string): string {
+  const normalized = phone.replace(/\D/g, '');
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(body)}`;
 }
 
 export async function sendEmailNotification(options: NotificationOptions): Promise<NotificationResult> {
@@ -77,17 +60,20 @@ export async function sendEmailNotification(options: NotificationOptions): Promi
     return { success: false, channel: 'email', error: 'No email address available' };
   }
 
-  const imagePlaceholder = options.imageUrl ? `\n[Image: ${options.imageUrl}]\n` : '';
-  const body = options.customMessage || TEMPLATES.email[options.type](wedding.weddingTitle, guestName, rsvpLink, imagePlaceholder);
-
-  console.log(`[Email] Sending to ${guestEmail}: ${body}`);
-  const delivered = await simulateExternalDelivery({ to: guestEmail, body });
-
-  if (!delivered) {
-    return { success: false, channel: 'email', error: 'Delivery failed after retries' };
+  let emailPayload: { subject: string; html: string; text: string };
+  if (options.type === 'invite') {
+    emailPayload = renderInviteEmail(wedding.weddingTitle, guestName, rsvpLink, options.imageUrl);
+  } else if (options.type === 'rsvp_confirmation') {
+    emailPayload = renderRsvpConfirmationEmail(wedding.weddingTitle, guestName);
+  } else {
+    emailPayload = renderReminderEmail(wedding.weddingTitle, guestName, rsvpLink);
   }
 
-  return { success: true, channel: 'email', messageId: `email_${Date.now()}`, attempts: 1 };
+  const result = await sendEmail({ to: guestEmail, ...emailPayload });
+  if (!result.success) {
+    return { success: false, channel: 'email', error: result.error || 'Delivery failed' };
+  }
+  return { success: true, channel: 'email', messageId: result.messageId, attempts: 1 };
 }
 
 export async function sendWhatsAppNotification(options: NotificationOptions): Promise<NotificationResult> {
@@ -121,14 +107,10 @@ export async function sendWhatsAppNotification(options: NotificationOptions): Pr
   const imagePlaceholder = options.imageUrl ? `[Attached: ${options.imageUrl}] ` : '';
   const body = options.customMessage || TEMPLATES.whatsapp[options.type](wedding.weddingTitle, guestName, rsvpLink, imagePlaceholder);
 
-  console.log(`[WhatsApp] Sending to ${guestPhone}: ${body}`);
-  const delivered = await simulateExternalDelivery({ to: guestPhone, body });
+  const shareUrl = buildWhatsAppUrl(guestPhone, body);
+  console.log(`[WhatsApp] Share URL for ${guestPhone}: ${shareUrl}`);
 
-  if (!delivered) {
-    return { success: false, channel: 'whatsapp', error: 'Delivery failed after retries' };
-  }
-
-  return { success: true, channel: 'whatsapp', messageId: `wa_${Date.now()}`, attempts: 1 };
+  return { success: true, channel: 'whatsapp', messageId: `wa_${Date.now()}`, attempts: 1, whatsappShareUrl: shareUrl };
 }
 
 export async function broadcastToGuests(weddingId: string, type: NotificationType, channel: 'email'|'whatsapp'|'both', options: Partial<NotificationOptions> = {}) {
