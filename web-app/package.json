@@ -10,6 +10,7 @@
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:seed": "node prisma/seed.js",
     "build": "next build --webpack",
+    "build:vercel-public": "npm run build && node scripts/export_vercel_public_static.js",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
