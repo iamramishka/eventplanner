@@ -41,15 +41,18 @@ None.
 
 ## Infrastructure
 
-### Postgres Migration (Production)
-- Status: **PRODUCTION READY** ✅
-- Supabase schema (20 tables) applied via Management API — project `rfkxrtovvukikxqsyvyl` (ap-northeast-1)
+### Vercel Production Deployment
+- Status: **LIVE** ✅ — https://invitemyguestplanner.vercel.app/
+- Deployed 2026-06-21 — all routes return 200 (/, /login, /api/auth/session)
+- Supabase Postgres schema (20 tables) applied — project `rfkxrtovvukikxqsyvyl` (ap-northeast-1)
 - Seed data inserted (User + Wedding + 2 Guests)
-- `_prisma_migrations` table seeded — `migrate deploy` will report 0 pending migrations on Vercel
 - Local dev uses SQLite (`DATABASE_URL=file:./dev_sqlite.db`) — ISP DPI blocks Postgres wire protocol locally
-- **Deploy to Vercel**: set env vars from `.env.production.example`, push to GitHub → Vercel auto-builds
-  - `vercel.json` `buildCommand` runs `prisma-schema-switch.js` → swaps to Postgres schema → `prisma generate` → `migrate deploy` → `next build`
-  - Production Postgres URLs: see `web-app/.env.production.example`
+- Key fixes applied to get Vercel working:
+  - `postinstall`: runs `prisma-schema-switch.js` → swaps to Postgres schema → `prisma generate`
+  - `postbuild`: symlinks `web-app/.next` and `web-app/node_modules` to repo root (Vercel adapter looks there)
+  - `outputFileTracingRoot: path.join(__dirname, '../')` — traces as `web-app/...` paths, Vercel finds them
+  - Data/log stubs at repo root (`data/*.json`, `logs/*.log`) — satisfy file-trace lstat checks
+  - Removed deprecated root-level Sentry files that caused build conflicts
 
 ### Lint Debt
 - Status: **RESOLVED** — 0 errors, 0 warnings (PR #30)
