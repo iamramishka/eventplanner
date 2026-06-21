@@ -27,6 +27,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // On Vercel, rootDirectory=web-app but Vercel's post-build checks path0/.next (repo root).
+  // Outputting to ../.next puts the build at /vercel/path0/.next where Vercel expects it.
+  distDir: process.env.VERCEL ? '../.next' : '.next',
   turbopack: {
     root: process.cwd(),
   },
