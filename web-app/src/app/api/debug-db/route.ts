@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import net from 'net';
+import dns from 'dns/promises';
 
 export const dynamic = 'force-dynamic';
 
-function tcpCheck(host: string, port: number, timeout = 6000): Promise<string> {
+function tcpCheck(host: string, port: number, timeout = 8000): Promise<string> {
   return new Promise((resolve) => {
     const sock = new net.Socket();
     const timer = setTimeout(() => { sock.destroy(); resolve('TIMEOUT'); }, timeout);
@@ -14,17 +15,19 @@ function tcpCheck(host: string, port: number, timeout = 6000): Promise<string> {
 
 export async function GET() {
   const ref = 'rfkxrtovvukikxqsyvyl';
-  const [r1, r2, r3, r4] = await Promise.all([
-    tcpCheck(`db.${ref}.supabase.co`, 5432),       // direct DB
-    tcpCheck(`aws-0-ap-northeast-1.pooler.supabase.com`, 5432),  // Supavisor session
-    tcpCheck(`aws-0-ap-northeast-1.pooler.supabase.com`, 6543),  // Supavisor transaction
-    tcpCheck(`db.${ref}.supabase.co`, 6543),        // old pgBouncer port
+  const directHost = `db.${ref}.supabase.co`;
+
+  const [dnsV4, dnsV6, tcpDirect, tcpPool5432, tcpPool6543] = await Promise.all([
+    dns.resolve4(directHost).then(a => 'A:' + a.join(',')).catch(e => 'A_ERR:' + (e as Error).message),
+    dns.resolve6(directHost).then(a => 'AAAA:' + a.join(',')).catch(e => 'AAAA_ERR:' + (e as Error).message),
+    tcpCheck(directHost, 5432),
+    tcpCheck(`aws-0-ap-northeast-1.pooler.supabase.com`, 5432),
+    tcpCheck(`aws-0-ap-northeast-1.pooler.supabase.com`, 6543),
   ]);
 
-  return NextResponse.json({
-    'direct:5432': r1,
-    'supavisor-session:5432': r2,
-    'supavisor-txn:6543': r3,
-    'db-pgbouncer:6543': r4,
-  });
+  const dbUrl = process.env.DATABASE_URL || '';
+  let urlHost = '';
+  try { urlHost = new URL(dbUrl).hostname; } catch { urlHost = 'parse-err'; }
+
+  return NextResponse.json({ dnsV4, dnsV6, tcpDirect, tcpPool5432, tcpPool6543, urlHost });
 }
