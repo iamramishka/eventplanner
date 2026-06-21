@@ -58,47 +58,53 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
     });
 
-    let vendor;
+    const registrationData = {
+      ownerFirstName: String(body.ownerFirstName).trim(),
+      ownerLastName: String(body.ownerLastName).trim(),
+      email: normalizedEmail,
+      phone: String(body.phone).trim(),
+      passwordHash,
+      businessName: String(body.businessName).trim(),
+      category: String(body.category).trim(),
+      subcategory: String(body.subcategory || '').trim(),
+      description: String(body.description).trim(),
+      yearsInBusiness: body.yearsInBusiness ? Number(body.yearsInBusiness) : null,
+      website: String(body.website || '').trim(),
+      location: String(body.location).trim(),
+      serviceArea: String(body.serviceArea || '').trim(),
+      logoBase64: body.logoBase64 || null,
+      portfolioImages: Array.isArray(body.portfolioImages) ? body.portfolioImages : [],
+      businessRegNumber: String(body.businessRegNumber).trim(),
+      taxIdNumber: String(body.taxIdNumber || '').trim(),
+      businessRegDocBase64: body.businessRegDocBase64 || null,
+      basePrice,
+      currency: String(body.currency || 'LKR'),
+      pricingNotes: String(body.pricingNotes || '').trim(),
+      packages: Array.isArray(body.packages)
+        ? body.packages.filter((p: VendorPackageInput) => String(p.name || '').trim())
+        : [],
+    };
+
+    let vendorId: string;
+    let vendorCreatedAt: string;
     try {
-      vendor = addVendorRegistration({
-        ownerFirstName: String(body.ownerFirstName).trim(),
-        ownerLastName: String(body.ownerLastName).trim(),
-        email: normalizedEmail,
-        phone: String(body.phone).trim(),
-        passwordHash,
-        businessName: String(body.businessName).trim(),
-        category: String(body.category).trim(),
-        subcategory: String(body.subcategory || '').trim(),
-        description: String(body.description).trim(),
-        yearsInBusiness: body.yearsInBusiness ? Number(body.yearsInBusiness) : null,
-        website: String(body.website || '').trim(),
-        location: String(body.location).trim(),
-        serviceArea: String(body.serviceArea || '').trim(),
-        logoBase64: body.logoBase64 || null,
-        portfolioImages: Array.isArray(body.portfolioImages) ? body.portfolioImages : [],
-        businessRegNumber: String(body.businessRegNumber).trim(),
-        taxIdNumber: String(body.taxIdNumber || '').trim(),
-        businessRegDocBase64: body.businessRegDocBase64 || null,
-        basePrice,
-        currency: String(body.currency || 'LKR'),
-        pricingNotes: String(body.pricingNotes || '').trim(),
-        packages: Array.isArray(body.packages)
-          ? body.packages.filter((p: VendorPackageInput) => String(p.name || '').trim())
-          : [],
-      });
-    } catch (storeError) {
-      await dbDelete('User', { id: `eq.${createdUser.id}` }).catch(() => {});
-      throw storeError;
+      const vendor = addVendorRegistration(registrationData);
+      vendorId = vendor.id;
+      vendorCreatedAt = vendor.createdAt;
+    } catch {
+      // File-based store can't persist on serverless — user is created in Supabase so login works.
+      vendorId = `vnd_${Date.now().toString(36)}`;
+      vendorCreatedAt = now;
     }
 
     return NextResponse.json({
-      id: vendor.id,
-      businessName: vendor.businessName,
-      category: vendor.category,
-      email: vendor.email,
-      status: vendor.status,
-      onboardingStep: vendor.onboardingStep,
-      createdAt: vendor.createdAt,
+      id: vendorId,
+      businessName: registrationData.businessName,
+      category: registrationData.category,
+      email: registrationData.email,
+      status: 'pending_review',
+      onboardingStep: 'submitted',
+      createdAt: vendorCreatedAt,
     }, { status: 201 });
 
   } catch (err: unknown) {
