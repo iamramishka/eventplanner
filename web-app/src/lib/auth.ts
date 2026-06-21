@@ -1,7 +1,15 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { prisma } from "./prisma"
+import { dbSelect } from "./supabase-db"
 import bcrypt from "bcrypt"
+
+interface DbUser {
+  id: string;
+  email: string;
+  name: string | null;
+  password: string | null;
+  role: string;
+}
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -18,30 +26,21 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
+        if (!credentials?.email || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        })
+        const rows = await dbSelect<DbUser>(
+          'User',
+          { 'email': `eq.${credentials.email}` },
+          'id,email,name,password,role',
+          1,
+        );
+        const user = rows[0];
+        if (!user || !user.password) return null;
 
-        if (!user || !user.password) {
-          return null
-        }
+        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+        if (!isPasswordValid) return null;
 
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role
-        }
+        return { id: user.id, email: user.email, name: user.name ?? '', role: user.role };
       }
     })
   ],
