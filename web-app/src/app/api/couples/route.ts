@@ -5,7 +5,6 @@ import { addWedding } from '@/lib/store';
 import { auditLog } from '@/lib/audit';
 import { dbSelect, dbInsert } from '@/lib/supabase-db';
 import bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
 
 type CreatedWedding = ReturnType<typeof addWedding> & {
   profileImage?: string;
@@ -61,7 +60,7 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const userId = uuidv4();
+    const userId = crypto.randomUUID();
     const slug = await uniqueWeddingSlug(slugify(String(body?.slug || `${brideName}-and-${groomName}`)));
 
     const user = await dbInsert<DbUser>('User', {
@@ -74,7 +73,7 @@ export async function POST(req: Request) {
       updatedAt: new Date().toISOString(),
     });
 
-    const weddingId = uuidv4();
+    const weddingId = crypto.randomUUID();
     const wedding = await dbInsert<DbWedding>('Wedding', {
       id: weddingId,
       userId: user.id,
