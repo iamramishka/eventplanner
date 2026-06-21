@@ -37,6 +37,18 @@ export async function dbInsert<T>(table: string, data: Record<string, unknown>):
   return rows[0];
 }
 
+export async function dbDelete(
+  table: string,
+  filters: Record<string, string>,
+): Promise<void> {
+  const params = new URLSearchParams(filters);
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
+    method: 'DELETE',
+    headers: headers(),
+  });
+  if (!res.ok) throw new Error(`dbDelete ${table}: ${res.status} ${await res.text()}`);
+}
+
 export async function dbUpdate(
   table: string,
   filters: Record<string, string>,

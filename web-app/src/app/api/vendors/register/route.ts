@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addVendorRegistration, getVendorByEmail } from '@/lib/vendorStore';
-import { prisma } from '@/lib/prisma';
+import { dbSelect, dbInsert, dbDelete } from '@/lib/supabase-db';
 import bcrypt from 'bcrypt';
 
 type VendorPackageInput = {
   name?: unknown;
 };
 
+interface DbUser { id: string; }
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // --- Required field validation ---
     const required = ['ownerFirstName', 'ownerLastName', 'email', 'phone', 'password',
       'businessName', 'category', 'description', 'location', 'businessRegNumber', 'basePrice'];
 
@@ -21,44 +22,40 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // --- Email format ---
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email || ''))) {
       return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
     }
 
-    // --- Duplicate email check ---
     const normalizedEmail = String(body.email).trim().toLowerCase();
     const existing = getVendorByEmail(normalizedEmail);
-    const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (existing || existingUser) {
+    const existingRows = await dbSelect<DbUser>('User', { email: `eq.${normalizedEmail}` }, 'id', 1);
+    if (existing || existingRows.length > 0) {
       return NextResponse.json({ error: 'A vendor with this email already exists.' }, { status: 409 });
     }
 
-    // --- Password length ---
     if (String(body.password || '').length < 8) {
       return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 });
     }
 
-    // --- Description min length ---
     if (String(body.description || '').trim().length < 30) {
       return NextResponse.json({ error: 'Description must be at least 30 characters.' }, { status: 400 });
     }
 
-    // --- Base price ---
     const basePrice = Number(body.basePrice);
     if (!Number.isFinite(basePrice) || basePrice < 0) {
       return NextResponse.json({ error: 'Starting price must be a non-negative number.' }, { status: 400 });
     }
 
-    // --- Create vendor registration ---
     const passwordHash = await bcrypt.hash(String(body.password), 10);
-    const createdUser = await prisma.user.create({
-      data: {
-        email: normalizedEmail,
-        password: passwordHash,
-        name: `${String(body.ownerFirstName).trim()} ${String(body.ownerLastName).trim()}`.trim(),
-        role: 'VENDOR',
-      },
+    const now = new Date().toISOString();
+    const createdUser = await dbInsert<DbUser>('User', {
+      id: crypto.randomUUID(),
+      email: normalizedEmail,
+      password: passwordHash,
+      name: `${String(body.ownerFirstName).trim()} ${String(body.ownerLastName).trim()}`.trim(),
+      role: 'VENDOR',
+      createdAt: now,
+      updatedAt: now,
     });
 
     let vendor;
@@ -90,11 +87,10 @@ export async function POST(req: NextRequest) {
           : [],
       });
     } catch (storeError) {
-      await prisma.user.delete({ where: { id: createdUser.id } }).catch(() => {});
+      await dbDelete('User', { id: `eq.${createdUser.id}` }).catch(() => {});
       throw storeError;
     }
 
-    // Return safe response (no password or sensitive docs)
     return NextResponse.json({
       id: vendor.id,
       businessName: vendor.businessName,
