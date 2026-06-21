@@ -54,6 +54,9 @@
     "resend": "^6.14.0",
     "stripe": "^12.8.0"
   },
+  "overrides": {
+    "postcss": ">=8.5.10"
+  },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^20",
@@ -61,6 +64,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "pg": "^8.22.0",
     "prisma": "^5.21.0",
     "typescript": "^5"
   }
