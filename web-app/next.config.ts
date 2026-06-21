@@ -30,9 +30,6 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Monorepo root — traces become web-app/... paths so Vercel resolves them correctly
   outputFileTracingRoot: path.join(__dirname, '../'),
-  turbopack: {
-    root: process.cwd(),
-  },
   async headers() {
     return [
       {
