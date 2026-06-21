@@ -80,7 +80,9 @@ export default function RegisterPage() {
       }
     }
     if (s === 2) {
-      // Step 2 validation to come later
+      if (!form.groomName?.trim()) e.groomName = "Groom's first name is required.";
+      if (!form.brideName?.trim()) e.brideName = "Bride's first name is required.";
+      if (!dateDeciding && !form.date) e.date = 'Please select a wedding date or check "Still deciding".';
     }
     return e;
   }
@@ -113,7 +115,13 @@ export default function RegisterPage() {
       const resp = await fetch('/api/couples', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          dateDeciding,
+          venueDeciding,
+          estimatedGuests: guestsDeciding ? null : guestCount,
+          estimatedBudget: budgetDeciding ? null : budgetAmount,
+        }),
       });
       const data = await resp.json();
       if (!resp.ok) {
