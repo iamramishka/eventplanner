@@ -4,8 +4,6 @@ import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import SiteNav from '@/components/SiteNav';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import { getAdminSettings } from "@/lib/adminSettings";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -19,12 +17,11 @@ export function generateMetadata(): Metadata {
   };
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession(authOptions);
   const { settings } = getAdminSettings();
   const brandStyle = {
     '--inv-rose': settings.branding.primaryColor,
@@ -33,7 +30,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${playfair.variable}`} style={brandStyle}>
-        <AuthProvider session={session}>
+        <AuthProvider>
           <SiteNav settings={settings} />
           {children}
         </AuthProvider>

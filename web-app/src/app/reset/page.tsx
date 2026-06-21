@@ -1,8 +1,16 @@
 "use client"
-import React, { useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 
 export default function ResetPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPageContent />
+    </Suspense>
+  )
+}
+
+function ResetPageContent() {
   const params = useSearchParams()
   const router = useRouter()
   const [token, setToken] = useState(params?.get('token') || '')
