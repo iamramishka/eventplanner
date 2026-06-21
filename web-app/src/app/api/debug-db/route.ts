@@ -1,37 +1,32 @@
 import { NextResponse } from 'next/server';
 import dns from 'dns/promises';
-import { Client } from 'pg';
+import net from 'net';
 
 export const dynamic = 'force-dynamic';
+
+function tcpCheck(host: string, port: number, timeout = 6000): Promise<string> {
+  return new Promise((resolve) => {
+    const sock = new net.Socket();
+    const timer = setTimeout(() => { sock.destroy(); resolve('TIMEOUT'); }, timeout);
+    sock.connect(port, host, () => { clearTimeout(timer); sock.destroy(); resolve('CONNECTED'); });
+    sock.on('error', (e) => { clearTimeout(timer); resolve('ERROR: ' + e.message); });
+  });
+}
 
 export async function GET() {
   const dbUrl = process.env.DATABASE_URL || '';
   let urlInfo = { host: '', user: '', port: '' };
   try {
     const u = new URL(dbUrl);
-    urlInfo = { host: u.hostname, user: u.username.slice(0, 12) + '...', port: u.port };
+    urlInfo = { host: u.hostname, user: u.username.slice(0, 14) + '...', port: u.port };
   } catch {
     urlInfo.host = 'parse-error';
   }
 
-  let dnsResult = '';
-  try {
-    const addrs = await dns.lookup(urlInfo.host);
-    dnsResult = JSON.stringify(addrs);
-  } catch (e: unknown) {
-    dnsResult = e instanceof Error ? e.message : String(e);
-  }
+  const [dnsResult, tcpResult] = await Promise.all([
+    dns.lookup(urlInfo.host).then(a => JSON.stringify(a)).catch(e => 'DNS_ERR: ' + (e as Error).message),
+    tcpCheck(urlInfo.host, Number(urlInfo.port) || 5432),
+  ]);
 
-  let pgResult = '';
-  try {
-    const client = new Client({ connectionString: dbUrl, connectionTimeoutMillis: 8000, ssl: { rejectUnauthorized: false } });
-    await client.connect();
-    const res = await client.query('SELECT 1 AS ok');
-    pgResult = JSON.stringify(res.rows[0]);
-    await client.end();
-  } catch (e: unknown) {
-    pgResult = e instanceof Error ? e.message : String(e);
-  }
-
-  return NextResponse.json({ urlInfo, dnsResult, pgResult });
+  return NextResponse.json({ urlInfo, dnsResult, tcpResult });
 }
