@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { dbSelect } from "./supabase-db"
 import bcrypt from "bcrypt"
+import type { Role } from "@prisma/client"
 
 interface DbUser {
   id: string;
@@ -40,7 +41,7 @@ export const authOptions: NextAuthOptions = {
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
         if (!isPasswordValid) return null;
 
-        return { id: user.id, email: user.email, name: user.name ?? '', role: user.role };
+        return { id: user.id, email: user.email, name: user.name ?? '', role: user.role as Role };
       }
     })
   ],
