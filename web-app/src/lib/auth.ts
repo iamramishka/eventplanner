@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { dbSelect } from "./supabase-db"
 import bcrypt from "bcrypt"
-import type { Role } from "@prisma/client"
+type Role = 'COUPLE' | 'VENDOR' | 'SUPER_ADMIN'
 
 interface DbUser {
   id: string;

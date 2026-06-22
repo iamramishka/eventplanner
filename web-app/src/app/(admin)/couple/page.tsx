@@ -15,7 +15,11 @@ interface WeddingRow {
   groomFirstName: string;
   brideFirstName: string;
   eventDate: string | null;
+  eventTime: string | null;
   venueName: string | null;
+  venueAddress: string | null;
+  venueMapLink: string | null;
+  rsvpDeadline: string | null;
   estimatedGuests: number | null;
   estimatedBudget: number | null;
 }
@@ -29,10 +33,12 @@ function mapWedding(w: WeddingRow) {
     groomName: w.groomFirstName,
     weddingTitle: `${w.brideFirstName} & ${w.groomFirstName}`,
     date: w.eventDate ? w.eventDate.slice(0, 10) : '',
-    time: '',
+    time: w.eventTime || '',
     timezone: 'UTC',
     venueName: w.venueName || '',
-    rsvpDeadline: '',
+    venueAddress: w.venueAddress || '',
+    venueMapLink: w.venueMapLink || '',
+    rsvpDeadline: w.rsvpDeadline ? w.rsvpDeadline.slice(0, 10) : '',
     estimatedGuests: w.estimatedGuests ?? null,
     estimatedBudget: w.estimatedBudget ?? null,
     sections: {},

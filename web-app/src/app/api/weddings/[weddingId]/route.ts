@@ -8,7 +8,11 @@ interface WeddingRow {
   groomFirstName: string;
   brideFirstName: string;
   eventDate: string | null;
+  eventTime: string | null;
   venueName: string | null;
+  venueAddress: string | null;
+  venueMapLink: string | null;
+  rsvpDeadline: string | null;
   slug: string;
   setupCompleted: boolean | null;
   estimatedGuests: number | null;
@@ -24,10 +28,12 @@ function toDashboardWedding(w: WeddingRow) {
     groomName: w.groomFirstName,
     weddingTitle: `${w.brideFirstName} & ${w.groomFirstName}`,
     date: w.eventDate ? w.eventDate.slice(0, 10) : '',
-    time: '',
+    time: w.eventTime || '',
     timezone: 'UTC',
     venueName: w.venueName || '',
-    rsvpDeadline: '',
+    venueAddress: w.venueAddress || '',
+    venueMapLink: w.venueMapLink || '',
+    rsvpDeadline: w.rsvpDeadline ? w.rsvpDeadline.slice(0, 10) : '',
     estimatedGuests: w.estimatedGuests ?? null,
     estimatedBudget: w.estimatedBudget ?? null,
     setupCompleted: !!w.setupCompleted,
@@ -62,12 +68,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ we
     return NextResponse.json({ error: 'Wedding not found' }, { status: 404 });
   }
 
-  // Persist only fields that have Supabase columns; other UI fields are echoed back.
   const cols: Record<string, unknown> = { updatedAt: new Date().toISOString() };
   if (payload.brideName !== undefined) cols.brideFirstName = String(payload.brideName || '');
   if (payload.groomName !== undefined) cols.groomFirstName = String(payload.groomName || '');
   if (payload.date !== undefined) cols.eventDate = payload.date ? `${String(payload.date).slice(0, 10)}T00:00:00` : null;
+  if (payload.time !== undefined) cols.eventTime = payload.time ? String(payload.time) : null;
   if (payload.venueName !== undefined) cols.venueName = payload.venueName ? String(payload.venueName) : null;
+  if (payload.venueAddress !== undefined) cols.venueAddress = payload.venueAddress ? String(payload.venueAddress) : null;
+  if (payload.venueMapLink !== undefined) cols.venueMapLink = payload.venueMapLink ? String(payload.venueMapLink) : null;
+  if (payload.rsvpDeadline !== undefined) cols.rsvpDeadline = payload.rsvpDeadline ? String(payload.rsvpDeadline).slice(0, 10) : null;
   if (payload.estimatedGuests !== undefined) cols.estimatedGuests = Number.isFinite(Number(payload.estimatedGuests)) ? Number(payload.estimatedGuests) : null;
   if (payload.estimatedBudget !== undefined) cols.estimatedBudget = Number.isFinite(Number(payload.estimatedBudget)) ? Number(payload.estimatedBudget) : null;
   if (payload.setupCompleted !== undefined) cols.setupCompleted = !!payload.setupCompleted;

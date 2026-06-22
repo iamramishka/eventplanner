@@ -1889,7 +1889,7 @@ function GalleryModule({ wedding }: any) {
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleHeroUpload} disabled={heroUploading} />
           </label>
         </div>
-        <div style={{ position: 'relative', aspectRatio: '16 / 9', borderRadius: 12, overflow: 'hidden', background: '#f8ebe4', marginTop: 16 }}>
+        <div style={{ position: 'relative', height: 200, borderRadius: 12, overflow: 'hidden', background: '#f8ebe4', marginTop: 16 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={heroImage?.imageUrl || '/images/default-hero.jpg'}
@@ -1926,7 +1926,7 @@ function GalleryModule({ wedding }: any) {
           />
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
           {galleryOnly.map((image, index) => (
             <article key={image.id} className="card settings-card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ position: 'relative', aspectRatio: '4 / 3', background: '#f8ebe4' }}>
@@ -2338,13 +2338,24 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
 function SettingsModule({ wedding, setWedding }: any) {
   const [formData, setFormData] = useState(wedding);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSave = () => {
-    setWedding(formData);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      const updated = await patchWeddingRecord(wedding.id, formData);
+      setWedding(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err: any) {
+      setSaveError(err?.message || 'Unable to save settings.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -2355,14 +2366,19 @@ function SettingsModule({ wedding, setWedding }: any) {
           <h1 className="module-title">Wedding Settings</h1>
           <p className="module-subtitle">Manage your wedding details, venue, and contact information.</p>
         </div>
-        <button className="btn btn-primary" onClick={handleSave} id="save-settings-btn">
-          {saved ? <><Check size={16} /> Saved!</> : <><Save size={16} /> Save Changes</>}
+        <button className="btn btn-primary" onClick={() => void handleSave()} id="save-settings-btn" disabled={saving}>
+          {saving ? 'Saving…' : saved ? <><Check size={16} /> Saved!</> : <><Save size={16} /> Save Changes</>}
         </button>
       </div>
 
       {saved && (
         <div className="success-banner">
           <Check size={16} /> Settings saved successfully.
+        </div>
+      )}
+      {saveError && (
+        <div className="success-banner" style={{ color: 'var(--adm-danger)', borderColor: 'var(--adm-danger-bg)', background: 'var(--adm-danger-bg)' }}>
+          {saveError}
         </div>
       )}
 
