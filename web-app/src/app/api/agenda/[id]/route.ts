@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db, deleteAgendaEvent, updateAgendaEvent } from '@/lib/store';
+import { listAgenda, updateAgendaById, deleteAgendaById } from '@/lib/wedding-data';
 import { requireAgendaAccess } from '@/lib/rbac';
-
-type AgendaRow = AgendaPayload & {
-  id?: unknown;
-};
+import { dbSelect } from '@/lib/supabase-db';
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
@@ -14,39 +11,25 @@ type AgendaPayload = {
   title?: string;
   startTime?: string;
   endTime?: string;
-  timezone?: string;
-  location?: string;
   description?: string;
   icon?: string;
 };
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-function isValidTimezone(timezone: string) {
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format(new Date());
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function minutes(value: string) {
   const [hours, mins] = value.split(':').map(Number);
   return (hours * 60) + mins;
 }
 
-function validateAgendaPayload(body: AgendaPayload, fallbackTimezone: string) {
+function validateAgendaPayload(body: { title?: string; startTime?: string; endTime?: string }) {
   const title = String(body?.title || '').trim();
   const startTime = String(body?.startTime || '').trim();
   const endTime = String(body?.endTime || '').trim();
-  const timezone = String(body?.timezone || fallbackTimezone || '').trim();
-
   if (!title) return 'Title is required';
   if (!TIME_RE.test(startTime)) return 'Start time must use HH:mm format';
   if (!TIME_RE.test(endTime)) return 'End time must use HH:mm format';
   if (minutes(endTime) <= minutes(startTime)) return 'End time must be after start time';
-  if (!timezone || !isValidTimezone(timezone)) return 'Select a valid IANA timezone';
   return '';
 }
 
@@ -55,23 +38,33 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { id } = await params;
     const access = await requireAgendaAccess(id);
     if (access.response) return access.response;
-    const existing = db.agenda.findMany((event: AgendaRow) => event.id === id)[0] as AgendaRow | undefined;
+
+    // Find the existing item (across its wedding) to merge fields for validation.
+    const rows = await dbSelect<{ weddingId: string }>('AgendaItem', { id: `eq.${id}` }, 'weddingId', 1);
+    if (!rows[0]) {
+      return NextResponse.json({ ok: false, error: 'Agenda event not found' }, { status: 404 });
+    }
+    const all = await listAgenda(rows[0].weddingId);
+    const existing = all.find((e) => e.id === id);
     if (!existing) {
       return NextResponse.json({ ok: false, error: 'Agenda event not found' }, { status: 404 });
     }
 
     const body = await request.json() as AgendaPayload;
-    const validationError = validateAgendaPayload({ ...existing, ...body }, existing.timezone || '');
+    const merged = {
+      title: body.title ?? existing.title,
+      startTime: body.startTime ?? existing.startTime,
+      endTime: body.endTime ?? existing.endTime,
+    };
+    const validationError = validateAgendaPayload(merged);
     if (validationError) {
       return NextResponse.json({ ok: false, error: validationError }, { status: 400 });
     }
 
-    const updated = updateAgendaEvent(id, {
-      title: String(body.title ?? existing.title).trim(),
-      startTime: String(body.startTime ?? existing.startTime).trim(),
-      endTime: String(body.endTime ?? existing.endTime).trim(),
-      timezone: String(body.timezone ?? existing.timezone).trim(),
-      location: String(body.location ?? existing.location ?? '').trim(),
+    const updated = await updateAgendaById(id, {
+      title: merged.title,
+      startTime: merged.startTime,
+      endTime: merged.endTime,
       description: String(body.description ?? existing.description ?? '').trim(),
       icon: String(body.icon ?? existing.icon ?? 'CalendarDays').trim(),
     });
@@ -86,10 +79,9 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const access = await requireAgendaAccess(id);
   if (access.response) return access.response;
-  const removed = deleteAgendaEvent(id);
+  const removed = await deleteAgendaById(id);
   if (!removed) {
     return NextResponse.json({ ok: false, error: 'Agenda event not found' }, { status: 404 });
   }
-
-  return NextResponse.json({ ok: true, removed });
+  return NextResponse.json({ ok: true });
 }

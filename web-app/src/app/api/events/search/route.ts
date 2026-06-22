@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/store';
+import { dbSelect } from '@/lib/supabase-db';
+
+interface WeddingRow {
+  id: string;
+  groomFirstName: string;
+  brideFirstName: string;
+  eventDate: string | null;
+  venueName: string | null;
+  slug: string;
+}
 
 export async function GET(req: Request) {
   try {
@@ -10,35 +19,30 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: true, events: [] });
     }
 
-    const matched = db.weddings.findMany((w) => {
-      const groom = (w.groomName || '').toLowerCase();
-      const bride = (w.brideName || '').toLowerCase();
-      const title = (w.weddingTitle || '').toLowerCase();
+    const all = await dbSelect<WeddingRow>('Wedding', {}, 'id,groomFirstName,brideFirstName,eventDate,venueName,slug', 1000);
+    const matched = all.filter((w) => {
+      const groom = (w.groomFirstName || '').toLowerCase();
+      const bride = (w.brideFirstName || '').toLowerCase();
       const slug = (w.slug || '').toLowerCase();
       const id = (w.id || '').toLowerCase();
       const couple = `${groom} ${bride}`;
       const coupleRev = `${bride} ${groom}`;
-
       return (
-        groom.includes(q) ||
-        bride.includes(q) ||
-        title.includes(q) ||
-        couple.includes(q) ||
-        coupleRev.includes(q) ||
-        slug.includes(q) ||
-        id === q
+        groom.includes(q) || bride.includes(q) ||
+        couple.includes(q) || coupleRev.includes(q) ||
+        slug.includes(q) || id === q
       );
     });
 
     const events = matched.map((w) => ({
       id: w.id,
-      groomName: w.groomName,
-      brideName: w.brideName,
-      weddingTitle: w.weddingTitle,
-      date: w.date,
+      groomName: w.groomFirstName,
+      brideName: w.brideFirstName,
+      weddingTitle: `${w.brideFirstName} & ${w.groomFirstName}`,
+      date: w.eventDate ? w.eventDate.slice(0, 10) : '',
       venueName: w.venueName,
       slug: w.slug,
-      profileImage: w.profileImage,
+      profileImage: null,
     }));
 
     return NextResponse.json({ ok: true, events });

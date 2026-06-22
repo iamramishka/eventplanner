@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { db } from '@/lib/store';
+import { getWeddingBySlug } from '@/lib/wedding-data';
 
 export const size = {
   width: 1600,
@@ -12,7 +12,18 @@ type Props = { params: { slug: string } };
 
 export default async function TwitterImage({ params }: Props) {
   const resolvedParams = (await params) as { slug: string };
-  const wedding = db.weddings.findUnique((w) => w.slug === resolvedParams.slug);
+  const row = await getWeddingBySlug(resolvedParams.slug);
+  const wedding = row
+    ? {
+        weddingTitle: `${row.brideFirstName} & ${row.groomFirstName}`,
+        brideName: row.brideFirstName,
+        groomName: row.groomFirstName,
+        date: row.eventDate ? row.eventDate.slice(0, 10) : '',
+        time: '',
+        venueName: row.venueName || '',
+        story: '',
+      }
+    : null;
 
   if (!wedding) {
     return new ImageResponse(

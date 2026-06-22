@@ -1,20 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { requireWeddingAccess } from '@/lib/rbac';
-import { db } from '@/lib/store';
+import { getWeddingRow, listGuests, listRsvpsByWedding, listBudgetItems, listChecklist } from '@/lib/wedding-data';
 
 export async function GET(_: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   const { weddingId } = await params;
   const access = await requireWeddingAccess(weddingId);
   if (access.response) return access.response;
 
-  const wedding = db.weddings.findUnique((w: any) => w.id === weddingId);
+  const wedding = await getWeddingRow(weddingId);
   if (!wedding) return NextResponse.json({ error: 'Wedding not found' }, { status: 404 });
 
-  const guests: any[] = db.guests.findMany((g: any) => g.weddingId === weddingId);
-  const rsvps: any[]  = db.rsvps.findMany((r: any) => r.weddingId === weddingId);
-  const budget: any[] = db.budget.findMany((b: any) => b.weddingId === weddingId);
-  const checklist: any[] = db.checklist.findMany((c: any) => c.weddingId === weddingId);
+  const [guests, rsvps, budget, checklist] = await Promise.all([
+    listGuests(weddingId),
+    listRsvpsByWedding(weddingId),
+    listBudgetItems(weddingId),
+    listChecklist(weddingId),
+  ]) as [any[], any[], any[], any[]];
 
   // ── RSVP Funnel ──────────────────────────────────────────────
   const totalGuests  = guests.length;
@@ -109,7 +111,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ weddingId:
   const checklistByGroup = Object.entries(groupMap).map(([group, v]) => ({ group, ...v }));
 
   // ── Countdown ────────────────────────────────────────────────
-  const eventDate = wedding.date || wedding.eventDate || null;
+  const eventDate = wedding.eventDate ? wedding.eventDate.slice(0, 10) : null;
   let daysUntil: number | null = null;
   if (eventDate) {
     const ev = new Date(eventDate); ev.setHours(0, 0, 0, 0);
