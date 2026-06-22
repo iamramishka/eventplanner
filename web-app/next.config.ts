@@ -19,7 +19,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://www.svgrepo.com",
+      "img-src 'self' data: blob: https://www.svgrepo.com https://*.supabase.co",
       "connect-src 'self' https://api.stripe.com",
       "frame-src https://js.stripe.com https://hooks.stripe.com",
       "frame-ancestors 'self'",
@@ -30,6 +30,12 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Monorepo root — traces become web-app/... paths so Vercel resolves them correctly
   outputFileTracingRoot: path.join(__dirname, '../'),
+  images: {
+    remotePatterns: [
+      // Supabase Storage (public wedding-media bucket) — hero & gallery images
+      { protocol: 'https', hostname: '*.supabase.co', pathname: '/storage/v1/object/public/**' },
+    ],
+  },
   async headers() {
     return [
       {
