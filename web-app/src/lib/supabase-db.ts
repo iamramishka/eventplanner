@@ -62,3 +62,41 @@ export async function dbUpdate(
   });
   if (!res.ok) throw new Error(`dbUpdate ${table}: ${res.status} ${await res.text()}`);
 }
+
+// ── Supabase Storage (wedding-media bucket) ──
+const STORAGE_BUCKET = 'wedding-media';
+
+/**
+ * Upload raw image bytes to the public wedding-media bucket and return the public URL.
+ * `objectPath` is the path within the bucket, e.g. "gallery/<weddingId>/<file>.jpg".
+ */
+export async function storageUpload(
+  objectPath: string,
+  bytes: Buffer | Uint8Array,
+  contentType: string,
+): Promise<string> {
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${objectPath}`, {
+    method: 'POST',
+    headers: {
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      'Content-Type': contentType,
+      'x-upsert': 'true',
+    },
+    body: bytes as unknown as BodyInit,
+  });
+  if (!res.ok) throw new Error(`storageUpload ${objectPath}: ${res.status} ${await res.text()}`);
+  return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${objectPath}`;
+}
+
+/** Remove an object from the bucket given its public URL (best-effort). */
+export async function storageDeleteByUrl(publicUrl: string): Promise<void> {
+  const marker = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
+  const idx = publicUrl.indexOf(marker);
+  if (idx === -1) return;
+  const objectPath = publicUrl.slice(idx + marker.length);
+  await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${objectPath}`, {
+    method: 'DELETE',
+    headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
+  });
+}

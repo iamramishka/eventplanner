@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { db, getRsvpById } from '@/lib/store';
+import { dbSelect } from '@/lib/supabase-db';
 import { getListingById, getVendorById } from '@/lib/vendorStore';
 
 export type AppRole = 'COUPLE' | 'VENDOR' | 'SUPER_ADMIN';
@@ -64,7 +65,8 @@ export async function requireWeddingAccess(weddingId: string): Promise<GuardResu
   if (guard.response) return guard;
   if (guard.auth?.role === 'SUPER_ADMIN') return guard;
 
-  const wedding = db.weddings.findUnique((w: OwnedRow) => w.id === weddingId) as OwnedRow | null;
+  const rows = await dbSelect<{ userId: string }>('Wedding', { id: `eq.${weddingId}` }, 'userId', 1);
+  const wedding = rows[0];
   if (!wedding) return { response: jsonError('Wedding not found', 404) };
   if (String(wedding.userId || '') !== guard.auth?.userId) {
     return { response: jsonError('Forbidden', 403) };
@@ -104,7 +106,8 @@ export async function requireAgendaAccess(eventId: string): Promise<GuardResult>
 }
 
 export async function requireGalleryAccess(imageId: string): Promise<GuardResult> {
-  const image = db.galleryImages.findUnique((row: OwnedRow) => row.id === imageId) as OwnedRow | null;
+  const rows = await dbSelect<{ weddingId: string }>('GalleryImage', { id: `eq.${imageId}` }, 'weddingId', 1);
+  const image = rows[0];
   if (!image) return { response: jsonError('Gallery image not found', 404) };
   return requireWeddingAccess(String(image.weddingId || ''));
 }

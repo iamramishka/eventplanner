@@ -61,7 +61,7 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const userId = crypto.randomUUID();
-    const slug = await uniqueWeddingSlug(slugify(String(body?.slug || `${brideName}-and-${groomName}`)));
+    const slug = await uniqueWeddingSlug(slugify(String(body?.slug || `${groomName}-and-${brideName}`)));
 
     const user = await dbInsert<DbUser>('User', {
       id: userId,

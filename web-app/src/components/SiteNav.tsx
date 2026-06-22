@@ -7,7 +7,7 @@ import type { PlatformSettings } from '@/lib/adminSettings';
 
 export default function SiteNav({ settings }: { settings?: PlatformSettings }) {
   const pathname = usePathname();
-  const hiddenRoutes = ['/', '/public-landing', '/login', '/register', '/find-event', '/sign-in'];
+  const hiddenRoutes = ['/', '/public-landing', '/login', '/register', '/find-event', '/sign-in', '/invitation'];
   const brandName = settings?.branding?.siteName || 'WedPlan';
 
   if (!pathname || hiddenRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {

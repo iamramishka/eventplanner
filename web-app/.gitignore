@@ -40,3 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 web-app/logs/task*.log
+web-app/supabase/.temp/

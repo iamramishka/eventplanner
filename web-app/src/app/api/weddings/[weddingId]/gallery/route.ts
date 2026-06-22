@@ -1,15 +1,17 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { addGalleryImage, db, getGalleryImagesByWedding, reorderGalleryImages } from '@/lib/store';
+import { dbSelect, dbInsert, dbUpdate, storageUpload } from '@/lib/supabase-db';
 import { requireWeddingAccess } from '@/lib/rbac';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
-type StoreRow = {
-  id?: unknown;
-};
+interface GalleryRow {
+  id: string;
+  weddingId: string;
+  imageType: string;
+  imageUrl: string;
+  sortOrder: number;
+}
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
@@ -21,7 +23,7 @@ function sanitizeFileName(name: string) {
     .replace(/[^a-zA-Z0-9-_]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .toLowerCase()
-    .slice(0, 60) || 'gallery-image';
+    .slice(0, 60) || 'image';
 }
 
 function extensionForMime(mimeType: string) {
@@ -32,16 +34,23 @@ function extensionForMime(mimeType: string) {
   return 'jpg';
 }
 
+async function weddingExists(weddingId: string) {
+  const rows = await dbSelect<{ id: string }>('Wedding', { id: `eq.${weddingId}` }, 'id', 1);
+  return rows.length > 0;
+}
+
 export async function GET(_: Request, { params }: { params: Promise<{ weddingId: string }> }) {
   const { weddingId } = await params;
   const access = await requireWeddingAccess(weddingId);
   if (access.response) return access.response;
-  const wedding = db.weddings.findUnique((w: StoreRow) => w.id === weddingId);
-  if (!wedding) {
-    return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
-  }
 
-  return NextResponse.json(getGalleryImagesByWedding(weddingId));
+  const images = await dbSelect<GalleryRow>(
+    'GalleryImage',
+    { weddingId: `eq.${weddingId}`, order: 'sortOrder.asc' },
+    '*',
+    500,
+  );
+  return NextResponse.json(images);
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ weddingId: string }> }) {
@@ -49,8 +58,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ wed
     const { weddingId } = await params;
     const access = await requireWeddingAccess(weddingId);
     if (access.response) return access.response;
-    const wedding = db.weddings.findUnique((w: StoreRow) => w.id === weddingId);
-    if (!wedding) {
+    if (!(await weddingExists(weddingId))) {
       return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
     }
 
@@ -71,25 +79,38 @@ export async function POST(request: Request, { params }: { params: Promise<{ wed
       return NextResponse.json({ ok: false, error: 'Image must be under 5 MB' }, { status: 400 });
     }
 
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'gallery');
-    fs.mkdirSync(uploadsDir, { recursive: true });
+    // imageType: 'hero' (single hero image) or 'gallery' (default)
+    const imageType = body?.imageType === 'hero' ? 'hero' : 'gallery';
 
     const ext = extensionForMime(mimeType);
-    const baseName = sanitizeFileName(String(body?.fileName || 'gallery-image'));
-    const storedFileName = `${weddingId}-${Date.now().toString(36)}-${baseName}.${ext}`;
-    const filePath = path.join(uploadsDir, storedFileName);
-    fs.writeFileSync(filePath, buffer);
+    const baseName = sanitizeFileName(String(body?.fileName || imageType));
+    const storedFileName = `${Date.now().toString(36)}-${baseName}.${ext}`;
+    const objectPath = `${imageType}/${weddingId}/${storedFileName}`;
+    const publicUrl = await storageUpload(objectPath, buffer, mimeType);
 
-    const image = addGalleryImage({
+    // A wedding has at most one hero image — replace any existing hero row.
+    if (imageType === 'hero') {
+      const existingHero = await dbSelect<GalleryRow>(
+        'GalleryImage',
+        { weddingId: `eq.${weddingId}`, imageType: 'eq.hero' },
+        'id',
+        1,
+      );
+      if (existingHero[0]) {
+        await dbUpdate('GalleryImage', { id: `eq.${existingHero[0].id}` }, { imageUrl: publicUrl });
+        return NextResponse.json({ ...existingHero[0], imageUrl: publicUrl, imageType: 'hero' }, { status: 201 });
+      }
+    }
+
+    const existing = await dbSelect<GalleryRow>('GalleryImage', { weddingId: `eq.${weddingId}` }, 'sortOrder', 500);
+    const nextOrder = existing.reduce((max, r) => Math.max(max, r.sortOrder ?? 0), 0) + 1;
+
+    const image = await dbInsert<GalleryRow>('GalleryImage', {
+      id: crypto.randomUUID(),
       weddingId,
-      imageType: 'gallery',
-      imageUrl: `/uploads/gallery/${storedFileName}`,
-      altText: String(body?.altText || '').trim(),
-      fileName: storedFileName,
-      mimeType,
-      sizeBytes: buffer.length,
-      width: Number(body?.width || 0),
-      height: Number(body?.height || 0),
+      imageType,
+      imageUrl: publicUrl,
+      sortOrder: nextOrder,
     });
 
     return NextResponse.json(image, { status: 201 });
@@ -103,8 +124,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ we
     const { weddingId } = await params;
     const access = await requireWeddingAccess(weddingId);
     if (access.response) return access.response;
-    const wedding = db.weddings.findUnique((w: StoreRow) => w.id === weddingId);
-    if (!wedding) {
+    if (!(await weddingExists(weddingId))) {
       return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
     }
 
@@ -113,7 +133,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ we
       return NextResponse.json({ ok: false, error: 'orderedIds array required' }, { status: 400 });
     }
 
-    return NextResponse.json(reorderGalleryImages(weddingId, body.orderedIds.map(String)));
+    const ids: string[] = body.orderedIds.map(String);
+    await Promise.all(
+      ids.map((id, index) => dbUpdate('GalleryImage', { id: `eq.${id}` }, { sortOrder: index + 1 })),
+    );
+
+    const images = await dbSelect<GalleryRow>(
+      'GalleryImage',
+      { weddingId: `eq.${weddingId}`, order: 'sortOrder.asc' },
+      '*',
+      500,
+    );
+    return NextResponse.json(images);
   } catch (error: unknown) {
     return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });
   }

@@ -1670,10 +1670,15 @@ function GalleryModule({ wedding }: any) {
   const [images, setImages] = useState<GalleryImageRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [heroUploading, setHeroUploading] = useState(false);
   const [savingId, setSavingId] = useState('');
   const [altDrafts, setAltDrafts] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  // Hero is a single image (imageType 'hero'); the grid shows the rest.
+  const heroImage = images.find(img => (img as any).imageType === 'hero');
+  const galleryOnly = images.filter(img => (img as any).imageType !== 'hero');
 
   useEffect(() => {
     let mounted = true;
@@ -1741,6 +1746,48 @@ function GalleryModule({ wedding }: any) {
       setError(err?.message || 'Unable to upload image.');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleHeroUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setError('');
+    setMessage('');
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be under 5 MB.');
+      return;
+    }
+
+    setHeroUploading(true);
+    try {
+      const compressed = await compressGalleryImage(file);
+      const res = await fetch(`/api/weddings/${wedding.id}/gallery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: compressed.dataUrl,
+          imageType: 'hero',
+          fileName: file.name,
+          width: compressed.width,
+          height: compressed.height,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const created = await res.json();
+      // Replace any existing hero, then keep gallery images as-is.
+      setImages(prev => [created, ...prev.filter(img => (img as any).imageType !== 'hero')]);
+      showMessage('Hero image saved.');
+    } catch (err: any) {
+      setError(err?.message || 'Unable to upload hero image.');
+    } finally {
+      setHeroUploading(false);
     }
   };
 
@@ -1827,11 +1874,50 @@ function GalleryModule({ wedding }: any) {
         </div>
       )}
 
+      {/* Hero Section Image */}
+      <div className="card settings-card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div>
+            <p className="eyebrow">Invitation Hero</p>
+            <h2 className="module-title" style={{ fontSize: '1.1rem', margin: '2px 0 4px' }}>Hero Section Image</h2>
+            <p className="module-subtitle" style={{ margin: 0, maxWidth: 460 }}>
+              The full-screen background photo at the top of your public invitation. If none is set, a default image is shown.
+            </p>
+          </div>
+          <label className="btn btn-primary" style={{ cursor: heroUploading ? 'not-allowed' : 'pointer' }}>
+            <Upload size={16} /> {heroUploading ? 'Uploading...' : heroImage ? 'Replace Hero' : 'Upload Hero'}
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleHeroUpload} disabled={heroUploading} />
+          </label>
+        </div>
+        <div style={{ position: 'relative', aspectRatio: '16 / 9', borderRadius: 12, overflow: 'hidden', background: '#f8ebe4', marginTop: 16 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={heroImage?.imageUrl || '/images/default-hero.jpg'}
+            alt={heroImage ? 'Invitation hero' : 'Default invitation hero'}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+          <span className="badge badge-slate" style={{ position: 'absolute', top: 12, left: 12 }}>
+            {heroImage ? 'Your hero image' : 'Default image'}
+          </span>
+          {heroImage && (
+            <button
+              className="table-action-btn"
+              title="Remove hero image"
+              aria-label="Remove hero image"
+              onClick={() => void deleteImage(heroImage.id)}
+              style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(255,255,255,0.9)' }}
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
       {loading ? (
         <div className="card">
           <p className="module-subtitle" style={{ margin: 0 }}>Loading gallery images...</p>
         </div>
-      ) : images.length === 0 ? (
+      ) : galleryOnly.length === 0 ? (
         <div className="card">
           <EmptyStatePanel
             icon={<Grid3x3 size={40} />}
@@ -1841,7 +1927,7 @@ function GalleryModule({ wedding }: any) {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
-          {images.map((image, index) => (
+          {galleryOnly.map((image, index) => (
             <article key={image.id} className="card settings-card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ position: 'relative', aspectRatio: '4 / 3', background: '#f8ebe4' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1873,7 +1959,7 @@ function GalleryModule({ wedding }: any) {
                     <button className="table-action-btn" title="Move image up" aria-label="Move image up" disabled={index === 0} onClick={() => void reorder(image.id, -1)}>
                       <ArrowUp size={14} />
                     </button>
-                    <button className="table-action-btn" title="Move image down" aria-label="Move image down" disabled={index === images.length - 1} onClick={() => void reorder(image.id, 1)}>
+                    <button className="table-action-btn" title="Move image down" aria-label="Move image down" disabled={index === galleryOnly.length - 1} onClick={() => void reorder(image.id, 1)}>
                       <ArrowDown size={14} />
                     </button>
                   </div>
