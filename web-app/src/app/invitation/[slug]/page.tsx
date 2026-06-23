@@ -23,6 +23,7 @@ interface WeddingRow {
   venueAddress: string | null;
   venueMapLink: string | null;
   rsvpDeadline: string | null;
+  specialNoteText: string | null;
 }
 interface GalleryRow { id: string; imageType: string; imageUrl: string; sortOrder: number }
 interface AgendaRow { id: string; title: string; eventTime: string | null; durationMinutes: number | null; description: string | null; iconKey: string | null; sortOrder: number }
@@ -138,6 +139,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
   const venueAddress = wedding.venueAddress || '';
   const venueMapLink = wedding.venueMapLink || '';
   const rsvpDeadline = wedding.rsvpDeadline ? wedding.rsvpDeadline.slice(0, 10) : '';
+  const specialNoteText = wedding.specialNoteText || '';
   const title = `${brideName} & ${groomName}`;
   const description = `Join ${brideName} and ${groomName} on ${formatDate(date)} at ${venueName || 'our celebration'}`;
 
@@ -148,6 +150,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
     500,
   );
   const heroRow = allImages.find((img) => img.imageType === 'hero');
+  const couplePhotoRow = allImages.find((img) => img.imageType === 'couple');
   const galleryImages = allImages.filter((img) => (img.imageType || 'gallery') === 'gallery');
   const heroImage = heroRow?.imageUrl || DEFAULT_HERO;
 
@@ -288,6 +291,18 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         .inv-gallery-empty-icon{font-size:2.5rem;margin-bottom:12px;opacity:.4}
         .inv-gallery-empty-text{color:var(--inv-muted);font-size:.92rem;line-height:1.6}
 
+        /* ── Special Note ── */
+        .inv-sn-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;border:none;padding:0;background:transparent;box-shadow:none}
+        @media(max-width:600px){.inv-sn-wrap{grid-template-columns:1fr}}
+        .inv-sn-photo{border-radius:18px;overflow:hidden;min-height:280px}
+        .inv-sn-photo img{width:100%;height:100%;object-fit:cover;display:block;min-height:280px}
+        .inv-sn-card{background:#fff;border:1px solid var(--inv-border);border-radius:18px;padding:36px 32px;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--inv-shadow)}
+        .inv-sn-eyebrow{letter-spacing:.3em;text-transform:uppercase;font-size:.68rem;color:var(--inv-muted);font-weight:700;margin-bottom:12px}
+        .inv-sn-heading{font-family:'Dancing Script',cursive,'Playfair Display',Georgia,serif;font-size:clamp(1.8rem,5vw,2.4rem);color:var(--inv-text);font-weight:600;margin-bottom:16px;line-height:1.15}
+        .inv-sn-text{color:var(--inv-muted);line-height:1.85;font-size:.97rem;margin-bottom:22px;white-space:pre-line}
+        .inv-sn-sign{color:var(--inv-muted);font-size:.88rem;margin-bottom:2px}
+        .inv-sn-names{font-family:'Dancing Script',cursive,'Playfair Display',Georgia,serif;color:var(--inv-primary);font-size:1.6rem;font-weight:600}
+
         /* ── CTA banners ── */
         .inv-cta-banner{border-radius:var(--inv-radius);padding:36px 28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px}
         .inv-cta-banner.rsvp{background:linear-gradient(135deg,var(--inv-primary),color-mix(in srgb,var(--inv-primary) 60%,var(--inv-gold)));box-shadow:0 12px 40px rgba(196,90,116,0.35)}
@@ -389,6 +404,33 @@ export default async function InvitationPage({ params, searchParams }: Props) {
               the beginning of their forever.
             </p>
           </section>
+
+          {/* ── Special Note ── */}
+          {specialNoteText && (
+            couplePhotoRow ? (
+              <div className="inv-sn-wrap">
+                <div className="inv-sn-photo">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={couplePhotoRow.imageUrl} alt={`${brideName} & ${groomName}`} />
+                </div>
+                <div className="inv-sn-card">
+                  <p className="inv-sn-eyebrow">A Special Note</p>
+                  <h2 className="inv-sn-heading">To Our Lovely Guests</h2>
+                  <p className="inv-sn-text">{specialNoteText}</p>
+                  <p className="inv-sn-sign">With all our love,</p>
+                  <p className="inv-sn-names">{brideName} &amp; {groomName}</p>
+                </div>
+              </div>
+            ) : (
+              <section className="inv-card" style={{ textAlign: 'center', padding: '40px 32px' }}>
+                <p className="inv-sn-eyebrow">A Special Note</p>
+                <h2 className="inv-sn-heading">To Our Lovely Guests</h2>
+                <p className="inv-sn-text" style={{ maxWidth: 560, margin: '0 auto 22px' }}>{specialNoteText}</p>
+                <p className="inv-sn-sign">With all our love,</p>
+                <p className="inv-sn-names">{brideName} &amp; {groomName}</p>
+              </section>
+            )
+          )}
 
           {/* ── Countdown ── */}
           {date && (

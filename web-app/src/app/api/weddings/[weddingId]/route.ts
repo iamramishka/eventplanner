@@ -13,6 +13,7 @@ interface WeddingRow {
   venueAddress: string | null;
   venueMapLink: string | null;
   rsvpDeadline: string | null;
+  specialNoteText: string | null;
   slug: string;
   setupCompleted: boolean | null;
   estimatedGuests: number | null;
@@ -34,6 +35,7 @@ function toDashboardWedding(w: WeddingRow) {
     venueAddress: w.venueAddress || '',
     venueMapLink: w.venueMapLink || '',
     rsvpDeadline: w.rsvpDeadline ? w.rsvpDeadline.slice(0, 10) : '',
+    specialNoteText: w.specialNoteText || '',
     estimatedGuests: w.estimatedGuests ?? null,
     estimatedBudget: w.estimatedBudget ?? null,
     setupCompleted: !!w.setupCompleted,
@@ -77,6 +79,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ we
   if (payload.venueAddress !== undefined) cols.venueAddress = payload.venueAddress ? String(payload.venueAddress) : null;
   if (payload.venueMapLink !== undefined) cols.venueMapLink = payload.venueMapLink ? String(payload.venueMapLink) : null;
   if (payload.rsvpDeadline !== undefined) cols.rsvpDeadline = payload.rsvpDeadline ? String(payload.rsvpDeadline).slice(0, 10) : null;
+  if (payload.specialNoteText !== undefined) cols.specialNoteText = payload.specialNoteText ? String(payload.specialNoteText) : null;
   if (payload.estimatedGuests !== undefined) cols.estimatedGuests = Number.isFinite(Number(payload.estimatedGuests)) ? Number(payload.estimatedGuests) : null;
   if (payload.estimatedBudget !== undefined) cols.estimatedBudget = Number.isFinite(Number(payload.estimatedBudget)) ? Number(payload.estimatedBudget) : null;
   if (payload.setupCompleted !== undefined) cols.setupCompleted = !!payload.setupCompleted;

@@ -1671,14 +1671,17 @@ function GalleryModule({ wedding }: any) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [heroUploading, setHeroUploading] = useState(false);
+  const [coupleUploading, setCoupleUploading] = useState(false);
   const [savingId, setSavingId] = useState('');
   const [altDrafts, setAltDrafts] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [specialNoteText, setSpecialNoteText] = useState<string>(wedding.specialNoteText || '');
+  const [noteSaving, setNoteSaving] = useState(false);
 
-  // Hero is a single image (imageType 'hero'); the grid shows the rest.
   const heroImage = images.find(img => (img as any).imageType === 'hero');
-  const galleryOnly = images.filter(img => (img as any).imageType !== 'hero');
+  const couplePhoto = images.find(img => (img as any).imageType === 'couple');
+  const galleryOnly = images.filter(img => (img as any).imageType !== 'hero' && (img as any).imageType !== 'couple');
 
   useEffect(() => {
     let mounted = true;
@@ -1705,6 +1708,44 @@ function GalleryModule({ wedding }: any) {
   const showMessage = (text: string) => {
     setMessage(text);
     window.setTimeout(() => setMessage(''), 2400);
+  };
+
+  const saveNoteText = async () => {
+    setNoteSaving(true);
+    try {
+      await patchWeddingRecord(wedding.id, { specialNoteText });
+      showMessage('Special note saved.');
+    } catch {
+      setError('Unable to save special note.');
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
+  const handleCouplePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setError('');
+    if (!file.type.startsWith('image/')) { setError('Please upload an image file.'); return; }
+    if (file.size > 5 * 1024 * 1024) { setError('Image must be under 5 MB.'); return; }
+    setCoupleUploading(true);
+    try {
+      const compressed = await compressGalleryImage(file);
+      const res = await fetch(`/api/weddings/${wedding.id}/gallery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: compressed.dataUrl, imageType: 'couple', fileName: file.name, width: compressed.width, height: compressed.height }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const created = await res.json();
+      setImages(prev => [created, ...prev.filter(img => (img as any).imageType !== 'couple')]);
+      showMessage('Couple photo saved.');
+    } catch (err: any) {
+      setError(err?.message || 'Unable to upload couple photo.');
+    } finally {
+      setCoupleUploading(false);
+    }
   };
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1910,6 +1951,49 @@ function GalleryModule({ wedding }: any) {
             </label>
           </div>
         </div>
+      </div>
+
+      {/* Special Note Section */}
+      <div className="card settings-card" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+          {/* Couple photo thumbnail */}
+          <div style={{ position: 'relative', width: 120, height: 80, borderRadius: 10, overflow: 'hidden', background: '#f8ebe4', flexShrink: 0 }}>
+            {couplePhoto ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={couplePhoto.imageUrl} alt="Couple photo" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <button className="table-action-btn" title="Remove couple photo" onClick={() => void deleteImage(couplePhoto.id)} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(255,255,255,0.9)', padding: 3 }}>
+                  <Trash2 size={12} />
+                </button>
+              </>
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: 'var(--adm-text-secondary)', fontSize: '0.72rem', textAlign: 'center', padding: 4 }}>No photo</div>
+            )}
+          </div>
+          <div style={{ flex: 1 }}>
+            <p className="eyebrow">Special Note</p>
+            <h2 className="module-title" style={{ fontSize: '1rem', margin: '2px 0 2px' }}>Message to Guests</h2>
+            <p className="module-subtitle" style={{ margin: '0 0 10px', fontSize: '0.82rem' }}>Shown on the invitation with a photo of you two.</p>
+            <label className="btn btn-primary" style={{ cursor: coupleUploading ? 'not-allowed' : 'pointer', fontSize: '0.82rem', padding: '7px 14px' }}>
+              <Upload size={14} /> {coupleUploading ? 'Uploading…' : couplePhoto ? 'Replace Photo' : 'Upload Couple Photo'}
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCouplePhotoUpload} disabled={coupleUploading} />
+            </label>
+          </div>
+        </div>
+        <div className="form-group" style={{ marginBottom: 12 }}>
+          <label className="form-label">Message text</label>
+          <textarea
+            className="form-input"
+            rows={4}
+            style={{ resize: 'vertical', fontFamily: 'inherit' }}
+            value={specialNoteText}
+            onChange={e => setSpecialNoteText(e.target.value)}
+            placeholder="Write a personal message to your guests…"
+          />
+        </div>
+        <button className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '7px 18px' }} onClick={() => void saveNoteText()} disabled={noteSaving}>
+          <Save size={14} /> {noteSaving ? 'Saving…' : 'Save Note'}
+        </button>
       </div>
 
       {loading ? (

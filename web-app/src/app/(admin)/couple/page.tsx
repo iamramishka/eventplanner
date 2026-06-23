@@ -20,6 +20,7 @@ interface WeddingRow {
   venueAddress: string | null;
   venueMapLink: string | null;
   rsvpDeadline: string | null;
+  specialNoteText: string | null;
   estimatedGuests: number | null;
   estimatedBudget: number | null;
 }
@@ -39,6 +40,7 @@ function mapWedding(w: WeddingRow) {
     venueAddress: w.venueAddress || '',
     venueMapLink: w.venueMapLink || '',
     rsvpDeadline: w.rsvpDeadline ? w.rsvpDeadline.slice(0, 10) : '',
+    specialNoteText: w.specialNoteText || '',
     estimatedGuests: w.estimatedGuests ?? null,
     estimatedBudget: w.estimatedBudget ?? null,
     sections: {},
