@@ -1876,40 +1876,39 @@ function GalleryModule({ wedding }: any) {
 
       {/* Hero Section Image */}
       <div className="card settings-card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <div>
-            <p className="eyebrow">Invitation Hero</p>
-            <h2 className="module-title" style={{ fontSize: '1.1rem', margin: '2px 0 4px' }}>Hero Section Image</h2>
-            <p className="module-subtitle" style={{ margin: 0, maxWidth: 460 }}>
-              The full-screen background photo at the top of your public invitation. If none is set, a default image is shown.
-            </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Thumbnail */}
+          <div style={{ position: 'relative', width: 120, height: 80, borderRadius: 10, overflow: 'hidden', background: '#f8ebe4', flexShrink: 0 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroImage?.imageUrl || '/images/default-hero.jpg'}
+              alt={heroImage ? 'Invitation hero' : 'Default invitation hero'}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+            {heroImage && (
+              <button
+                className="table-action-btn"
+                title="Remove hero image"
+                aria-label="Remove hero image"
+                onClick={() => void deleteImage(heroImage.id)}
+                style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(255,255,255,0.9)', padding: 3 }}
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
           </div>
-          <label className="btn btn-primary" style={{ cursor: heroUploading ? 'not-allowed' : 'pointer' }}>
-            <Upload size={16} /> {heroUploading ? 'Uploading...' : heroImage ? 'Replace Hero' : 'Upload Hero'}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleHeroUpload} disabled={heroUploading} />
-          </label>
-        </div>
-        <div style={{ position: 'relative', height: 200, borderRadius: 12, overflow: 'hidden', background: '#f8ebe4', marginTop: 16 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={heroImage?.imageUrl || '/images/default-hero.jpg'}
-            alt={heroImage ? 'Invitation hero' : 'Default invitation hero'}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
-          <span className="badge badge-slate" style={{ position: 'absolute', top: 12, left: 12 }}>
-            {heroImage ? 'Your hero image' : 'Default image'}
-          </span>
-          {heroImage && (
-            <button
-              className="table-action-btn"
-              title="Remove hero image"
-              aria-label="Remove hero image"
-              onClick={() => void deleteImage(heroImage.id)}
-              style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(255,255,255,0.9)' }}
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
+          {/* Text + action */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p className="eyebrow">Invitation Hero</p>
+            <h2 className="module-title" style={{ fontSize: '1rem', margin: '2px 0 2px' }}>Hero Section Image</h2>
+            <p className="module-subtitle" style={{ margin: '0 0 10px', fontSize: '0.82rem' }}>
+              {heroImage ? 'Your hero image' : 'Default image shown'} — full-screen background on the invitation.
+            </p>
+            <label className="btn btn-primary" style={{ cursor: heroUploading ? 'not-allowed' : 'pointer', fontSize: '0.82rem', padding: '7px 14px' }}>
+              <Upload size={14} /> {heroUploading ? 'Uploading...' : heroImage ? 'Replace' : 'Upload Hero'}
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleHeroUpload} disabled={heroUploading} />
+            </label>
+          </div>
         </div>
       </div>
 
@@ -1926,49 +1925,45 @@ function GalleryModule({ wedding }: any) {
           />
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
           {galleryOnly.map((image, index) => (
             <article key={image.id} className="card settings-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ position: 'relative', aspectRatio: '4 / 3', background: '#f8ebe4' }}>
+              <div style={{ position: 'relative', height: 110, background: '#f8ebe4' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={image.imageUrl}
                   alt={image.altText || 'Wedding gallery image'}
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
-                <span className="badge badge-slate" style={{ position: 'absolute', top: 12, left: 12 }}>#{index + 1}</span>
+                <span className="badge badge-slate" style={{ position: 'absolute', top: 6, left: 6, fontSize: '0.68rem', padding: '2px 8px' }}>#{index + 1}</span>
               </div>
-              <div style={{ padding: 16, display: 'grid', gap: 12 }}>
-                <div className="form-group">
-                  <label className="form-label">Alt text</label>
-                  <input
-                    className="form-input"
-                    value={altDrafts[image.id] || ''}
-                    onChange={event => setAltDrafts(prev => ({ ...prev, [image.id]: event.target.value }))}
-                    onBlur={() => void saveAltText(image.id)}
-                    placeholder="Describe this image"
-                  />
-                </div>
-                <div style={{ display: 'grid', gap: 6, fontSize: '0.76rem', color: 'var(--adm-text-secondary)' }}>
-                  <span>{image.width || '?'} x {image.height || '?'} px</span>
-                  <span>{formatBytes(image.sizeBytes)} · {image.mimeType || 'image'}</span>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{image.fileName}</span>
+              <div style={{ padding: 10, display: 'grid', gap: 6 }}>
+                <input
+                  className="form-input"
+                  style={{ fontSize: '0.78rem', padding: '5px 8px' }}
+                  value={altDrafts[image.id] || ''}
+                  onChange={event => setAltDrafts(prev => ({ ...prev, [image.id]: event.target.value }))}
+                  onBlur={() => void saveAltText(image.id)}
+                  placeholder="Alt text"
+                />
+                <div style={{ fontSize: '0.7rem', color: 'var(--adm-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {image.width || '?'}×{image.height || '?'} · {formatBytes(image.sizeBytes)}
                 </div>
                 <div className="table-actions" style={{ justifyContent: 'space-between' }}>
-                  <div className="table-actions">
-                    <button className="table-action-btn" title="Move image up" aria-label="Move image up" disabled={index === 0} onClick={() => void reorder(image.id, -1)}>
-                      <ArrowUp size={14} />
+                  <div className="table-actions" style={{ gap: 4 }}>
+                    <button className="table-action-btn" title="Move up" aria-label="Move image up" disabled={index === 0} onClick={() => void reorder(image.id, -1)}>
+                      <ArrowUp size={12} />
                     </button>
-                    <button className="table-action-btn" title="Move image down" aria-label="Move image down" disabled={index === galleryOnly.length - 1} onClick={() => void reorder(image.id, 1)}>
-                      <ArrowDown size={14} />
+                    <button className="table-action-btn" title="Move down" aria-label="Move image down" disabled={index === galleryOnly.length - 1} onClick={() => void reorder(image.id, 1)}>
+                      <ArrowDown size={12} />
                     </button>
                   </div>
-                  <div className="table-actions">
+                  <div className="table-actions" style={{ gap: 4 }}>
                     <button className="table-action-btn" title="Save alt text" aria-label="Save alt text" disabled={savingId === image.id} onClick={() => void saveAltText(image.id)}>
-                      <Save size={14} />
+                      <Save size={12} />
                     </button>
                     <button className="table-action-btn" title="Delete image" aria-label="Delete image" onClick={() => void deleteImage(image.id)}>
-                      <Trash2 size={14} />
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
