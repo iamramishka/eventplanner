@@ -12,6 +12,21 @@ type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<s
 
 const DEFAULT_HERO = '/images/default-hero.jpg';
 
+const DEFAULT_GALLERY_IMAGES = [
+  { id: 'dg-1',  imageUrl: 'https://picsum.photos/seed/wed-a/600/800' },
+  { id: 'dg-2',  imageUrl: 'https://picsum.photos/seed/wed-b/800/600' },
+  { id: 'dg-3',  imageUrl: 'https://picsum.photos/seed/wed-c/600/900' },
+  { id: 'dg-4',  imageUrl: 'https://picsum.photos/seed/wed-d/800/560' },
+  { id: 'dg-5',  imageUrl: 'https://picsum.photos/seed/wed-e/600/800' },
+  { id: 'dg-6',  imageUrl: 'https://picsum.photos/seed/wed-f/800/600' },
+  { id: 'dg-7',  imageUrl: 'https://picsum.photos/seed/wed-g/600/720' },
+  { id: 'dg-8',  imageUrl: 'https://picsum.photos/seed/wed-h/800/600' },
+  { id: 'dg-9',  imageUrl: 'https://picsum.photos/seed/wed-i/600/800' },
+  { id: 'dg-10', imageUrl: 'https://picsum.photos/seed/wed-j/800/640' },
+  { id: 'dg-11', imageUrl: 'https://picsum.photos/seed/wed-k/600/750' },
+  { id: 'dg-12', imageUrl: 'https://picsum.photos/seed/wed-l/800/600' },
+];
+
 interface WeddingRow {
   id: string;
   slug: string;
@@ -152,6 +167,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
   const heroRow = allImages.find((img) => img.imageType === 'hero');
   const couplePhotoRow = allImages.find((img) => img.imageType === 'couple');
   const galleryImages = allImages.filter((img) => (img.imageType || 'gallery') === 'gallery');
+  const displayGalleryImages = galleryImages.length > 0 ? galleryImages : DEFAULT_GALLERY_IMAGES;
   const heroImage = heroRow?.imageUrl || DEFAULT_HERO;
 
   const agenda = await dbSelect<AgendaRow>(
@@ -491,24 +507,14 @@ export default async function InvitationPage({ params, searchParams }: Props) {
               <h2 className="inv-masonry-script">Moments of Love</h2>
               <p className="inv-masonry-sub">A few precious memories shared ahead of our celebration.</p>
             </div>
-            {galleryImages.length > 0 ? (
-              <div className="inv-masonry-grid" data-testid="public-gallery-grid">
-                {galleryImages.map((img) => (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <div key={img.id} className="inv-masonry-item">
-                    <img src={img.imageUrl} alt="Wedding memory" loading="lazy" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="inv-gallery-empty" data-testid="public-gallery-empty">
-                <div className="inv-gallery-empty-icon">🌸</div>
-                <p className="inv-gallery-empty-text">
-                  The couple will be adding their gallery soon.<br />
-                  Please check back closer to the celebration.
-                </p>
-              </div>
-            )}
+            <div className="inv-masonry-grid" data-testid="public-gallery-grid">
+              {displayGalleryImages.map((img) => (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <div key={img.id} className="inv-masonry-item">
+                  <img src={img.imageUrl} alt="Wedding memory" loading="lazy" />
+                </div>
+              ))}
+            </div>
           </section>
 
           {/* ── RSVP CTA ── */}

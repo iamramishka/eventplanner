@@ -1663,6 +1663,19 @@ function buildAgendaMarkdown(wedding: any, events: AgendaEventRecord[]) {
   return lines.join('\n');
 }
 
+/* ── Default sample images shown when no gallery photos are uploaded ── */
+const DASHBOARD_DEFAULT_GALLERY = [
+  { id: 'dg-1',  imageUrl: 'https://picsum.photos/seed/wed-a/600/800',  altText: 'Sample photo' },
+  { id: 'dg-2',  imageUrl: 'https://picsum.photos/seed/wed-b/800/600',  altText: 'Sample photo' },
+  { id: 'dg-3',  imageUrl: 'https://picsum.photos/seed/wed-c/600/900',  altText: 'Sample photo' },
+  { id: 'dg-4',  imageUrl: 'https://picsum.photos/seed/wed-d/800/560',  altText: 'Sample photo' },
+  { id: 'dg-5',  imageUrl: 'https://picsum.photos/seed/wed-e/600/800',  altText: 'Sample photo' },
+  { id: 'dg-6',  imageUrl: 'https://picsum.photos/seed/wed-f/800/600',  altText: 'Sample photo' },
+  { id: 'dg-7',  imageUrl: 'https://picsum.photos/seed/wed-g/600/720',  altText: 'Sample photo' },
+  { id: 'dg-8',  imageUrl: 'https://picsum.photos/seed/wed-h/800/600',  altText: 'Sample photo' },
+  { id: 'dg-9',  imageUrl: 'https://picsum.photos/seed/wed-i/600/800',  altText: 'Sample photo' },
+] as GalleryImageRecord[];
+
 /* ════════════════════════════════════════
    GALLERY MODULE
 ════════════════════════════════════════ */
@@ -1682,6 +1695,8 @@ function GalleryModule({ wedding }: any) {
   const heroImage = images.find(img => (img as any).imageType === 'hero');
   const couplePhoto = images.find(img => (img as any).imageType === 'couple');
   const galleryOnly = images.filter(img => (img as any).imageType !== 'hero' && (img as any).imageType !== 'couple');
+  const isDefaultGallery = galleryOnly.length === 0;
+  const displayGallery = isDefaultGallery ? DASHBOARD_DEFAULT_GALLERY : galleryOnly;
 
   useEffect(() => {
     let mounted = true;
@@ -2000,18 +2015,18 @@ function GalleryModule({ wedding }: any) {
         <div className="card">
           <p className="module-subtitle" style={{ margin: 0 }}>Loading gallery images...</p>
         </div>
-      ) : galleryOnly.length === 0 ? (
-        <div className="card">
-          <EmptyStatePanel
-            icon={<Grid3x3 size={40} />}
-            title="No gallery images yet"
-            description="Upload a few favorite photos now. Public gallery rendering will be connected in the next task."
-          />
-        </div>
       ) : (
+        <>
+          {isDefaultGallery && (
+            <div className="card" style={{ background: 'rgba(196,90,116,0.06)', border: '1.5px dashed rgba(196,90,116,0.30)', marginBottom: 10 }}>
+              <p className="module-subtitle" style={{ margin: 0, textAlign: 'center', fontSize: '0.82rem' }}>
+                Sample preview — upload your own photos using the button above and they will replace these.
+              </p>
+            </div>
+          )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-          {galleryOnly.map((image, index) => (
-            <article key={image.id} className="card settings-card" style={{ padding: 0, overflow: 'hidden' }}>
+          {displayGallery.map((image, index) => (
+            <article key={image.id} className="card settings-card" style={{ padding: 0, overflow: 'hidden', opacity: isDefaultGallery ? 0.72 : 1 }}>
               <div style={{ position: 'relative', height: 110, background: '#f8ebe4' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -2019,8 +2034,13 @@ function GalleryModule({ wedding }: any) {
                   alt={image.altText || 'Wedding gallery image'}
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
-                <span className="badge badge-slate" style={{ position: 'absolute', top: 6, left: 6, fontSize: '0.68rem', padding: '2px 8px' }}>#{index + 1}</span>
+                {isDefaultGallery ? (
+                  <span className="badge badge-slate" style={{ position: 'absolute', top: 6, left: 6, fontSize: '0.65rem', padding: '2px 7px', background: 'rgba(0,0,0,0.45)', color: '#fff', border: 'none' }}>Sample</span>
+                ) : (
+                  <span className="badge badge-slate" style={{ position: 'absolute', top: 6, left: 6, fontSize: '0.68rem', padding: '2px 8px' }}>#{index + 1}</span>
+                )}
               </div>
+              {!isDefaultGallery && (
               <div style={{ padding: 10, display: 'grid', gap: 6 }}>
                 <input
                   className="form-input"
@@ -2052,9 +2072,11 @@ function GalleryModule({ wedding }: any) {
                   </div>
                 </div>
               </div>
+              )}
             </article>
           ))}
         </div>
+        </>
       )}
     </section>
   );
