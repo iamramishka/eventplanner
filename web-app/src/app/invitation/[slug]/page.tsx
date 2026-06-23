@@ -5,6 +5,7 @@ import { dbSelect } from '@/lib/supabase-db';
 import { notFound } from 'next/navigation';
 import { getInvitationContent, renderMarkdownBlocks } from '@/lib/invitation-content';
 import CountdownTimer from './CountdownTimer';
+import FindTableInline from './FindTableInline';
 import { formatEventDateTime } from './invitation-date';
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -324,7 +325,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
           </div>
           <div className="inv-hero-ctas">
             <a href={guestToken ? `/rsvp/${guestToken}` : `#rsvp`} className="inv-btn-primary">✉ RSVP</a>
-            <a href={`/find-table/${slug}`} className="inv-btn-secondary">🪑 Find My Seat</a>
+            <a href="#find-table" className="inv-btn-secondary">🪑 Find My Seat</a>
           </div>
           <div className="inv-scroll-hint" aria-hidden="true">Scroll</div>
         </header>
@@ -485,13 +486,8 @@ export default async function InvitationPage({ params, searchParams }: Props) {
             )}
           </div>
 
-          {/* ── Find My Table CTA ── */}
-          <div className="inv-cta-banner table" data-testid="public-table-finder">
-            <p className="inv-section-label">Seating</p>
-            <h2 className="inv-section-title">Find Your Table</h2>
-            <p className="inv-section-body">After RSVPs close, you can look up your seat assignment here.</p>
-            <a href={`/find-table/${slug}`} className="inv-btn-primary">🪑 Find My Table</a>
-          </div>
+          {/* ── Find Your Table (inline search) ── */}
+          <FindTableInline slug={slug} />
 
         </div>
 
