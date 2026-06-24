@@ -12,19 +12,20 @@ type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<s
 
 const DEFAULT_HERO = '/images/default-hero.jpg';
 
+const Q = 'auto=format&fit=crop&q=80';
 const DEFAULT_GALLERY_IMAGES = [
-  { id: 'dg-1',  imageUrl: 'https://picsum.photos/seed/wed-a/600/800' },
-  { id: 'dg-2',  imageUrl: 'https://picsum.photos/seed/wed-b/800/600' },
-  { id: 'dg-3',  imageUrl: 'https://picsum.photos/seed/wed-c/600/900' },
-  { id: 'dg-4',  imageUrl: 'https://picsum.photos/seed/wed-d/800/560' },
-  { id: 'dg-5',  imageUrl: 'https://picsum.photos/seed/wed-e/600/800' },
-  { id: 'dg-6',  imageUrl: 'https://picsum.photos/seed/wed-f/800/600' },
-  { id: 'dg-7',  imageUrl: 'https://picsum.photos/seed/wed-g/600/720' },
-  { id: 'dg-8',  imageUrl: 'https://picsum.photos/seed/wed-h/800/600' },
-  { id: 'dg-9',  imageUrl: 'https://picsum.photos/seed/wed-i/600/800' },
-  { id: 'dg-10', imageUrl: 'https://picsum.photos/seed/wed-j/800/640' },
-  { id: 'dg-11', imageUrl: 'https://picsum.photos/seed/wed-k/600/750' },
-  { id: 'dg-12', imageUrl: 'https://picsum.photos/seed/wed-l/800/600' },
+  { id: 'dg-1',  imageUrl: `https://images.unsplash.com/photo-1519741497674-611271b22270?${Q}&w=600&h=800` },
+  { id: 'dg-2',  imageUrl: `https://images.unsplash.com/photo-1537633552985-df8429e8048b?${Q}&w=800&h=600` },
+  { id: 'dg-3',  imageUrl: `https://images.unsplash.com/photo-1583939003579-730e3918a45a?${Q}&w=600&h=900` },
+  { id: 'dg-4',  imageUrl: `https://images.unsplash.com/photo-1544005163-ab4f35c15c97?${Q}&w=800&h=560` },
+  { id: 'dg-5',  imageUrl: `https://images.unsplash.com/photo-1511285560929-80b456fea0bc?${Q}&w=600&h=800` },
+  { id: 'dg-6',  imageUrl: `https://images.unsplash.com/photo-1529621230753-41e86153da24?${Q}&w=800&h=600` },
+  { id: 'dg-7',  imageUrl: `https://images.unsplash.com/photo-1606800052052-a08af7148866?${Q}&w=600&h=720` },
+  { id: 'dg-8',  imageUrl: `https://images.unsplash.com/photo-1559563362-c667ba5f5480?${Q}&w=800&h=600` },
+  { id: 'dg-9',  imageUrl: `https://images.unsplash.com/photo-1521543832500-49e69fb0c5dc?${Q}&w=600&h=800` },
+  { id: 'dg-10', imageUrl: `https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?${Q}&w=800&h=640` },
+  { id: 'dg-11', imageUrl: `https://images.unsplash.com/photo-1567634014273-fda25c37c79f?${Q}&w=600&h=750` },
+  { id: 'dg-12', imageUrl: `https://images.unsplash.com/photo-1522673607200-164d1b6ce486?${Q}&w=800&h=600` },
 ];
 
 interface WeddingRow {

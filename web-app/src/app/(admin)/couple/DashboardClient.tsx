@@ -1664,16 +1664,17 @@ function buildAgendaMarkdown(wedding: any, events: AgendaEventRecord[]) {
 }
 
 /* ── Default sample images shown when no gallery photos are uploaded ── */
+const _Q = 'auto=format&fit=crop&q=80';
 const DASHBOARD_DEFAULT_GALLERY = [
-  { id: 'dg-1',  imageUrl: 'https://picsum.photos/seed/wed-a/600/800',  altText: 'Sample photo' },
-  { id: 'dg-2',  imageUrl: 'https://picsum.photos/seed/wed-b/800/600',  altText: 'Sample photo' },
-  { id: 'dg-3',  imageUrl: 'https://picsum.photos/seed/wed-c/600/900',  altText: 'Sample photo' },
-  { id: 'dg-4',  imageUrl: 'https://picsum.photos/seed/wed-d/800/560',  altText: 'Sample photo' },
-  { id: 'dg-5',  imageUrl: 'https://picsum.photos/seed/wed-e/600/800',  altText: 'Sample photo' },
-  { id: 'dg-6',  imageUrl: 'https://picsum.photos/seed/wed-f/800/600',  altText: 'Sample photo' },
-  { id: 'dg-7',  imageUrl: 'https://picsum.photos/seed/wed-g/600/720',  altText: 'Sample photo' },
-  { id: 'dg-8',  imageUrl: 'https://picsum.photos/seed/wed-h/800/600',  altText: 'Sample photo' },
-  { id: 'dg-9',  imageUrl: 'https://picsum.photos/seed/wed-i/600/800',  altText: 'Sample photo' },
+  { id: 'dg-1',  imageUrl: `https://images.unsplash.com/photo-1519741497674-611271b22270?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-2',  imageUrl: `https://images.unsplash.com/photo-1537633552985-df8429e8048b?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-3',  imageUrl: `https://images.unsplash.com/photo-1583939003579-730e3918a45a?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-4',  imageUrl: `https://images.unsplash.com/photo-1544005163-ab4f35c15c97?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-5',  imageUrl: `https://images.unsplash.com/photo-1511285560929-80b456fea0bc?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-6',  imageUrl: `https://images.unsplash.com/photo-1529621230753-41e86153da24?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-7',  imageUrl: `https://images.unsplash.com/photo-1606800052052-a08af7148866?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-8',  imageUrl: `https://images.unsplash.com/photo-1559563362-c667ba5f5480?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-9',  imageUrl: `https://images.unsplash.com/photo-1521543832500-49e69fb0c5dc?${_Q}&w=400&h=300`, altText: 'Sample photo' },
 ] as GalleryImageRecord[];
 
 /* ════════════════════════════════════════
