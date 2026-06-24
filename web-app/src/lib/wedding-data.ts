@@ -78,10 +78,12 @@ function toGuestColumns(data: Record<string, unknown>) {
 }
 
 export async function listGuests(weddingId: string): Promise<DashboardGuest[]> {
-  const [guests, rsvps] = await Promise.all([
-    dbSelect<GuestRow>('Guest', { weddingId: `eq.${weddingId}`, order: 'createdAt.asc' }, '*', 1000),
-    dbSelect<{ guestId: string; status: string }>('GuestRsvp', {}, 'guestId,status', 5000),
-  ]);
+  const guests = await dbSelect<GuestRow>('Guest', { weddingId: `eq.${weddingId}`, order: 'createdAt.asc' }, '*', 1000);
+  if (guests.length === 0) return [];
+  const ids = guests.map((g) => g.id).join(',');
+  const rsvps = await dbSelect<{ guestId: string; status: string }>(
+    'GuestRsvp', { guestId: `in.(${ids})` }, 'guestId,status', guests.length,
+  );
   const statusByGuest = new Map(rsvps.map((r) => [r.guestId, r.status]));
   return guests.map((g) => toDashboardGuest(g, mapRsvpStatusLabel(statusByGuest.get(g.id))));
 }
@@ -695,10 +697,10 @@ export async function upsertRsvpForGuest(guest: GuestRow, data: {
 
 export async function listRsvpsByWedding(weddingId: string): Promise<DashboardRsvp[]> {
   const guests = await dbSelect<GuestRow>('Guest', { weddingId: `eq.${weddingId}` }, 'id', 1000);
-  const guestIds = new Set(guests.map((g) => g.id));
-  if (guestIds.size === 0) return [];
-  const rsvps = await dbSelect<RsvpRow>('GuestRsvp', {}, '*', 5000);
-  return rsvps.filter((r) => guestIds.has(r.guestId)).map((r) => toDashboardRsvp(r, weddingId));
+  if (guests.length === 0) return [];
+  const ids = guests.map((g) => g.id).join(',');
+  const rsvps = await dbSelect<RsvpRow>('GuestRsvp', { guestId: `in.(${ids})` }, '*', guests.length);
+  return rsvps.map((r) => toDashboardRsvp(r, weddingId));
 }
 
 export async function getRsvpCounts(weddingId: string) {
@@ -804,10 +806,11 @@ function toDashboardTable(row: TableRow, assignedGuestIds: string[]): DashboardT
 async function assignmentsByTable(tableIds: string[]): Promise<Map<string, string[]>> {
   const map = new Map<string, string[]>();
   if (tableIds.length === 0) return map;
-  const assignments = await dbSelect<AssignmentRow>('TableAssignment', {}, '*', 5000);
-  const idSet = new Set(tableIds);
+  const ids = tableIds.join(',');
+  const assignments = await dbSelect<AssignmentRow>(
+    'TableAssignment', { tableId: `in.(${ids})` }, '*', tableIds.length * 20,
+  );
   for (const a of assignments) {
-    if (!idSet.has(a.tableId)) continue;
     if (!map.has(a.tableId)) map.set(a.tableId, []);
     map.get(a.tableId)!.push(a.guestId);
   }

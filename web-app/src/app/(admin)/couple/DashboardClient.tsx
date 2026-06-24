@@ -2642,7 +2642,7 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
         const res = await fetch('/api/guests', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...formData, weddingId: 'w_1' })
+          body: JSON.stringify({ ...formData, weddingId: wedding.id })
         });
         if (!res.ok) throw new Error(await res.text());
         const created = await res.json();
@@ -2688,7 +2688,7 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
   };
 
   const handleExport = () => {
-    window.location.href = '/api/guests/export?weddingId=w_1';
+    window.location.href = `/api/guests/export?weddingId=${wedding.id}`;
   };
 
   return (

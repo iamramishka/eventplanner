@@ -71,14 +71,23 @@ export default async function CoupleDashboardPage({ searchParams }: { searchPara
 
   let wedding: ReturnType<typeof mapWedding> | null = weddingRow ? mapWedding(weddingRow) : null;
 
-  // Fallback: demo wedding from the file store (e.g. local dev / super admin preview).
-  if (!wedding) {
+  // Demo fallback only when there is no authenticated user (local dev / unauthenticated preview).
+  // Never fall back for real logged-in users — a mismatched demo ID (w_1) makes every save fail.
+  if (!wedding && !userId) {
     const demo = db.weddings.findUnique((w: any) => w.id === 'w_1');
     if (demo) wedding = demo as any;
   }
 
   if (!wedding) {
-    return <div style={{ padding: 40 }}>No wedding found for this account.</div>;
+    return (
+      <div style={{ padding: 40, fontFamily: 'sans-serif' }}>
+        <h2 style={{ marginBottom: 8 }}>No wedding found for this account.</h2>
+        <p style={{ color: '#666' }}>
+          Your session is active but no wedding record was found.
+          Please <a href="/register">complete registration</a> or contact support.
+        </p>
+      </div>
+    );
   }
 
   // Load planning data from Supabase for the real wedding; empty for the demo fallback.
