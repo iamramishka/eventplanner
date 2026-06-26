@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Mail, Lock, Eye, EyeOff, User, Users, CheckCircle2, ShieldCheck, MailOpen, CalendarCheck, MapPin } from 'lucide-react';
 import styles from './register.module.css';
@@ -28,6 +29,30 @@ type FormState = {
 };
 
 type FieldErrors = Partial<Record<keyof FormState, string>> & { terms?: string };
+
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+const minWeddingDate = toDateInputValue(new Date());
+const maxWeddingDate = `${new Date().getFullYear() + 10}-12-31`;
+const weddingDateMessage = `Please select a valid date between ${minWeddingDate} and ${maxWeddingDate}.`;
+
+function isValidWeddingDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  const isRealDate =
+    parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day;
+
+  return isRealDate && value >= minWeddingDate && value <= maxWeddingDate;
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -83,6 +108,7 @@ export default function RegisterPage() {
       if (!form.groomName?.trim()) e.groomName = "Groom's first name is required.";
       if (!form.brideName?.trim()) e.brideName = "Bride's first name is required.";
       if (!dateDeciding && !form.date) e.date = 'Please select a wedding date or check "Still deciding".';
+      else if (!dateDeciding && form.date && !isValidWeddingDate(form.date)) e.date = weddingDateMessage;
     }
     return e;
   }
@@ -127,6 +153,17 @@ export default function RegisterPage() {
       if (!resp.ok) {
         setSubmitError(data?.error || 'Submission failed. Please try again.');
         setLoading(false);
+        return;
+      }
+      const result = await signIn('credentials', {
+        email: form.email,
+        password: form.password,
+        redirect: false,
+      });
+      if (result?.error) {
+        setSubmitError('Account created but sign-in failed. Please log in manually.');
+        setLoading(false);
+        router.push('/login');
         return;
       }
       setLoading(false);
@@ -340,18 +377,7 @@ export default function RegisterPage() {
                 Continue to Wedding Details →
               </button>
 
-              <div className={styles.orDivider}>or sign up with</div>
-
-              <div className={styles.socialBtns}>
-                <button type="button" className={styles.socialBtn}>
-                  <Image src="/public-site/google-mark.svg" alt="Google" width={20} height={20} /> Google
-                </button>
-                <button type="button" className={styles.socialBtn}>
-                  <Image src="/public-site/apple-mark.svg" alt="Apple" width={20} height={20} /> Apple
-                </button>
-              </div>
-
-              <div className={styles.securityNote}>
+<div className={styles.securityNote}>
                 <ShieldCheck size={24} className={styles.securityIcon} />
                 <div>
                   <div className={styles.securityTitle}>Your data is safe with us</div>
@@ -432,7 +458,8 @@ export default function RegisterPage() {
                     value={form.date || ''}
                     onChange={(e) => update({ date: e.target.value })}
                     disabled={dateDeciding}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={minWeddingDate}
+                    max={maxWeddingDate}
                   />
                 </div>
                 {errors.date && !dateDeciding && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.date}</div>}

@@ -161,6 +161,20 @@ export async function importGuestRows(rows: Array<Record<string, unknown>>): Pro
       maxMembers: row.maxMembers ? Number(row.maxMembers) : undefined,
       notes: row.notes,
     });
+    // Pre-seed RSVP preferences if meal or liquor data was provided in the import
+    const mealPref = String(row.mealPreference || '').trim();
+    const liquorPref = String(row.liquorPreference || '').trim();
+    if (mealPref || liquorPref) {
+      const guestRow = await getGuestRow(guest.id);
+      if (guestRow) {
+        await upsertRsvpForGuest(guestRow, {
+          attending: true,
+          memberCount: guest.maxMembers,
+          mealPreference: mealPref,
+          liquorPreference: liquorPref,
+        });
+      }
+    }
     created.push(guest);
   }
   return created;

@@ -32,6 +32,7 @@ export async function POST(
         return {
           guestName: g.name,
           tableName: table?.name || null,
+          token: g.inviteToken || null,
         };
       }),
     );

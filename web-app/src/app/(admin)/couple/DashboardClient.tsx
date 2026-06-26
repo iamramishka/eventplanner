@@ -1680,6 +1680,9 @@ const DASHBOARD_DEFAULT_GALLERY = [
 /* ════════════════════════════════════════
    GALLERY MODULE
 ════════════════════════════════════════ */
+const DEFAULT_GUEST_NOTE =
+  'With hearts full of love and gratitude, we are so happy to celebrate this beautiful chapter of our lives with you. Your presence means more to us than words can truly express, and having you by our side makes this day even more meaningful.\n\nThank you for your love, your blessings, and for being part of our journey. We cannot wait to share laughter, joy, and unforgettable memories with the people who mean so much to us.';
+
 function GalleryModule({ wedding }: any) {
   const [images, setImages] = useState<GalleryImageRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1690,8 +1693,10 @@ function GalleryModule({ wedding }: any) {
   const [altDrafts, setAltDrafts] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [specialNoteText, setSpecialNoteText] = useState<string>(wedding.specialNoteText || '');
+  const [specialNoteText, setSpecialNoteText] = useState<string>(wedding.specialNoteText || DEFAULT_GUEST_NOTE);
+  const [isDefaultNote, setIsDefaultNote] = useState<boolean>(!wedding.specialNoteText);
   const [noteSaving, setNoteSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
 
   const heroImage = images.find(img => (img as any).imageType === 'hero');
   const couplePhoto = images.find(img => (img as any).imageType === 'couple');
@@ -1765,44 +1770,47 @@ function GalleryModule({ wedding }: any) {
   };
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files || []);
     event.target.value = '';
-    if (!file) return;
+    if (files.length === 0) return;
+
+    const invalidType = files.find(f => !f.type.startsWith('image/'));
+    if (invalidType) { setError('Please upload image files only.'); return; }
+    const tooBig = files.find(f => f.size > 5 * 1024 * 1024);
+    if (tooBig) { setError(`"${tooBig.name}" exceeds the 5 MB limit.`); return; }
 
     setError('');
     setMessage('');
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file.');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image must be under 5 MB.');
-      return;
-    }
-
     setUploading(true);
+    setUploadProgress({ current: 0, total: files.length });
+
     try {
-      const compressed = await compressGalleryImage(file);
-      const res = await fetch(`/api/weddings/${wedding.id}/gallery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: compressed.dataUrl,
-          altText: file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
-          fileName: file.name,
-          width: compressed.width,
-          height: compressed.height,
-        }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const created = await res.json();
-      setImages(prev => [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder));
-      setAltDrafts(prev => ({ ...prev, [created.id]: created.altText || '' }));
-      showMessage('Gallery image uploaded.');
+      for (let i = 0; i < files.length; i++) {
+        setUploadProgress({ current: i + 1, total: files.length });
+        const file = files[i];
+        const compressed = await compressGalleryImage(file);
+        const res = await fetch(`/api/weddings/${wedding.id}/gallery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: compressed.dataUrl,
+            altText: file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
+            fileName: file.name,
+            width: compressed.width,
+            height: compressed.height,
+          }),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const created = await res.json();
+        setImages(prev => [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder));
+        setAltDrafts(prev => ({ ...prev, [created.id]: created.altText || '' }));
+      }
+      showMessage(files.length === 1 ? 'Gallery image uploaded.' : `${files.length} images uploaded.`);
     } catch (err: any) {
       setError(err?.message || 'Unable to upload image.');
     } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -1913,172 +1921,249 @@ function GalleryModule({ wedding }: any) {
 
   return (
     <section className="module">
-      <div className="module-header">
+      <div className="module-header" style={{ marginBottom: 20 }}>
         <div>
           <p className="eyebrow">Media Library</p>
           <h1 className="module-title">Gallery</h1>
           <p className="module-subtitle">Upload compressed gallery images, manage alt text, and control display order for the invitation gallery.</p>
         </div>
-        <label className="btn btn-primary" style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
-          <Upload size={16} /> {uploading ? 'Uploading...' : 'Upload Image'}
-          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
-        </label>
       </div>
 
       {(message || error) && (
-        <div className="success-banner" style={error ? { color: 'var(--adm-danger)', borderColor: 'var(--adm-danger-bg)', background: 'var(--adm-danger-bg)' } : undefined}>
+        <div className="success-banner" style={error ? { color: 'var(--adm-danger)', borderColor: 'var(--adm-danger-bg)', background: 'var(--adm-danger-bg)', marginBottom: 16 } : { marginBottom: 16 }}>
           {error || <><Check size={16} /> {message}</>}
         </div>
       )}
 
-      {/* Hero Section Image */}
-      <div className="card settings-card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Thumbnail */}
-          <div style={{ position: 'relative', width: 120, height: 80, borderRadius: 10, overflow: 'hidden', background: '#f8ebe4', flexShrink: 0 }}>
+      {/* ── Hero Section Image ── */}
+      <div className="card" style={{ marginBottom: 16, padding: '20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ width: 144, height: 96, borderRadius: 10, overflow: 'hidden', background: '#f8ebe4', flexShrink: 0 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={heroImage?.imageUrl || '/images/default-hero.jpg'}
               alt={heroImage ? 'Invitation hero' : 'Default invitation hero'}
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             />
-            {heroImage && (
-              <button
-                className="table-action-btn"
-                title="Remove hero image"
-                aria-label="Remove hero image"
-                onClick={() => void deleteImage(heroImage.id)}
-                style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(255,255,255,0.9)', padding: 3 }}
-              >
-                <Trash2 size={12} />
-              </button>
-            )}
           </div>
-          {/* Text + action */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p className="eyebrow">Invitation Hero</p>
-            <h2 className="module-title" style={{ fontSize: '1rem', margin: '2px 0 2px' }}>Hero Section Image</h2>
-            <p className="module-subtitle" style={{ margin: '0 0 10px', fontSize: '0.82rem' }}>
-              {heroImage ? 'Your hero image' : 'Default image shown'} — full-screen background on the invitation.
+            <h2 style={{ fontWeight: 700, fontSize: 16, margin: '0 0 4px', color: '#111827' }}>Hero Section Image</h2>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 14px', lineHeight: 1.5 }}>
+              This image appears as the full-screen background on your invitation.
             </p>
-            <label className="btn btn-primary" style={{ cursor: heroUploading ? 'not-allowed' : 'pointer', fontSize: '0.82rem', padding: '7px 14px' }}>
-              <Upload size={14} /> {heroUploading ? 'Uploading...' : heroImage ? 'Replace' : 'Upload Hero'}
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleHeroUpload} disabled={heroUploading} />
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* Special Note Section */}
-      <div className="card settings-card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-          {/* Couple photo thumbnail */}
-          <div style={{ position: 'relative', width: 120, height: 80, borderRadius: 10, overflow: 'hidden', background: '#f8ebe4', flexShrink: 0 }}>
-            {couplePhoto ? (
-              <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={couplePhoto.imageUrl} alt="Couple photo" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                <button className="table-action-btn" title="Remove couple photo" onClick={() => void deleteImage(couplePhoto.id)} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(255,255,255,0.9)', padding: 3 }}>
-                  <Trash2 size={12} />
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <label className="btn btn-primary" style={{ cursor: heroUploading ? 'not-allowed' : 'pointer', fontSize: 13, padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Upload size={14} /> {heroUploading ? 'Uploading...' : heroImage ? 'Replace Image' : 'Upload Hero'}
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleHeroUpload} disabled={heroUploading} />
+              </label>
+              {heroImage && (
+                <button
+                  className="btn btn-outline"
+                  style={{ fontSize: 13, padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  onClick={() => void deleteImage(heroImage.id)}
+                >
+                  <Trash2 size={14} /> Remove
                 </button>
-              </>
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', color: 'var(--adm-text-secondary)', fontSize: '0.72rem', textAlign: 'center', padding: 4 }}>No photo</div>
+              )}
+            </div>
+            {heroImage && (
+              <p style={{ fontSize: 12, color: '#9ca3af', margin: '10px 0 0' }}>
+                {(heroImage.mimeType || 'image/jpeg').split('/')[1]?.toUpperCase() || 'IMG'} • {heroImage.width || '—'} × {heroImage.height || '—'} • {formatBytes(heroImage.sizeBytes)}
+              </p>
             )}
           </div>
-          <div style={{ flex: 1 }}>
-            <p className="eyebrow">Special Note</p>
-            <h2 className="module-title" style={{ fontSize: '1rem', margin: '2px 0 2px' }}>Message to Guests</h2>
-            <p className="module-subtitle" style={{ margin: '0 0 10px', fontSize: '0.82rem' }}>Shown on the invitation with a photo of you two.</p>
-            <label className="btn btn-primary" style={{ cursor: coupleUploading ? 'not-allowed' : 'pointer', fontSize: '0.82rem', padding: '7px 14px' }}>
-              <Upload size={14} /> {coupleUploading ? 'Uploading…' : couplePhoto ? 'Replace Photo' : 'Upload Couple Photo'}
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCouplePhotoUpload} disabled={coupleUploading} />
-            </label>
-          </div>
         </div>
-        <div className="form-group" style={{ marginBottom: 12 }}>
-          <label className="form-label">Message text</label>
-          <textarea
-            className="form-input"
-            rows={4}
-            style={{ resize: 'vertical', fontFamily: 'inherit' }}
-            value={specialNoteText}
-            onChange={e => setSpecialNoteText(e.target.value)}
-            placeholder="Write a personal message to your guests…"
-          />
-        </div>
-        <button className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '7px 18px' }} onClick={() => void saveNoteText()} disabled={noteSaving}>
-          <Save size={14} /> {noteSaving ? 'Saving…' : 'Save Note'}
-        </button>
       </div>
 
-      {loading ? (
-        <div className="card">
-          <p className="module-subtitle" style={{ margin: 0 }}>Loading gallery images...</p>
+      {/* ── Message to Guests ── */}
+      <div className="card" style={{ marginBottom: 16, padding: '20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 8, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Heart size={17} color="#c45a74" fill="#c45a74" />
+          </div>
+          <div>
+            <h2 style={{ fontWeight: 700, fontSize: 15, margin: 0, color: '#111827' }}>Message to Guests</h2>
+            <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>Add a photo of you both and a personal message for your guests.</p>
+          </div>
         </div>
-      ) : (
-        <>
-          {isDefaultGallery && (
-            <div className="card" style={{ background: 'rgba(196,90,116,0.06)', border: '1.5px dashed rgba(196,90,116,0.30)', marginBottom: 10 }}>
-              <p className="module-subtitle" style={{ margin: 0, textAlign: 'center', fontSize: '0.82rem' }}>
-                Sample preview — upload your own photos using the button above and they will replace these.
-              </p>
-            </div>
-          )}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-          {displayGallery.map((image, index) => (
-            <article key={image.id} className="card settings-card" style={{ padding: 0, overflow: 'hidden', opacity: isDefaultGallery ? 0.72 : 1 }}>
-              <div style={{ position: 'relative', height: 110, background: '#f8ebe4' }}>
+        <div style={{ height: 1, background: '#f3f4f6', margin: '14px 0' }} />
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
+          {/* Left: Couple Photo */}
+          <div>
+            <p style={{ fontWeight: 600, fontSize: 13, margin: '0 0 10px', color: '#374151' }}>Couple Photo</p>
+            {couplePhoto ? (
+              <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', background: '#f8ebe4' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={image.imageUrl}
-                  alt={image.altText || 'Wedding gallery image'}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
-                {isDefaultGallery ? (
-                  <span className="badge badge-slate" style={{ position: 'absolute', top: 6, left: 6, fontSize: '0.65rem', padding: '2px 7px', background: 'rgba(0,0,0,0.45)', color: '#fff', border: 'none' }}>Sample</span>
-                ) : (
-                  <span className="badge badge-slate" style={{ position: 'absolute', top: 6, left: 6, fontSize: '0.68rem', padding: '2px 8px' }}>#{index + 1}</span>
-                )}
+                <img src={couplePhoto.imageUrl} alt="Couple" style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', display: 'block' }} />
+                <label
+                  className="btn btn-outline"
+                  style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 11, padding: '5px 12px', background: 'rgba(255,255,255,0.92)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+                >
+                  <Upload size={12} /> Replace Photo
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCouplePhotoUpload} disabled={coupleUploading} />
+                </label>
               </div>
-              {!isDefaultGallery && (
-              <div style={{ padding: 10, display: 'grid', gap: 6 }}>
-                <input
-                  className="form-input"
-                  style={{ fontSize: '0.78rem', padding: '5px 8px' }}
-                  value={altDrafts[image.id] || ''}
-                  onChange={event => setAltDrafts(prev => ({ ...prev, [image.id]: event.target.value }))}
-                  onBlur={() => void saveAltText(image.id)}
-                  placeholder="Alt text"
-                />
-                <div style={{ fontSize: '0.7rem', color: 'var(--adm-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {image.width || '?'}×{image.height || '?'} · {formatBytes(image.sizeBytes)}
+            ) : (
+              <label style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                border: '2px dashed #f0a8b8', borderRadius: 10, padding: '32px 16px', gap: 8,
+                background: '#fff9fb', cursor: coupleUploading ? 'not-allowed' : 'pointer', minHeight: 190,
+              }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Upload size={20} color="#c45a74" />
                 </div>
-                <div className="table-actions" style={{ justifyContent: 'space-between' }}>
-                  <div className="table-actions" style={{ gap: 4 }}>
-                    <button className="table-action-btn" title="Move up" aria-label="Move image up" disabled={index === 0} onClick={() => void reorder(image.id, -1)}>
-                      <ArrowUp size={12} />
-                    </button>
-                    <button className="table-action-btn" title="Move down" aria-label="Move image down" disabled={index === galleryOnly.length - 1} onClick={() => void reorder(image.id, 1)}>
-                      <ArrowDown size={12} />
-                    </button>
-                  </div>
-                  <div className="table-actions" style={{ gap: 4 }}>
-                    <button className="table-action-btn" title="Save alt text" aria-label="Save alt text" disabled={savingId === image.id} onClick={() => void saveAltText(image.id)}>
-                      <Save size={12} />
-                    </button>
-                    <button className="table-action-btn" title="Delete image" aria-label="Delete image" onClick={() => void deleteImage(image.id)}>
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              )}
-            </article>
-          ))}
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, textAlign: 'center' }}>Drag &amp; drop a photo here</p>
+                <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>or</p>
+                <span className="btn btn-outline" style={{ fontSize: 12, padding: '6px 14px', pointerEvents: 'none', borderColor: '#c45a74', color: '#c45a74', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Upload size={13} /> {coupleUploading ? 'Uploading…' : 'Upload Photo'}
+                </span>
+                <p style={{ fontSize: 11, color: '#9ca3af', margin: 0, textAlign: 'center' }}>JPG, PNG • Max 5MB • Recommended 1:1</p>
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCouplePhotoUpload} disabled={coupleUploading} />
+              </label>
+            )}
+          </div>
+
+          {/* Right: Message */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <p style={{ fontWeight: 600, fontSize: 13, margin: '0 0 10px', color: '#374151' }}>Message</p>
+            <textarea
+              className="form-input"
+              rows={7}
+              style={{ resize: 'vertical', fontFamily: 'inherit', fontSize: 13, flex: 1, color: isDefaultNote ? '#9ca3af' : 'inherit' }}
+              value={specialNoteText}
+              maxLength={500}
+              onClick={() => { if (isDefaultNote) { setSpecialNoteText(''); setIsDefaultNote(false); } }}
+              onChange={e => { setIsDefaultNote(false); setSpecialNoteText(e.target.value); }}
+              placeholder="Write a personal message to your guests…"
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+              <span style={{ fontSize: 12, color: '#9ca3af' }}>{isDefaultNote ? 'Default message — click to replace' : `${specialNoteText.length} / 500`}</span>
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: 13, padding: '8px 18px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                onClick={() => void saveNoteText()}
+                disabled={noteSaving}
+              >
+                <Save size={14} /> {noteSaving ? 'Saving…' : 'Save Message'}
+              </button>
+            </div>
+          </div>
         </div>
-        </>
-      )}
+      </div>
+
+      {/* ── Gallery Images ── */}
+      <div className="card" style={{ padding: '20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 8, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ImageIcon size={17} color="#c45a74" />
+          </div>
+          <div>
+            <h2 style={{ fontWeight: 700, fontSize: 15, margin: 0, color: '#111827' }}>Gallery Images</h2>
+            <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>Add images to your gallery and arrange them in the order you want them to appear.</p>
+          </div>
+        </div>
+        <div style={{ height: 1, background: '#f3f4f6', margin: '14px 0' }} />
+
+        {loading ? (
+          <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: '20px 0', margin: 0 }}>Loading gallery images...</p>
+        ) : (
+          <>
+            {isDefaultGallery && (
+              <div style={{ background: '#fff9fb', border: '1.5px dashed #f0a8b8', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
+                <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, textAlign: 'center' }}>
+                  Sample preview — upload your own photos using the tile below and they will replace these.
+                </p>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+              {displayGallery.map((image, index) => (
+                <div key={image.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, opacity: isDefaultGallery ? 0.72 : 1 }}>
+                  {!isDefaultGallery && (
+                    <div style={{ paddingTop: 44, color: '#d1d5db', cursor: 'grab', flexShrink: 0 }} title="Drag to reorder">
+                      <GripVertical size={18} />
+                    </div>
+                  )}
+                  <div style={{ flex: 1, border: '1px solid #f3f4f6', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
+                    <div style={{ position: 'relative', aspectRatio: '16/9', background: '#f8ebe4' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={image.imageUrl}
+                        alt={image.altText || 'Gallery image'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                      <div style={{
+                        position: 'absolute', top: 8, left: 8,
+                        width: 26, height: 26, borderRadius: '50%',
+                        background: isDefaultGallery ? 'rgba(0,0,0,0.45)' : '#c45a74',
+                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, fontWeight: 700,
+                      }}>
+                        {index + 1}
+                      </div>
+                    </div>
+                    {!isDefaultGallery && (
+                      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <input
+                          className="form-input"
+                          style={{ fontSize: 12, padding: '6px 10px' }}
+                          value={altDrafts[image.id] || ''}
+                          onChange={e => setAltDrafts(prev => ({ ...prev, [image.id]: e.target.value }))}
+                          onBlur={() => void saveAltText(image.id)}
+                          placeholder="Alt text for this image..."
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: '#9ca3af' }}>
+                            {(image.mimeType || 'image/jpeg').split('/')[1]?.toUpperCase() || 'IMG'} • {image.width || '—'} × {image.height || '—'} • {formatBytes(image.sizeBytes)}
+                          </span>
+                          <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                            <button className="table-action-btn" title="Move up" disabled={index === 0} onClick={() => void reorder(image.id, -1)}><ArrowUp size={13} /></button>
+                            <button className="table-action-btn" title="Move down" disabled={index === galleryOnly.length - 1} onClick={() => void reorder(image.id, 1)}><ArrowDown size={13} /></button>
+                            <button className="table-action-btn" title="Save alt text" disabled={savingId === image.id} onClick={() => void saveAltText(image.id)}><Save size={13} /></button>
+                            <button className="table-action-btn" title="Delete image" onClick={() => void deleteImage(image.id)}><Trash2 size={13} /></button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Upload tile — always last in the grid */}
+              <label style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                border: '2px dashed #f0a8b8', borderRadius: 10, gap: 10,
+                background: uploading ? '#fef2f2' : '#fff9fb',
+                cursor: uploading ? 'not-allowed' : 'pointer',
+                minHeight: 180, padding: '24px 16px',
+                transition: 'background 0.15s',
+              }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Upload size={20} color="#c45a74" />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 2px' }}>
+                    {uploading
+                      ? uploadProgress
+                        ? `Uploading ${uploadProgress.current} / ${uploadProgress.total}…`
+                        : 'Uploading…'
+                      : 'Add Photos'}
+                  </p>
+                  <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>Select one or multiple images</p>
+                </div>
+                <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
+              </label>
+            </div>
+
+            {!isDefaultGallery && galleryOnly.length > 0 && (
+              <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 16, marginBottom: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                ⓘ Drag the <GripVertical size={13} style={{ display: 'inline-block', verticalAlign: 'middle' }} /> handle or use the ↑ ↓ buttons to reorder images.
+              </p>
+            )}
+          </>
+        )}
+      </div>
     </section>
   );
 }
@@ -2566,11 +2651,13 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
   const [filter, setFilter] = useState<'all' | 'bride' | 'groom' | 'confirmed' | 'pending' | 'declined'>('all');
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [editingGuest, setEditingGuest] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ name: '', side: 'Groom', whatsapp: '', type: 'Individual', maxMembers: 1, notes: '' });
   const [errorMsg, setErrorMsg] = useState('');
   const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
+  const importFileRef = React.useRef<HTMLInputElement>(null);
 
   function copyInviteLink(guestToken: string, guestId: string) {
     const link = `${window.location.origin}/invitation/${wedding?.slug}?token=${guestToken}`;
@@ -2668,12 +2755,27 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    const csv = [
+      'Guest Name,Family Name,Side,Invitation Type,Max Members,WhatsApp,Email,Meal Preference,Taking Liquor,Notes',
+      'John Silva,Silva Family,G,Individual,1,+94771234567,john@example.com,Non-Veg,Yes,VIP',
+      'Mary Perera,Perera Family,B,Family,4,+94779876543,mary@example.com,Veg,No,Close Friends',
+    ].join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'guest_import_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const text = await file.text();
     try {
-      const res = await fetch('/api/guests/import', {
+      const res = await fetch(`/api/guests/import?weddingId=${encodeURIComponent(wedding?.id || '')}`, {
         method: 'POST',
         headers: { 'Content-Type': 'text/csv' },
         body: text
@@ -2681,11 +2783,12 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
       if (!res.ok) throw new Error('Failed to import');
       const data = await res.json();
       setGuests([...guests, ...data.created]);
+      setShowImportModal(false);
       alert(`Imported ${data.createdCount} guests successfully.`);
     } catch (err: any) {
       alert(err.message);
     }
-    e.target.value = '';
+    if (importFileRef.current) importFileRef.current.value = '';
   };
 
   const handleExport = () => {
@@ -2704,10 +2807,9 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
           <button className="btn btn-outline" onClick={handleExport} title="Export CSV">
             <Download size={16} /> Export
           </button>
-          <label className="btn btn-outline" style={{ cursor: 'pointer' }} title="Import CSV">
+          <button className="btn btn-outline" onClick={() => setShowImportModal(true)} title="Import CSV">
             <Upload size={16} /> Import
-            <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImport} />
-          </label>
+          </button>
           <button className="btn btn-primary" id="add-guest-btn" onClick={() => openModal()}>
             <UserPlus size={16} /> Add Guest
           </button>
@@ -2890,6 +2992,113 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
               <button className="btn btn-primary" type="submit" form="guest-form" disabled={isSaving}>
                 {isSaving ? 'Saving...' : 'Save Guest'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bulk Import Modal ── */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={() => setShowImportModal(false)}>
+          <div className="modal-container" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <p className="eyebrow" style={{ color: '#b5922c', marginBottom: 4 }}>BULK IMPORT</p>
+                <h2 className="modal-title">Upload Guest File</h2>
+              </div>
+              <button className="modal-close" onClick={() => setShowImportModal(false)} aria-label="Close">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '1.25rem 1.5rem' }}>
+              {/* Info banner */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.875rem',
+                background: '#fdf8ee',
+                border: '1px dashed #d4a84b',
+                borderRadius: 10,
+                padding: '0.875rem 1rem',
+                marginBottom: '1.25rem',
+              }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 8,
+                  background: '#fef3d0',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Upload size={18} color="#b5922c" />
+                </div>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: 14, margin: 0 }}>Import from Excel or CSV</p>
+                  <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0' }}>Your file must follow the correct column structure before upload.</p>
+                </div>
+              </div>
+
+              {/* Column table */}
+              <div style={{ overflowX: 'auto', marginBottom: '1.1rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ background: '#f9fafb' }}>
+                      <th style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontWeight: 600 }}>Column</th>
+                      <th style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontWeight: 600 }}>Required</th>
+                      <th style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontWeight: 600 }}>Accepted Values</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { col: 'Guest Name',      req: 'Yes', hint: 'Full name of the individual' },
+                      { col: 'Family Name',     req: 'No',  hint: 'e.g. Silva Family' },
+                      { col: 'Side',            req: 'Yes', hint: 'G = Groom\'s side · B = Bride\'s side' },
+                      { col: 'Invitation Type', req: 'No',  hint: 'Individual or Family' },
+                      { col: 'Max Members',     req: 'No',  hint: 'Number 1–20 (default 1)' },
+                      { col: 'WhatsApp',        req: 'No',  hint: 'e.g. +94771234567' },
+                      { col: 'Email',           req: 'No',  hint: 'Guest email address' },
+                      { col: 'Meal Preference', req: 'No',  hint: 'e.g. Veg · Non-Veg · Halal' },
+                      { col: 'Taking Liquor',   req: 'No',  hint: 'Yes or No' },
+                      { col: 'Notes',           req: 'No',  hint: 'Tags, VIP, group name, etc.' },
+                    ].map(({ col, req, hint }) => (
+                      <tr key={col} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                        <td style={{ padding: '5px 10px', fontWeight: 600, color: '#111827', whiteSpace: 'nowrap' }}>{col}</td>
+                        <td style={{ padding: '5px 10px' }}>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                            background: req === 'Yes' ? '#fef2f2' : '#f3f4f6',
+                            color:      req === 'Yes' ? '#b91c1c' : '#6b7280',
+                          }}>{req}</span>
+                        </td>
+                        <td style={{ padding: '5px 10px', color: '#6b7280' }}>{hint}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>
+                💡 <strong>Tip:</strong> Download the ready-made template below, fill it in, and upload it back. Meal Preference and Taking Liquor will be saved as RSVP preferences automatically.
+              </p>
+            </div>
+
+            <div className="modal-footer" style={{ justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button className="btn btn-outline" onClick={handleDownloadTemplate} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <FileText size={15} /> Download Template
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{ background: '#b5922c', borderColor: '#b5922c', display: 'flex', alignItems: 'center', gap: 6 }}
+                onClick={() => importFileRef.current?.click()}
+              >
+                <Upload size={15} /> Upload Guest File
+              </button>
+              <input
+                ref={importFileRef}
+                type="file"
+                accept=".csv,.xlsx"
+                style={{ display: 'none' }}
+                onChange={handleImport}
+              />
             </div>
           </div>
         </div>

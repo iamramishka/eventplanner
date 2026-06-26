@@ -12,20 +12,20 @@ type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<s
 
 const DEFAULT_HERO = '/images/default-hero.jpg';
 
-const Q = 'auto=format&fit=crop&q=80';
 const DEFAULT_GALLERY_IMAGES = [
-  { id: 'dg-1',  imageUrl: `https://images.unsplash.com/photo-1519741497674-611271b22270?${Q}&w=600&h=800` },
-  { id: 'dg-2',  imageUrl: `https://images.unsplash.com/photo-1537633552985-df8429e8048b?${Q}&w=800&h=600` },
-  { id: 'dg-3',  imageUrl: `https://images.unsplash.com/photo-1583939003579-730e3918a45a?${Q}&w=600&h=900` },
-  { id: 'dg-4',  imageUrl: `https://images.unsplash.com/photo-1544005163-ab4f35c15c97?${Q}&w=800&h=560` },
-  { id: 'dg-5',  imageUrl: `https://images.unsplash.com/photo-1511285560929-80b456fea0bc?${Q}&w=600&h=800` },
-  { id: 'dg-6',  imageUrl: `https://images.unsplash.com/photo-1529621230753-41e86153da24?${Q}&w=800&h=600` },
-  { id: 'dg-7',  imageUrl: `https://images.unsplash.com/photo-1606800052052-a08af7148866?${Q}&w=600&h=720` },
-  { id: 'dg-8',  imageUrl: `https://images.unsplash.com/photo-1559563362-c667ba5f5480?${Q}&w=800&h=600` },
-  { id: 'dg-9',  imageUrl: `https://images.unsplash.com/photo-1521543832500-49e69fb0c5dc?${Q}&w=600&h=800` },
-  { id: 'dg-10', imageUrl: `https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?${Q}&w=800&h=640` },
-  { id: 'dg-11', imageUrl: `https://images.unsplash.com/photo-1567634014273-fda25c37c79f?${Q}&w=600&h=750` },
-  { id: 'dg-12', imageUrl: `https://images.unsplash.com/photo-1522673607200-164d1b6ce486?${Q}&w=800&h=600` },
+  { id: 'dg-1',  imageUrl: '/images/gallery-1.jpg' },
+  { id: 'dg-2',  imageUrl: '/images/gallery-2.jpg' },
+  { id: 'dg-3',  imageUrl: '/images/gallery-3.jpg' },
+  { id: 'dg-4',  imageUrl: '/images/gallery-4.jpg' },
+  { id: 'dg-5',  imageUrl: '/images/gallery-5.jpg' },
+  { id: 'dg-6',  imageUrl: '/images/gallery-6.jpg' },
+  { id: 'dg-7',  imageUrl: '/images/gallery-7.jpg' },
+  { id: 'dg-8',  imageUrl: '/images/gallery-8.jpg' },
+  { id: 'dg-9',  imageUrl: '/images/gallery-9.jpg' },
+  { id: 'dg-10', imageUrl: '/images/gallery-10.jpg' },
+  { id: 'dg-11', imageUrl: '/images/gallery-11.jpg' },
+  { id: 'dg-12', imageUrl: '/images/gallery-12.jpg' },
+  { id: 'dg-13', imageUrl: '/images/gallery-13.jpg' },
 ];
 
 interface WeddingRow {
@@ -204,7 +204,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
           --inv-shadow: 0 8px 32px rgba(100,50,70,0.10);
         }
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        .inv-root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--inv-bg);color:var(--inv-text);min-height:100vh;-webkit-font-smoothing:antialiased}
+        .inv-root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--inv-bg);color:var(--inv-text);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 
         /* ── Hero ── */
         .inv-hero{
@@ -295,12 +295,13 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         .inv-agenda-desc{font-size:.87rem;color:var(--inv-muted);line-height:1.6}
 
         /* ── Masonry Gallery ── */
-        .inv-masonry-card{padding:0;overflow:hidden}
+        .inv-masonry-card{padding:0;overflow:hidden;width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);border-radius:0;border-left:0;border-right:0}
         .inv-masonry-header{text-align:center;padding:36px 24px 24px}
         .inv-masonry-script{font-family:'Dancing Script',cursive,'Playfair Display',Georgia,serif;font-size:clamp(2rem,6vw,3rem);color:var(--inv-text);font-weight:600;margin-bottom:8px;line-height:1.1}
         .inv-masonry-sub{color:var(--inv-muted);font-size:.9rem;font-style:italic}
-        .inv-masonry-grid{columns:2;column-gap:8px;padding:0 16px 24px}
-        @media(min-width:520px){.inv-masonry-grid{columns:3}}
+        .inv-masonry-grid{columns:2;column-gap:10px;padding:0 16px 28px}
+        @media(min-width:520px){.inv-masonry-grid{columns:3;column-gap:12px}}
+        @media(min-width:1000px){.inv-masonry-grid{columns:4;column-gap:14px;padding:0 28px 32px}}
         .inv-masonry-item{break-inside:avoid;margin-bottom:8px;border-radius:10px;overflow:hidden}
         .inv-masonry-item img{width:100%;height:auto;display:block;border-radius:10px;transition:transform .3s}
         .inv-masonry-item:hover img{transform:scale(1.03)}
@@ -365,6 +366,17 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         {/* ─── BODY ─── */}
         <div className="inv-body">
 
+          {/* ── With Love Invitation Card ── */}
+          <section className="inv-card inv-love-card">
+            <p className="inv-love-tag">With Love</p>
+            <p className="inv-love-text">
+              Together with their families,<br />
+              <span className="inv-love-names">{brideName} &amp; {groomName}</span>
+              joyfully invite you to celebrate<br />
+              the beginning of their forever.
+            </p>
+          </section>
+
           {/* ── Elegant Wedding Details Card ── */}
           {(date || venueName || eventTime) && (
             <section className="inv-card inv-details-elegant" data-testid="public-event-details">
@@ -411,44 +423,6 @@ export default async function InvitationPage({ params, searchParams }: Props) {
             </section>
           )}
 
-          {/* ── With Love Invitation Card ── */}
-          <section className="inv-card inv-love-card">
-            <p className="inv-love-tag">With Love</p>
-            <p className="inv-love-text">
-              Together with their families,<br />
-              <span className="inv-love-names">{brideName} &amp; {groomName}</span>
-              joyfully invite you to celebrate<br />
-              the beginning of their forever.
-            </p>
-          </section>
-
-          {/* ── Special Note ── */}
-          {specialNoteText && (
-            couplePhotoRow ? (
-              <div className="inv-sn-wrap">
-                <div className="inv-sn-photo">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={couplePhotoRow.imageUrl} alt={`${brideName} & ${groomName}`} />
-                </div>
-                <div className="inv-sn-card">
-                  <p className="inv-sn-eyebrow">A Special Note</p>
-                  <h2 className="inv-sn-heading">To Our Lovely Guests</h2>
-                  <p className="inv-sn-text">{specialNoteText}</p>
-                  <p className="inv-sn-sign">With all our love,</p>
-                  <p className="inv-sn-names">{brideName} &amp; {groomName}</p>
-                </div>
-              </div>
-            ) : (
-              <section className="inv-card" style={{ textAlign: 'center', padding: '40px 32px' }}>
-                <p className="inv-sn-eyebrow">A Special Note</p>
-                <h2 className="inv-sn-heading">To Our Lovely Guests</h2>
-                <p className="inv-sn-text" style={{ maxWidth: 560, margin: '0 auto 22px' }}>{specialNoteText}</p>
-                <p className="inv-sn-sign">With all our love,</p>
-                <p className="inv-sn-names">{brideName} &amp; {groomName}</p>
-              </section>
-            )
-          )}
-
           {/* ── Countdown ── */}
           {date && (
             <section className="inv-card inv-countdown-card">
@@ -458,21 +432,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
             </section>
           )}
 
-          {/* ── Message ── */}
-          <section className="inv-card inv-story-card">
-            <p className="inv-section-label">A message from us</p>
-            {messageBlocks.map((block, i) => {
-              if (block.type === 'heading') return <h3 key={i}>{block.text}</h3>;
-              if (block.type === 'list') return (
-                <ul key={i} style={{paddingLeft:'1.4em',color:'var(--inv-muted)',fontSize:'.97rem',lineHeight:1.75}}>
-                  {(block.items || []).map((item, j) => <li key={j}>{item}</li>)}
-                </ul>
-              );
-              return <p key={i}>{block.text}</p>;
-            })}
-          </section>
-
-          {/* ── Agenda ── */}
+{/* ── Agenda ── */}
           {agenda.length > 0 && (
             <section className="inv-card" data-testid="public-agenda">
               <p className="inv-section-label">The day</p>
@@ -539,6 +499,35 @@ export default async function InvitationPage({ params, searchParams }: Props) {
           <FindTableInline slug={slug} />
 
         </div>
+
+        {/* ── Special Note ── */}
+        {specialNoteText && (
+          <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 16px 32px' }}>
+            {couplePhotoRow ? (
+              <div className="inv-sn-wrap">
+                <div className="inv-sn-photo">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={couplePhotoRow.imageUrl} alt={`${brideName} & ${groomName}`} />
+                </div>
+                <div className="inv-sn-card">
+                  <p className="inv-sn-eyebrow">A Special Note</p>
+                  <h2 className="inv-sn-heading">To Our Lovely Guests</h2>
+                  <p className="inv-sn-text">{specialNoteText}</p>
+                  <p className="inv-sn-sign">With all our love,</p>
+                  <p className="inv-sn-names">{brideName} &amp; {groomName}</p>
+                </div>
+              </div>
+            ) : (
+              <section className="inv-card" style={{ textAlign: 'center', padding: '40px 32px' }}>
+                <p className="inv-sn-eyebrow">A Special Note</p>
+                <h2 className="inv-sn-heading">To Our Lovely Guests</h2>
+                <p className="inv-sn-text" style={{ maxWidth: 560, margin: '0 auto 22px' }}>{specialNoteText}</p>
+                <p className="inv-sn-sign">With all our love,</p>
+                <p className="inv-sn-names">{brideName} &amp; {groomName}</p>
+              </section>
+            )}
+          </div>
+        )}
 
         {/* ─── FOOTER ─── */}
         <footer className="inv-footer">

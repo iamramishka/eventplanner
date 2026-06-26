@@ -13,6 +13,30 @@ type CreatedWedding = ReturnType<typeof addWedding> & {
 interface DbUser { id: string; email: string; }
 interface DbWedding { id: string; slug: string; }
 
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+const minWeddingDate = toDateInputValue(new Date());
+const maxWeddingDate = `${new Date().getFullYear() + 10}-12-31`;
+
+function parseWeddingDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  const isRealDate =
+    parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day;
+
+  if (!isRealDate || value < minWeddingDate || value > maxWeddingDate) return null;
+  return parsed;
+}
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -49,9 +73,9 @@ export async function POST(req: Request) {
     if (!password) return NextResponse.json({ ok: false, error: 'Password is required.' }, { status: 400 });
     if (!dateDeciding && !date) return NextResponse.json({ ok: false, error: 'Please select a wedding date or mark it as "still deciding".' }, { status: 400 });
 
-    const eventDate = date ? new Date(date) : null;
-    if (eventDate && Number.isNaN(eventDate.getTime())) {
-      return NextResponse.json({ ok: false, error: 'Invalid wedding date.' }, { status: 400 });
+    const eventDate = date ? parseWeddingDate(date) : null;
+    if (!dateDeciding && !eventDate) {
+      return NextResponse.json({ ok: false, error: `Please select a valid date between ${minWeddingDate} and ${maxWeddingDate}.` }, { status: 400 });
     }
 
     const existing = await dbSelect<DbUser>('User', { email: `eq.${email}` }, 'id', 1);
@@ -61,7 +85,7 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const userId = crypto.randomUUID();
-    const slug = await uniqueWeddingSlug(slugify(String(body?.slug || `${groomName}-and-${brideName}`)));
+    const slug = await uniqueWeddingSlug(slugify(String(body?.slug || `${brideName}-and-${groomName}`)));
 
     const user = await dbInsert<DbUser>('User', {
       id: userId,

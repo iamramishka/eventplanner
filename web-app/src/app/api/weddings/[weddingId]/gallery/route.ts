@@ -79,8 +79,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ wed
       return NextResponse.json({ ok: false, error: 'Image must be under 5 MB' }, { status: 400 });
     }
 
-    // imageType: 'hero' (single hero image) or 'gallery' (default)
-    const imageType = body?.imageType === 'hero' ? 'hero' : 'gallery';
+    // imageType: 'hero' | 'couple' (singletons) or 'gallery' (default)
+    const VALID_TYPES = new Set(['hero', 'couple', 'gallery']);
+    const imageType: string = VALID_TYPES.has(String(body?.imageType)) ? String(body.imageType) : 'gallery';
 
     const ext = extensionForMime(mimeType);
     const baseName = sanitizeFileName(String(body?.fileName || imageType));
@@ -88,17 +89,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ wed
     const objectPath = `${imageType}/${weddingId}/${storedFileName}`;
     const publicUrl = await storageUpload(objectPath, buffer, mimeType);
 
-    // A wedding has at most one hero image — replace any existing hero row.
-    if (imageType === 'hero') {
-      const existingHero = await dbSelect<GalleryRow>(
+    // Hero and couple are singletons — replace any existing row of the same type.
+    if (imageType === 'hero' || imageType === 'couple') {
+      const existing = await dbSelect<GalleryRow>(
         'GalleryImage',
-        { weddingId: `eq.${weddingId}`, imageType: 'eq.hero' },
-        'id',
+        { weddingId: `eq.${weddingId}`, imageType: `eq.${imageType}` },
+        '*',
         1,
       );
-      if (existingHero[0]) {
-        await dbUpdate('GalleryImage', { id: `eq.${existingHero[0].id}` }, { imageUrl: publicUrl });
-        return NextResponse.json({ ...existingHero[0], imageUrl: publicUrl, imageType: 'hero' }, { status: 201 });
+      if (existing[0]) {
+        await dbUpdate('GalleryImage', { id: `eq.${existing[0].id}` }, { imageUrl: publicUrl });
+        return NextResponse.json({ ...existing[0], imageUrl: publicUrl, imageType }, { status: 201 });
       }
     }
 

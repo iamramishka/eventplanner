@@ -1806,6 +1806,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+  min-width: 0;
 }
 
 .form-label {
@@ -1815,6 +1816,9 @@ body {
 }
 
 .form-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 0.65rem 0.875rem;
   border: 1px solid var(--adm-border);
   border-radius: var(--radius-lg);
@@ -2081,14 +2085,16 @@ body {
 
 .agenda-layout {
   display: grid;
-  grid-template-columns: minmax(320px, 0.8fr) minmax(420px, 1.2fr);
-  gap: 1.25rem;
+  grid-template-columns: minmax(360px, 430px) minmax(0, 1fr);
+  gap: 1.5rem;
   align-items: start;
 }
 
 .agenda-form-card {
   position: sticky;
   top: 96px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .agenda-stack,
@@ -2097,6 +2103,18 @@ body {
 .agenda-list {
   display: grid;
   gap: 1rem;
+  min-width: 0;
+}
+
+.agenda-editor .form-grid-3 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.agenda-editor .form-group,
+.agenda-editor .form-input,
+.agenda-editor textarea.form-input,
+.agenda-inline-error {
+  max-width: 100%;
 }
 
 .agenda-status-row {
@@ -2128,6 +2146,7 @@ body {
   color: #92400E;
   font-size: 0.84rem;
   font-weight: 500;
+  min-width: 0;
 }
 
 .agenda-inline-error {
@@ -2289,6 +2308,7 @@ body {
   color: var(--adm-text-primary);
   font: 0.78rem/1.65 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   overflow-x: auto;
 }
 
@@ -2555,6 +2575,7 @@ body {
   .btn-preview span { display: none; }
   .kpi-grid6 { grid-template-columns: repeat(2, 1fr); }
   .form-grid-3 { grid-template-columns: 1fr; }
+  .agenda-editor .form-grid-3 { grid-template-columns: 1fr; }
   .agenda-list::before { display: none; }
   .agenda-item {
     grid-template-columns: 28px minmax(0, 1fr);

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 
-type Result = { guestName: string; tableName: string | null };
+type Result = { guestName: string; tableName: string | null; token: string | null };
 
 export default function FindTableInline({ slug }: { slug: string }) {
   const [query, setQuery] = useState('');
@@ -162,40 +162,72 @@ export default function FindTableInline({ slug }: { slug: string }) {
                   key={i}
                   style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    flexDirection: 'column',
                     background: '#fff',
                     border: '1px solid rgba(196,90,116,0.15)',
                     borderRadius: 14,
                     padding: '14px 18px',
-                    gap: 12,
+                    gap: 14,
                   }}
                 >
-                  <div>
-                    <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--inv-muted)', margin: '0 0 3px' }}>
-                      Guest
-                    </p>
-                    <p style={{ fontWeight: 700, color: 'var(--inv-text)', margin: 0, fontSize: '1rem' }}>
-                      {r.guestName}
-                    </p>
-                  </div>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
-                    background: 'rgba(196,90,116,0.06)',
-                    border: '1px solid rgba(196,90,116,0.18)',
-                    borderRadius: 999,
-                    padding: '8px 16px',
-                    whiteSpace: 'nowrap',
+                    justifyContent: 'space-between',
+                    gap: 12,
                   }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--inv-muted)' }}>
-                      Your table no. is
-                    </span>
-                    <span style={{ fontWeight: 800, color: r.tableName ? 'var(--inv-text)' : 'var(--inv-muted)', fontSize: r.tableName ? '1rem' : '0.9rem' }}>
-                      {r.tableName ?? '—'}
-                    </span>
+                    <div>
+                      <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--inv-muted)', margin: '0 0 3px' }}>
+                        Guest
+                      </p>
+                      <p style={{ fontWeight: 700, color: 'var(--inv-text)', margin: 0, fontSize: '1rem' }}>
+                        {r.guestName}
+                      </p>
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: 'rgba(196,90,116,0.06)',
+                      border: '1px solid rgba(196,90,116,0.18)',
+                      borderRadius: 999,
+                      padding: '8px 16px',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--inv-muted)' }}>
+                        Your table no. is
+                      </span>
+                      <span style={{ fontWeight: 800, color: r.tableName ? 'var(--inv-text)' : 'var(--inv-muted)', fontSize: r.tableName ? '1rem' : '0.9rem' }}>
+                        {r.tableName ?? '—'}
+                      </span>
+                    </div>
                   </div>
+
+                  {r.token && (
+                    <a
+                      href={`/rsvp/${r.token}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        textDecoration: 'none',
+                        padding: '11px 16px',
+                        borderRadius: 999,
+                        background: 'linear-gradient(135deg, var(--inv-primary), color-mix(in srgb, var(--inv-primary) 70%, var(--inv-gold)))',
+                        color: '#fff',
+                        fontWeight: 700,
+                        fontSize: '0.88rem',
+                        letterSpacing: '0.02em',
+                        boxShadow: '0 4px 16px rgba(196,90,116,0.30)',
+                      }}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/>
+                      </svg>
+                      Confirm Your Place
+                    </a>
+                  )}
                 </div>
               ))}
             </>

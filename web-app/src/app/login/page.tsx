@@ -137,18 +137,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className={styles.orDivider}>or continue with</div>
-
-          <div className={styles.socialBtns}>
-            <button type="button" className={styles.socialBtn}>
-              <Image src="/public-site/google-mark.svg" alt="Google" width={20} height={20} /> Continue with Google
-            </button>
-            <button type="button" className={styles.socialBtn}>
-              <Image src="/public-site/apple-mark.svg" alt="Apple" width={20} height={20} /> Continue with Apple
-            </button>
-          </div>
-
-          <div className={styles.securityNote}>
+<div className={styles.securityNote}>
             <ShieldCheck size={24} className={styles.securityIcon} />
             <div>
               <div className={styles.securityTitle}>Your data is secure with us.</div>

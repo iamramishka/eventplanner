@@ -2,7 +2,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { CheckCircle, Heart, HeartOff, Send } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { CheckCircle, Heart, HeartOff, Loader2, Send } from 'lucide-react';
 import { getInvitationThemeCssVars } from '@/lib/invitation-content';
 
 type RsvpContext = {
@@ -33,6 +34,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function RsvpTokenForm({ token, context }: { token: string; context: RsvpContext }) {
+  const router = useRouter();
   const initialAttending = context.rsvp ? (context.rsvp.attending ? 'yes' : 'no') : '';
   const [attending, setAttending] = useState(initialAttending);
   const [memberCount, setMemberCount] = useState(context.rsvp?.memberCount || 1);
@@ -44,6 +46,7 @@ export default function RsvpTokenForm({ token, context }: { token: string; conte
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [confirmation, setConfirmation] = useState(context.rsvp ? 'Your RSVP is already saved. You can update it below.' : '');
+  const [submitted, setSubmitted] = useState(false);
 
   const maxMembers = Math.max(1, Number(context.guest.maxMembers) || 1);
   const coupleNames = context.wedding.weddingTitle || `${context.wedding.brideName} & ${context.wedding.groomName}`;
@@ -86,16 +89,43 @@ export default function RsvpTokenForm({ token, context }: { token: string; conte
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Unable to save your RSVP.');
-      setConfirmation(data?.message || 'Your RSVP has been saved.');
+      setSubmitted(true);
+      const slug = context.wedding.slug;
+      const home = slug ? `/invitation/${slug}` : '/';
+      setTimeout(() => router.push(home), 2600);
     } catch (err: any) {
       setError(err?.message || 'Unable to save your RSVP.');
-    } finally {
       setSaving(false);
     }
   };
 
+  if (submitted) {
+    return (
+      <main style={{ ...cssVars, minHeight: '100vh', background: 'linear-gradient(180deg, var(--theme-surface), #fff)', color: 'var(--theme-text)', fontFamily: 'var(--theme-body-font)', display: 'grid', placeItems: 'center', padding: '48px 20px' }}>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}`}</style>
+        <section style={{ width: 'min(560px, 100%)', textAlign: 'center', background: '#fff', border: '1px solid color-mix(in srgb, var(--theme-secondary) 26%, transparent)', borderRadius: 20, boxShadow: '0 24px 60px rgba(0,0,0,0.10)', padding: '48px 28px', display: 'grid', gap: 16, justifyItems: 'center' }}>
+          <div style={{ width: 76, height: 76, borderRadius: '50%', background: 'color-mix(in srgb, var(--theme-primary) 12%, #fff)', display: 'grid', placeItems: 'center', animation: 'pop .5s ease-out' }}>
+            <Heart size={36} color="var(--theme-primary)" fill="var(--theme-primary)" />
+          </div>
+          <h1 style={{ margin: 0, fontFamily: 'var(--theme-heading-font)', fontSize: 'clamp(1.8rem, 5vw, 2.6rem)', lineHeight: 1.1 }}>
+            Thank you for confirming us
+          </h1>
+          <p style={{ margin: 0, color: 'var(--theme-muted)', lineHeight: 1.6, maxWidth: 380 }}>
+            {attending === 'yes'
+              ? `We can't wait to celebrate this special day with you, ${context.guest.name}.`
+              : `Thank you for letting us know, ${context.guest.name}. You will be missed.`}
+          </p>
+          <p style={{ margin: '8px 0 0', display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--theme-secondary)', fontWeight: 600, fontSize: '.9rem' }}>
+            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Taking you to the invitation…
+          </p>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main style={{ ...cssVars, minHeight: '100vh', background: 'linear-gradient(180deg, var(--theme-surface), #fff)', color: 'var(--theme-text)', fontFamily: 'var(--theme-body-font)', padding: '48px 20px' }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <section style={{ width: 'min(760px, 100%)', margin: '0 auto', display: 'grid', gap: 20 }}>
         <div style={{ textAlign: 'center', display: 'grid', gap: 10 }}>
           <p style={{ margin: 0, color: 'var(--theme-secondary)', fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', fontSize: 12 }}>Kindly Reply</p>
@@ -177,7 +207,7 @@ export default function RsvpTokenForm({ token, context }: { token: string; conte
           )}
 
           <button type="submit" disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '14px 18px', borderRadius: 999, border: 0, background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-text))', color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.72 : 1 }}>
-            <Send size={18} /> {saving ? 'Saving RSVP...' : 'Send RSVP'}
+            {saving ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={18} />} {saving ? 'Sending…' : 'Send RSVP'}
           </button>
         </form>
       </section>
