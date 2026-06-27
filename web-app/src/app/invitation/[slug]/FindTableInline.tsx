@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import InlineRsvp from './InlineRsvp';
 
 type Result = { guestName: string; tableName: string | null; token: string | null };
 
-export default function FindTableInline({ slug }: { slug: string }) {
+export default function FindTableInline({ slug, guestToken }: { slug: string; guestToken?: string }) {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Result[] | null>(null);
@@ -140,6 +141,20 @@ export default function FindTableInline({ slug }: { slug: string }) {
         )}
       </form>
 
+      {/* Confirm Your Place (personal token) */}
+      {guestToken && (
+        <div style={{ padding: '0 20px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 0 16px' }}>
+            <span style={{ flex: 1, height: 1, background: 'rgba(196,90,116,0.18)' }} />
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--inv-muted)' }}>
+              Your RSVP
+            </span>
+            <span style={{ flex: 1, height: 1, background: 'rgba(196,90,116,0.18)' }} />
+          </div>
+          <InlineRsvp token={guestToken} defaultOpen label="Confirm Your Place" />
+        </div>
+      )}
+
       {/* Results */}
       {searched && results !== null && (
         <div style={{ padding: '0 20px 24px', display: 'grid', gap: 8 }}>
@@ -203,31 +218,7 @@ export default function FindTableInline({ slug }: { slug: string }) {
                     </div>
                   </div>
 
-                  {r.token && (
-                    <a
-                      href={`/rsvp/${r.token}`}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 8,
-                        textDecoration: 'none',
-                        padding: '11px 16px',
-                        borderRadius: 999,
-                        background: 'linear-gradient(135deg, var(--inv-primary), color-mix(in srgb, var(--inv-primary) 70%, var(--inv-gold)))',
-                        color: '#fff',
-                        fontWeight: 700,
-                        fontSize: '0.88rem',
-                        letterSpacing: '0.02em',
-                        boxShadow: '0 4px 16px rgba(196,90,116,0.30)',
-                      }}
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/>
-                      </svg>
-                      Confirm Your Place
-                    </a>
-                  )}
+                  {r.token && <InlineRsvp token={r.token} />}
                 </div>
               ))}
             </>

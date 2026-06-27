@@ -826,7 +826,30 @@ async function assignmentsByTable(tableIds: string[]): Promise<Map<string, strin
   );
   for (const a of assignments) {
     if (!map.has(a.tableId)) map.set(a.tableId, []);
-    map.get(a.tableId)!.push(a.guestId);
+    const arr = map.get(a.tableId)!;
+    if (!arr.includes(a.guestId)) arr.push(a.guestId); // dedupe: one guest counts once per table
+  }
+  return map;
+}
+
+/**
+ * Seats each guest occupies at a table: confirmed RSVP attending count once they've
+ * replied, otherwise their max allowed members (reserve space). Minimum 1.
+ */
+async function seatCountsForGuests(guestIds: string[]): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  const ids = Array.from(new Set(guestIds)).filter(Boolean);
+  if (ids.length === 0) return map;
+  const list = ids.join(',');
+  const guests = await dbSelect<GuestRow>('Guest', { id: `in.(${list})` }, '*', ids.length);
+  const rsvps = await dbSelect<RsvpRow>('GuestRsvp', { guestId: `in.(${list})` }, '*', ids.length);
+  const rsvpByGuest = new Map(rsvps.map((r) => [r.guestId, r]));
+  for (const g of guests) {
+    const rsvp = rsvpByGuest.get(g.id);
+    const seats = rsvp && (rsvp.status || '').toLowerCase() === 'attending'
+      ? Math.max(1, Number(rsvp.attendingCount) || 1)
+      : Math.max(1, Number(g.maxAllowedMembers) || 1);
+    map.set(g.id, seats);
   }
   return map;
 }
@@ -894,18 +917,24 @@ export async function assignGuestToTable(weddingId: string, tableId: string, gue
   if (!guest || guest.weddingId !== weddingId) throw new Error('guest not found');
 
   const source = tables.find((t) => t.assignedGuestIds.includes(guestId)) || null;
-  if (source?.id === tableId) {
-    return { guestId, guestName: guest.name, sourceTable: tableSummary(source), targetTable: tableSummary(target),
-      table: target, capacity: { assigned: target.assignedGuestIds.length, capacity: target.capacity }, noOp: true, conflict: null };
-  }
-  if (target.assignedGuestIds.length >= (target.capacity || 0)) throw new Error('table is full');
 
-  if (source) await dbDelete('TableAssignment', { tableId: `eq.${source.id}`, guestId: `eq.${guestId}` }).catch(() => {});
-  await dbInsert('TableAssignment', { id: crypto.randomUUID(), tableId, guestId, assignedCount: 1 });
+  // Seat-based capacity: a family occupies as many chairs as its members.
+  const othersAtTarget = target.assignedGuestIds.filter((id) => id !== guestId);
+  const seatMap = await seatCountsForGuests([...othersAtTarget, guestId]);
+  const guestSeats = seatMap.get(guestId) || 1;
+  const usedSeats = othersAtTarget.reduce((sum, id) => sum + (seatMap.get(id) || 1), 0);
+  // Skip the capacity check when the guest is merely being re-saved onto the same table.
+  if (source?.id !== tableId && usedSeats + guestSeats > (target.capacity || 0)) {
+    throw new Error('table is full');
+  }
+
+  // Dedupe: a guest holds exactly one assignment. Clear any existing rows, then insert one.
+  await dbDelete('TableAssignment', { guestId: `eq.${guestId}` }).catch(() => {});
+  await dbInsert('TableAssignment', { id: crypto.randomUUID(), tableId, guestId, assignedCount: guestSeats });
 
   const refreshed = await listTables(weddingId);
   const newTarget = refreshed.find((t) => t.id === tableId)!;
-  const newSource = source ? refreshed.find((t) => t.id === source.id) || null : null;
+  const newSource = source && source.id !== tableId ? refreshed.find((t) => t.id === source.id) || null : null;
   return { guestId, guestName: guest.name, sourceTable: tableSummary(newSource), targetTable: tableSummary(newTarget),
     table: newTarget, capacity: { assigned: newTarget.assignedGuestIds.length, capacity: newTarget.capacity }, noOp: false, conflict: null };
 }
