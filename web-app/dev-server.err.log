@@ -1612,3 +1612,81 @@ https://react.dev/link/hydration-mismatch
   432 |             </section>
   433 |           )}
   434 |
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <RedirectBoundary>
+      <RedirectErrorBoundary router={{...}}>
+        <InnerLayoutRouter url="/invitatio..." tree={[...]} params={{slug:"nima..."}} cacheNode={{rsc:{...}, ...}} ...>
+          <SegmentViewNode type="page" pagePath="invitation...">
+            <SegmentTrieNode>
+            <InvitationPage>
+              <style>
+              <div className="inv-root">
+                <header>
+                <div className="inv-body">
+                  <section>
+                  <section>
+                  <section className="inv-card i...">
+                    <p>
+                    <h2>
+                    <CountdownTimer date="2026-10-05" timezone="UTC">
+                      <div data-testid="public-cou..." data-countdown-status="upcoming" data-event-timezone="UTC" ...>
+                        <div style={{display:"grid", ...}}>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit value={10} label="Seconds">
+                            <span style={{display:"grid", ...}}>
+                              <strong style={{color:"#4b2230",fontSize:"clamp(1.4r...",lineHeight:1}}>
++                               10
+-                               11
+                              ...
+                        ...
+                  ...
+                ...
+          ...
+        ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at throwOnHydrationMismatch (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3318:56)
+    at prepareToHydrateHostInstance (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3372:23)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6922:60)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64)
+    at strong (<anonymous>)
+    at CountdownUnit (.next\dev\static\chunks\web-app_src_0y38i79._.js:260:229)
+    at CountdownTimer (.next\dev\static\chunks\web-app_src_0y38i79._.js:225:237)
+    at InvitationPage (src\app\invitation\[slug]\page.tsx:432:15)
+  430 |               <p className="inv-section-label" style={{marginBottom:6}}>Counting down to</p>
+  431 |               <h2 className="inv-section-title" style={{textAlign:'center',marginBottom:2...
+> 432 |               <CountdownTimer date={date} timezone={'UTC'} />
+      |               ^
+  433 |             </section>
+  434 |           )}
+  435 |
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
