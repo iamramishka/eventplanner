@@ -18,6 +18,11 @@ npm run lint        # eslint — must stay at 0 errors (lint debt was cleared)
 npm run build       # next build — the hard release gate; must pass
 ```
 
+> On Windows, `npm run build` ends with `-n was unexpected at this time` — that's the
+> Vercel-only `postbuild` symlink script (bash syntax) running under cmd. It fires *after*
+> `next build` succeeds and only matters on Vercel/Linux. If the route list printed above it,
+> the build passed — ignore this line.
+
 ## Smoke tests (run the ones relevant to what changed)
 
 Pick from `web-app/package.json` based on the area you touched:
