@@ -1,14 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { NextResponse } from 'next/server';
+import { dbSelect } from '@/lib/supabase-db';
 import {
   assignGuestToTable,
-  db,
   getTableAssignmentSnapshot,
-  getTablesByWedding,
+  listTables,
   restoreTableAssignmentSnapshot,
   unassignGuestFromTable,
-} from '@/lib/store';
+  getGuestRow,
+} from '@/lib/wedding-data';
 import { requireWeddingAccess } from '@/lib/rbac';
 
 function statusForError(message: string) {
@@ -35,8 +34,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ wedding
   const { weddingId } = await params;
   const access = await requireWeddingAccess(weddingId);
   if (access.response) return access.response;
-  const wedding = db.weddings.findUnique((w: any) => w.id === weddingId);
-  if (!wedding) return jsonError('Wedding not found', 404);
+  const wedding = await dbSelect<{ id: string }>('Wedding', { id: `eq.${weddingId}` }, 'id', 1);
+  if (!wedding[0]) return jsonError('Wedding not found', 404);
 
   try {
     const body = await req.json();
@@ -45,52 +44,47 @@ export async function POST(req: Request, { params }: { params: Promise<{ wedding
     if (action === 'assign') {
       if (!body?.tableId) return jsonError('tableId required');
       if (!body?.guestId) return jsonError('guestId required');
-      const snapshot = getTableAssignmentSnapshot(weddingId);
-      const result = assignGuestToTable(weddingId, String(body.tableId), String(body.guestId));
-      return NextResponse.json({ ok: true, data: { ...result, snapshot, tables: getTablesByWedding(weddingId) } });
+      const snapshot = await getTableAssignmentSnapshot(weddingId);
+      const result = await assignGuestToTable(weddingId, String(body.tableId), String(body.guestId));
+      return NextResponse.json({ ok: true, data: { ...result, snapshot, tables: await listTables(weddingId) } });
     }
 
     if (action === 'unassign') {
       if (!body?.guestId) return jsonError('guestId required');
-      const snapshot = getTableAssignmentSnapshot(weddingId);
-      const result = unassignGuestFromTable(weddingId, String(body.guestId));
-      return NextResponse.json({ ok: true, data: { ...result, snapshot, tables: getTablesByWedding(weddingId) } });
+      const snapshot = await getTableAssignmentSnapshot(weddingId);
+      const result = await unassignGuestFromTable(weddingId, String(body.guestId));
+      return NextResponse.json({ ok: true, data: { ...result, snapshot, tables: await listTables(weddingId) } });
     }
 
     if (action === 'bulkAssign') {
       if (!body?.tableId) return jsonError('tableId required');
       const guestIds: string[] = Array.isArray(body?.guestIds) ? body.guestIds.map(String) : [];
       if (!guestIds.length) return jsonError('guestIds required');
-      const snapshot = getTableAssignmentSnapshot(weddingId);
-      const results = guestIds.map(guestId => {
+      const snapshot = await getTableAssignmentSnapshot(weddingId);
+      const results = [];
+      for (const guestId of guestIds) {
         try {
-          return { ok: true, ...assignGuestToTable(weddingId, String(body.tableId), guestId) };
-        } catch (err: any) {
-          const error = String(err?.message || err);
-          return {
-            ok: false,
-            guestId,
-            guestName: db.guests.findMany((g: any) => g.id === guestId)[0]?.name || guestId,
-            error,
-            code: codeForError(error),
-          };
+          results.push({ ok: true, ...(await assignGuestToTable(weddingId, String(body.tableId), guestId)) });
+        } catch (err: unknown) {
+          const error = String(err instanceof Error ? err.message : err);
+          const guest = await getGuestRow(guestId);
+          results.push({ ok: false, guestId, guestName: guest?.name || guestId, error, code: codeForError(error) });
         }
-      });
-
+      }
       return NextResponse.json({
         ok: results.every(item => item.ok),
-        data: { results, snapshot, tables: getTablesByWedding(weddingId) },
+        data: { results, snapshot, tables: await listTables(weddingId) },
       });
     }
 
     if (action === 'undo') {
-      const restored = restoreTableAssignmentSnapshot(weddingId, body?.snapshot);
+      const restored = await restoreTableAssignmentSnapshot(weddingId, body?.snapshot);
       return NextResponse.json({ ok: true, data: { tables: restored } });
     }
 
     return jsonError('invalid action');
-  } catch (err: any) {
-    const message = String(err?.message || err);
+  } catch (err: unknown) {
+    const message = String(err instanceof Error ? err.message : err);
     return jsonError(message);
   }
 }

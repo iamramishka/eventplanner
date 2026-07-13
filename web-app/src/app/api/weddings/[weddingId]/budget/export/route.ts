@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db, exportBudgetRows } from '@/lib/store';
+import { dbSelect } from '@/lib/supabase-db';
+import { listBudgetItems } from '@/lib/wedding-data';
 import { requireWeddingAccess } from '@/lib/rbac';
-
-type StoreRow = {
-  id?: unknown;
-};
 
 type BudgetExportRow = {
   category?: unknown;
@@ -25,13 +22,13 @@ export async function GET(_: Request, { params }: { params: Promise<{ weddingId:
   const { weddingId } = await params;
   const access = await requireWeddingAccess(weddingId);
   if (access.response) return access.response;
-  const wedding = db.weddings.findUnique((w: StoreRow) => w.id === weddingId);
-  if (!wedding) {
+  const wedding = await dbSelect<{ id: string }>('Wedding', { id: `eq.${weddingId}` }, 'id', 1);
+  if (!wedding[0]) {
     return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
   }
 
   const header = ['category', 'item name', 'estimated', 'actual', 'status', 'notes'];
-  const rows = (exportBudgetRows(weddingId) as BudgetExportRow[]).map((item) => [
+  const rows = (await listBudgetItems(weddingId) as unknown as BudgetExportRow[]).map((item) => [
     item.category,
     item.name,
     item.estimated,

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { db, getRsvpById } from '@/lib/store';
+import { dbSelect } from '@/lib/supabase-db';
 import { getListingById, getVendorById } from '@/lib/vendorStore';
 
 export type AppRole = 'COUPLE' | 'VENDOR' | 'SUPER_ADMIN';
@@ -64,7 +64,8 @@ export async function requireWeddingAccess(weddingId: string): Promise<GuardResu
   if (guard.response) return guard;
   if (guard.auth?.role === 'SUPER_ADMIN') return guard;
 
-  const wedding = db.weddings.findUnique((w: OwnedRow) => w.id === weddingId) as OwnedRow | null;
+  const rows = await dbSelect<{ userId: string }>('Wedding', { id: `eq.${weddingId}` }, 'userId', 1);
+  const wedding = rows[0];
   if (!wedding) return { response: jsonError('Wedding not found', 404) };
   if (String(wedding.userId || '') !== guard.auth?.userId) {
     return { response: jsonError('Forbidden', 403) };
@@ -74,37 +75,38 @@ export async function requireWeddingAccess(weddingId: string): Promise<GuardResu
 }
 
 export async function requireGuestAccess(guestId: string): Promise<GuardResult> {
-  const guest = db.guests.findMany((g: OwnedRow) => g.id === guestId)[0] as OwnedRow | undefined;
-  if (!guest) return { response: jsonError('Guest not found', 404) };
-  return requireWeddingAccess(String(guest.weddingId || ''));
+  const rows = await dbSelect<{ weddingId: string }>('Guest', { id: `eq.${guestId}` }, 'weddingId', 1);
+  if (!rows[0]) return { response: jsonError('Guest not found', 404) };
+  return requireWeddingAccess(String(rows[0].weddingId || ''));
 }
 
 export async function requireRsvpAccess(rsvpId: string): Promise<GuardResult> {
-  const rsvp = getRsvpById(rsvpId) as OwnedRow | null;
-  if (!rsvp) return { response: jsonError('RSVP not found', 404) };
-  return requireWeddingAccess(String(rsvp.weddingId || ''));
+  const rsvp = await dbSelect<{ guestId: string }>('GuestRsvp', { id: `eq.${rsvpId}` }, 'guestId', 1);
+  if (!rsvp[0]) return { response: jsonError('RSVP not found', 404) };
+  return requireGuestAccess(String(rsvp[0].guestId || ''));
 }
 
 export async function requireBudgetItemAccess(itemId: string): Promise<GuardResult> {
-  const item = db.budget.findUnique((row: OwnedRow) => row.id === itemId) as OwnedRow | null;
-  if (!item) return { response: jsonError('Budget item not found', 404) };
-  return requireWeddingAccess(String(item.weddingId || ''));
+  const rows = await dbSelect<{ weddingId: string }>('BudgetItem', { id: `eq.${itemId}` }, 'weddingId', 1);
+  if (!rows[0]) return { response: jsonError('Budget item not found', 404) };
+  return requireWeddingAccess(String(rows[0].weddingId || ''));
 }
 
 export async function requireChecklistItemAccess(itemId: string): Promise<GuardResult> {
-  const item = db.checklist.findUnique((row: OwnedRow) => row.id === itemId) as OwnedRow | null;
-  if (!item) return { response: jsonError('Checklist item not found', 404) };
-  return requireWeddingAccess(String(item.weddingId || ''));
+  const rows = await dbSelect<{ weddingId: string }>('ChecklistItem', { id: `eq.${itemId}` }, 'weddingId', 1);
+  if (!rows[0]) return { response: jsonError('Checklist item not found', 404) };
+  return requireWeddingAccess(String(rows[0].weddingId || ''));
 }
 
 export async function requireAgendaAccess(eventId: string): Promise<GuardResult> {
-  const event = db.agenda.findMany((row: OwnedRow) => row.id === eventId)[0] as OwnedRow | undefined;
-  if (!event) return { response: jsonError('Agenda event not found', 404) };
-  return requireWeddingAccess(String(event.weddingId || ''));
+  const rows = await dbSelect<{ weddingId: string }>('AgendaItem', { id: `eq.${eventId}` }, 'weddingId', 1);
+  if (!rows[0]) return { response: jsonError('Agenda event not found', 404) };
+  return requireWeddingAccess(String(rows[0].weddingId || ''));
 }
 
 export async function requireGalleryAccess(imageId: string): Promise<GuardResult> {
-  const image = db.galleryImages.findUnique((row: OwnedRow) => row.id === imageId) as OwnedRow | null;
+  const rows = await dbSelect<{ weddingId: string }>('GalleryImage', { id: `eq.${imageId}` }, 'weddingId', 1);
+  const image = rows[0];
   if (!image) return { response: jsonError('Gallery image not found', 404) };
   return requireWeddingAccess(String(image.weddingId || ''));
 }

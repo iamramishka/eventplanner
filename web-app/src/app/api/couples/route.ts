@@ -3,13 +3,15 @@ import fs from 'fs';
 import path from 'path';
 import { addWedding } from '@/lib/store';
 import { auditLog } from '@/lib/audit';
-import { prisma } from '@/lib/prisma';
+import { dbSelect, dbInsert } from '@/lib/supabase-db';
 import bcrypt from 'bcrypt';
 
 type CreatedWedding = ReturnType<typeof addWedding> & {
   profileImage?: string;
 };
 
+interface DbUser { id: string; email: string; }
+interface DbWedding { id: string; slug: string; }
 function toDateInputValue(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -44,12 +46,12 @@ function slugify(value: string) {
 async function uniqueWeddingSlug(baseSlug: string) {
   let candidate = baseSlug;
   let suffix = 2;
-
-  while (await prisma.wedding.findUnique({ where: { slug: candidate }, select: { id: true } })) {
+  while (true) {
+    const rows = await dbSelect<DbWedding>('Wedding', { slug: `eq.${candidate}` }, 'id', 1);
+    if (rows.length === 0) break;
     candidate = `${baseSlug}-${suffix}`;
     suffix += 1;
   }
-
   return candidate;
 }
 
@@ -75,45 +77,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: `Please select a valid date between ${minWeddingDate} and ${maxWeddingDate}.` }, { status: 400 });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
+    const existing = await dbSelect<DbUser>('User', { email: `eq.${email}` }, 'id', 1);
+    if (existing.length > 0) {
       return NextResponse.json({ ok: false, error: 'An account with this email already exists' }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const userId = crypto.randomUUID();
     const slug = await uniqueWeddingSlug(slugify(String(body?.slug || `${brideName}-and-${groomName}`)));
 
-    const { user, wedding: createdPrismaWedding } = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email,
-          password: passwordHash,
-          name: `${brideName} & ${groomName}`,
-          role: 'COUPLE',
-        },
-      });
-
-      const wedding = await tx.wedding.create({
-        data: {
-          userId: user.id,
-          groomFirstName: groomName,
-          brideFirstName: brideName,
-          eventDate: eventDate ?? null,
-          venueName: body?.venueDeciding ? null : (body?.venueName || null),
-          slug,
-          setupCompleted: true,
-          estimatedGuests: Number.isFinite(Number(body?.estimatedGuests)) ? Number(body.estimatedGuests) : null,
-          estimatedBudget: Number.isFinite(Number(body?.estimatedBudget)) ? Number(body.estimatedBudget) : null,
-        },
-      });
-
-      return { user, wedding };
+    const user = await dbInsert<DbUser>('User', {
+      id: userId,
+      email,
+      password: passwordHash,
+      name: `${brideName} & ${groomName}`,
+      role: 'COUPLE',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
-    // Keep the existing demo store in sync until the dashboard reads fully from Prisma.
-    const created: CreatedWedding = addWedding({ ...(body || {}), id: createdPrismaWedding.id, userId: user.id, email, slug });
+    const weddingId = crypto.randomUUID();
+    const wedding = await dbInsert<DbWedding>('Wedding', {
+      id: weddingId,
+      userId: user.id,
+      groomFirstName: groomName,
+      brideFirstName: brideName,
+      eventDate: eventDate ? eventDate.toISOString() : null,
+      venueName: body?.venueDeciding ? null : (body?.venueName || null),
+      slug,
+      setupCompleted: true,
+      estimatedGuests: Number.isFinite(Number(body?.estimatedGuests)) ? Number(body.estimatedGuests) : null,
+      estimatedBudget: Number.isFinite(Number(body?.estimatedBudget)) ? Number(body.estimatedBudget) : null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
 
-    // If an image base64 string was provided, save it to public/uploads/<id>.<ext>
+    const created: CreatedWedding = addWedding({ ...(body || {}), id: wedding.id, userId: user.id, email, slug });
+
     if (profileImageBase64) {
       const match = profileImageBase64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
       let b64 = profileImageBase64;
@@ -123,19 +123,14 @@ export async function POST(req: Request) {
         b64 = match[2];
         const parts = mime.split('/');
         if (parts[1]) ext = parts[1];
-      } else {
-        ext = 'png';
       }
-
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
       if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
       const filename = `${created.id}.${ext}`;
-      const filePath = path.join(uploadsDir, filename);
-      fs.writeFileSync(filePath, Buffer.from(b64, 'base64'));
+      fs.writeFileSync(path.join(uploadsDir, filename), Buffer.from(b64, 'base64'));
       created.profileImage = `/uploads/${filename}`;
     }
 
-    // Audit
     await auditLog({ action: 'create-wedding', targetId: created.id, data: { groomName, brideName, date, userId: user.id } });
 
     return NextResponse.json({ ...created, userId: user.id }, { status: 201 });

@@ -16,6 +16,7 @@ import {
   Home, Upload, Download, Trash2, GripVertical, Printer, Copy, FileText,
   BarChart2,
 } from 'lucide-react';
+import { AGENDA_ICON_SET, AgendaIcon } from '@/components/agenda-icons';
 import './dashboard.css';
 import InvitationEditorModule, { InvitationPreview } from './InvitationEditorModule';
 import TablesModule from './TablesModule';
@@ -458,7 +459,7 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
           {activeModule === 'guests'    && <GuestsModule    wedding={wedding} guests={guests} setGuests={setGuests} rsvps={rsvps} onNavigate={handleNavigate} />}
           {activeModule === 'rsvps'     && <RsvpsModule     guests={guests} rsvps={rsvps} onNavigate={handleNavigate} />}
           {activeModule === 'analytics' && <CoupleAnalyticsModule weddingId={wedding?.id} />}
-          {activeModule === 'tables'    && <TablesModule    wedding={wedding} guests={guests} />}
+          {activeModule === 'tables'    && <TablesModule    wedding={wedding} guests={guests} rsvps={rsvps} />}
           {activeModule === 'vendors'   && <VendorsModule   wedding={wedding} setWedding={setWedding} />}
           {activeModule === 'notifications' && <NotificationsModule wedding={wedding} guests={guests} rsvps={rsvps} checklist={checklist} budget={budget} setWedding={setWedding} onNavigate={handleNavigate} />}
           {activeModule === 'account'   && <AccountModule   wedding={wedding} onNavigate={handleNavigate} />}
@@ -1235,20 +1236,42 @@ Generated from WedPlan Theme & Design on ${new Date().toLocaleString()}.
 /* ════════════════════════════════════════
    AGENDA MODULE
 ════════════════════════════════════════ */
-const AGENDA_ICON_OPTIONS = [
-  { value: 'CalendarDays', label: 'Calendar' },
-  { value: 'Ring', label: 'Ceremony' },
-  { value: 'GlassWater', label: 'Toast' },
-  { value: 'Music', label: 'Music' },
-  { value: 'MapPin', label: 'Venue' },
-  { value: 'PartyPopper', label: 'Party' },
+// Common predefined ceremony items — click or drag onto the timeline.
+const AGENDA_TEMPLATES: { title: string; icon: string }[] = [
+  { title: 'Guest Arrival & Welcome Drinks', icon: 'drinks' },
+  { title: 'Religious Blessing Ceremony', icon: 'bell' },
+  { title: 'Ring Exchange Ceremony', icon: 'ring' },
+  { title: 'Poruwa Ceremony', icon: 'poruwa' },
+  { title: 'Signing of Marriage Register', icon: 'register' },
+  { title: 'Lighting of Traditional Oil Lamp', icon: 'oillamp' },
+  { title: 'Cake Cutting Ceremony', icon: 'cake' },
+  { title: 'Speech Session', icon: 'mic' },
+  { title: 'Group Photography Session', icon: 'camera' },
+  { title: 'Buffet Lunch / Dinner', icon: 'dining' },
+  { title: 'Entertainment (Music / Dancing)', icon: 'music' },
+  { title: "Couple's First Dance", icon: 'dance' },
+  { title: 'Vote of Thanks', icon: 'heart' },
+  { title: "Couple's Departure", icon: 'departure' },
 ];
+
+// Auto-assign the next time slot: starts after the last item ends (or wedding start time).
+function nextAgendaSlot(events: AgendaEventRecord[], wedding: any) {
+  let startTime = wedding.time || '16:00';
+  if (events.length > 0) {
+    const sorted = [...events].sort((a, b) => a.sortOrder - b.sortOrder);
+    const last = sorted[sorted.length - 1];
+    if (last?.endTime) startTime = last.endTime;
+  }
+  return { startTime, endTime: addMinutesToClock(startTime, 30) };
+}
 
 function AgendaModule({ wedding, agenda, setAgenda }: any) {
   const [events, setEvents] = useState<AgendaEventRecord[]>(agenda || []);
   const [draft, setDraft] = useState(() => createAgendaDraft(wedding));
   const [editingId, setEditingId] = useState('');
   const [draggingId, setDraggingId] = useState('');
+  const [draggingTemplate, setDraggingTemplate] = useState<{ title: string; icon: string } | null>(null);
+  const [dropActive, setDropActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -1320,6 +1343,27 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
     ordered.splice(to, 0, moved);
     setDraggingId('');
     void persistOrder(ordered);
+  };
+
+  const addTemplate = (tpl: { title: string; icon: string }) => {
+    const { startTime, endTime } = nextAgendaSlot(events, wedding);
+    void saveEvent({
+      title: tpl.title,
+      icon: tpl.icon,
+      startTime,
+      endTime,
+      timezone: wedding.timezone || 'UTC',
+      location: wedding.venueName || '',
+      description: '',
+    });
+  };
+
+  const handleTemplateDrop = () => {
+    setDropActive(false);
+    if (draggingTemplate) {
+      addTemplate(draggingTemplate);
+      setDraggingTemplate(null);
+    }
   };
 
   const saveEvent = async (payload: any, id?: string) => {
@@ -1442,15 +1486,27 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
           </div>
 
           {events.length === 0 ? (
-            <div className="card">
+            <div
+              className="card"
+              onDragOver={e => { if (draggingTemplate) { e.preventDefault(); setDropActive(true); } }}
+              onDragLeave={() => setDropActive(false)}
+              onDrop={handleTemplateDrop}
+              style={dropActive ? { outline: '2px dashed var(--adm-primary)', outlineOffset: 4 } : undefined}
+            >
               <EmptyStatePanel
                 icon={<CalendarDays size={40} />}
                 title="No agenda items yet"
-                description="Add the ceremony, reception, photos, speeches, and vendor handoff moments to create a usable day-of schedule."
+                description="Click a ceremony card above, or drag one here. You can also add the ceremony, reception, photos, speeches, and vendor handoff moments manually."
               />
             </div>
           ) : (
-            <div className="agenda-list">
+            <div
+              className="agenda-list"
+              onDragOver={e => { if (draggingTemplate) { e.preventDefault(); setDropActive(true); } }}
+              onDragLeave={e => { if (e.currentTarget === e.target) setDropActive(false); }}
+              onDrop={handleTemplateDrop}
+              style={dropActive ? { outline: '2px dashed var(--adm-primary)', outlineOffset: 4, borderRadius: 12 } : undefined}
+            >
               {events.map((event, index) => {
                 const isEditing = editingId === event.id;
                 return (
@@ -1482,13 +1538,14 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
                       ) : (
                         <>
                           <div className="agenda-item-title-row">
-                            <h3><span aria-hidden="true">{agendaIconText(event.icon)}</span>{event.title}</h3>
+                            <h3 style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                              <span aria-hidden="true" style={{ display: 'inline-flex', color: 'var(--adm-primary)' }}><AgendaIcon icon={event.icon} size={18} /></span>
+                              {event.title}
+                            </h3>
                             <span className="badge badge-slate">{formatAgendaDuration(event)}</span>
                           </div>
                           <div className="agenda-meta">
                             <span><Clock size={14} /> {event.startTime}-{event.endTime}</span>
-                            <span><MapPin size={14} /> {event.location || wedding.venueName || 'Venue TBD'}</span>
-                            <span><CalendarDays size={14} /> {event.timezone || wedding.timezone}</span>
                           </div>
                           {event.description && <p className="agenda-description">{event.description}</p>}
                         </>
@@ -1508,6 +1565,38 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
             </div>
           )}
 
+          <div className="card agenda-templates-card">
+            <div className="settings-section-header">
+              <Plus size={18} style={{ color: 'var(--adm-primary)' }} /><h3>Common Ceremony Cards</h3>
+            </div>
+            <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 12px' }}>
+              Click a card to add it, or drag it onto your timeline above. Times are auto-assigned — edit them anytime.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {AGENDA_TEMPLATES.map(tpl => (
+                <button
+                  key={tpl.title}
+                  type="button"
+                  draggable
+                  onDragStart={() => { setDraggingTemplate(tpl); setDraggingId(''); }}
+                  onDragEnd={() => setDraggingTemplate(null)}
+                  onClick={() => addTemplate(tpl)}
+                  disabled={saving}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '9px 12px', border: '1px solid var(--adm-border, #e5e7eb)',
+                    borderRadius: 10, background: '#fff', cursor: saving ? 'not-allowed' : 'grab',
+                    fontSize: 13, fontWeight: 600, color: '#374151', userSelect: 'none',
+                  }}
+                >
+                  <span aria-hidden="true" style={{ display: 'inline-flex', color: 'var(--adm-primary)' }}><AgendaIcon icon={tpl.icon} size={16} /></span>
+                  {tpl.title}
+                  <Plus size={13} style={{ opacity: 0.45 }} />
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="card agenda-print-preview">
             <div className="settings-section-header">
               <Printer size={18} style={{ color: 'var(--adm-primary)' }} /><h3>Printable Schedule</h3>
@@ -1521,9 +1610,13 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
 }
 
 function AgendaEditor({ value, saving, submitLabel, error, onChange, onSubmit, onCancel }: any) {
-  const update = (patch: Record<string, string>) => onChange({ ...value, ...patch });
+  const [touched, setTouched] = useState(false);
+  // Reset the "touched" flag whenever the form clears (e.g. after a successful add),
+  // so the "Title is required" hint never shows on a fresh, untouched form.
+  useEffect(() => { if (!value.title) setTouched(false); }, [value.title]);
+  const update = (patch: Record<string, string>) => { setTouched(true); onChange({ ...value, ...patch }); };
   return (
-    <form className="agenda-editor" onSubmit={event => { event.preventDefault(); onSubmit(); }}>
+    <form className="agenda-editor" onSubmit={event => { event.preventDefault(); setTouched(true); onSubmit(); }}>
       <div className="form-grid-3">
         <div className="form-group">
           <label className="form-label">Title</label>
@@ -1538,30 +1631,42 @@ function AgendaEditor({ value, saving, submitLabel, error, onChange, onSubmit, o
           <input className="form-input" type="time" value={value.endTime || ''} onChange={event => update({ endTime: event.target.value })} required />
         </div>
       </div>
-      <div className="form-grid-3">
-        <div className="form-group">
-          <label className="form-label">Timezone</label>
-          <input className="form-input" value={value.timezone || ''} onChange={event => update({ timezone: event.target.value })} placeholder="Asia/Colombo" required />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Location</label>
-          <input className="form-input" value={value.location || ''} onChange={event => update({ location: event.target.value })} placeholder="Garden lawn" />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Icon</label>
-          <select className="form-input" value={value.icon || 'CalendarDays'} onChange={event => update({ icon: event.target.value })}>
-            {AGENDA_ICON_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
+      <div className="form-group">
+        <label className="form-label">Icon</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {AGENDA_ICON_SET.map(option => {
+            const selected = (value.icon || 'calendar') === option.value;
+            const Icon = option.Icon;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                title={option.label}
+                aria-label={option.label}
+                aria-pressed={selected}
+                onClick={() => update({ icon: option.value })}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
+                  border: `1.5px solid ${selected ? 'var(--adm-primary)' : 'var(--adm-border, #e5e7eb)'}`,
+                  background: selected ? 'var(--adm-primary-bg, #fdecef)' : '#fff',
+                  color: selected ? 'var(--adm-primary)' : '#6b7280',
+                }}
+              >
+                <Icon size={18} />
+              </button>
+            );
+          })}
         </div>
       </div>
       <div className="form-group">
         <label className="form-label">Notes</label>
         <textarea className="form-input" rows={3} value={value.description || ''} onChange={event => update({ description: event.target.value })} placeholder="Vendor cues, guest instructions, or family notes" />
       </div>
-      {error && <div className="agenda-inline-error"><AlertCircle size={14} /> {error}</div>}
+      {touched && error && <div className="agenda-inline-error"><AlertCircle size={14} /> {error}</div>}
       <div className="agenda-editor-actions">
         {onCancel && <button type="button" className="btn btn-outline" onClick={onCancel}>Cancel</button>}
-        <button type="submit" className="btn btn-primary" disabled={saving || !!error}>
+        <button type="submit" className="btn btn-primary" disabled={saving || (touched && !!error)}>
           {saving ? 'Saving...' : <><Save size={16} /> {submitLabel}</>}
         </button>
       </div>
@@ -1578,7 +1683,7 @@ function createAgendaDraft(wedding: any) {
     timezone: wedding.timezone || 'UTC',
     location: wedding.venueName || '',
     description: '',
-    icon: 'CalendarDays',
+    icon: 'calendar',
   };
 }
 
@@ -1635,18 +1740,6 @@ function formatAgendaDuration(event: AgendaEventRecord) {
   return minutes ? `${hours} hr ${minutes} min` : `${hours} hr`;
 }
 
-function agendaIconText(icon: string) {
-  const map: Record<string, string> = {
-    CalendarDays: 'Cal',
-    Ring: 'Cer',
-    GlassWater: 'Tst',
-    Music: 'Mus',
-    MapPin: 'Map',
-    PartyPopper: 'Fun',
-  };
-  return map[icon] || 'Cal';
-}
-
 function buildAgendaMarkdown(wedding: any, events: AgendaEventRecord[]) {
   const title = wedding.weddingTitle || `${wedding.brideName || 'Wedding'} & ${wedding.groomName || 'Celebration'}`;
   const lines = [
@@ -1663,17 +1756,46 @@ function buildAgendaMarkdown(wedding: any, events: AgendaEventRecord[]) {
   return lines.join('\n');
 }
 
+/* ── Default sample images shown when no gallery photos are uploaded ── */
+const _Q = 'auto=format&fit=crop&q=80';
+const DASHBOARD_DEFAULT_GALLERY = [
+  { id: 'dg-1',  imageUrl: `https://images.unsplash.com/photo-1519741497674-611271b22270?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-2',  imageUrl: `https://images.unsplash.com/photo-1537633552985-df8429e8048b?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-3',  imageUrl: `https://images.unsplash.com/photo-1583939003579-730e3918a45a?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-4',  imageUrl: `https://images.unsplash.com/photo-1544005163-ab4f35c15c97?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-5',  imageUrl: `https://images.unsplash.com/photo-1511285560929-80b456fea0bc?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-6',  imageUrl: `https://images.unsplash.com/photo-1529621230753-41e86153da24?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-7',  imageUrl: `https://images.unsplash.com/photo-1606800052052-a08af7148866?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-8',  imageUrl: `https://images.unsplash.com/photo-1559563362-c667ba5f5480?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+  { id: 'dg-9',  imageUrl: `https://images.unsplash.com/photo-1521543832500-49e69fb0c5dc?${_Q}&w=400&h=300`, altText: 'Sample photo' },
+] as GalleryImageRecord[];
+
 /* ════════════════════════════════════════
    GALLERY MODULE
 ════════════════════════════════════════ */
+const DEFAULT_GUEST_NOTE =
+  'With hearts full of love and gratitude, we are so happy to celebrate this beautiful chapter of our lives with you. Your presence means more to us than words can truly express, and having you by our side makes this day even more meaningful.\n\nThank you for your love, your blessings, and for being part of our journey. We cannot wait to share laughter, joy, and unforgettable memories with the people who mean so much to us.';
+
 function GalleryModule({ wedding }: any) {
   const [images, setImages] = useState<GalleryImageRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [heroUploading, setHeroUploading] = useState(false);
+  const [coupleUploading, setCoupleUploading] = useState(false);
   const [savingId, setSavingId] = useState('');
   const [altDrafts, setAltDrafts] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [specialNoteText, setSpecialNoteText] = useState<string>(wedding.specialNoteText || DEFAULT_GUEST_NOTE);
+  const [isDefaultNote, setIsDefaultNote] = useState<boolean>(!wedding.specialNoteText);
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+
+  const heroImage = images.find(img => (img as any).imageType === 'hero');
+  const couplePhoto = images.find(img => (img as any).imageType === 'couple');
+  const galleryOnly = images.filter(img => (img as any).imageType !== 'hero' && (img as any).imageType !== 'couple');
+  const isDefaultGallery = galleryOnly.length === 0;
+  const displayGallery = isDefaultGallery ? DASHBOARD_DEFAULT_GALLERY : galleryOnly;
 
   useEffect(() => {
     let mounted = true;
@@ -1702,7 +1824,90 @@ function GalleryModule({ wedding }: any) {
     window.setTimeout(() => setMessage(''), 2400);
   };
 
+  const saveNoteText = async () => {
+    setNoteSaving(true);
+    try {
+      await patchWeddingRecord(wedding.id, { specialNoteText });
+      showMessage('Special note saved.');
+    } catch {
+      setError('Unable to save special note.');
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
+  const handleCouplePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setError('');
+    if (!file.type.startsWith('image/')) { setError('Please upload an image file.'); return; }
+    if (file.size > 5 * 1024 * 1024) { setError('Image must be under 5 MB.'); return; }
+    setCoupleUploading(true);
+    try {
+      const compressed = await compressGalleryImage(file);
+      const res = await fetch(`/api/weddings/${wedding.id}/gallery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: compressed.dataUrl, imageType: 'couple', fileName: file.name, width: compressed.width, height: compressed.height }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const created = await res.json();
+      setImages(prev => [created, ...prev.filter(img => (img as any).imageType !== 'couple')]);
+      showMessage('Couple photo saved.');
+    } catch (err: any) {
+      setError(err?.message || 'Unable to upload couple photo.');
+    } finally {
+      setCoupleUploading(false);
+    }
+  };
+
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (files.length === 0) return;
+
+    const invalidType = files.find(f => !f.type.startsWith('image/'));
+    if (invalidType) { setError('Please upload image files only.'); return; }
+    const tooBig = files.find(f => f.size > 5 * 1024 * 1024);
+    if (tooBig) { setError(`"${tooBig.name}" exceeds the 5 MB limit.`); return; }
+
+    setError('');
+    setMessage('');
+    setUploading(true);
+    setUploadProgress({ current: 0, total: files.length });
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        setUploadProgress({ current: i + 1, total: files.length });
+        const file = files[i];
+        const compressed = await compressGalleryImage(file);
+        const res = await fetch(`/api/weddings/${wedding.id}/gallery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: compressed.dataUrl,
+            altText: file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
+            fileName: file.name,
+            width: compressed.width,
+            height: compressed.height,
+          }),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const created = await res.json();
+        setImages(prev => [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder));
+        setAltDrafts(prev => ({ ...prev, [created.id]: created.altText || '' }));
+      }
+      showMessage(files.length === 1 ? 'Gallery image uploaded.' : `${files.length} images uploaded.`);
+    } catch (err: any) {
+      setError(err?.message || 'Unable to upload image.');
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+    }
+  };
+
+  const handleHeroUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
@@ -1718,7 +1923,7 @@ function GalleryModule({ wedding }: any) {
       return;
     }
 
-    setUploading(true);
+    setHeroUploading(true);
     try {
       const compressed = await compressGalleryImage(file);
       const res = await fetch(`/api/weddings/${wedding.id}/gallery`, {
@@ -1726,7 +1931,7 @@ function GalleryModule({ wedding }: any) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           imageBase64: compressed.dataUrl,
-          altText: file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
+          imageType: 'hero',
           fileName: file.name,
           width: compressed.width,
           height: compressed.height,
@@ -1734,13 +1939,13 @@ function GalleryModule({ wedding }: any) {
       });
       if (!res.ok) throw new Error(await res.text());
       const created = await res.json();
-      setImages(prev => [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder));
-      setAltDrafts(prev => ({ ...prev, [created.id]: created.altText || '' }));
-      showMessage('Gallery image uploaded.');
+      // Replace any existing hero, then keep gallery images as-is.
+      setImages(prev => [created, ...prev.filter(img => (img as any).imageType !== 'hero')]);
+      showMessage('Hero image saved.');
     } catch (err: any) {
-      setError(err?.message || 'Unable to upload image.');
+      setError(err?.message || 'Unable to upload hero image.');
     } finally {
-      setUploading(false);
+      setHeroUploading(false);
     }
   };
 
@@ -1809,88 +2014,249 @@ function GalleryModule({ wedding }: any) {
 
   return (
     <section className="module">
-      <div className="module-header">
+      <div className="module-header" style={{ marginBottom: 20 }}>
         <div>
           <p className="eyebrow">Media Library</p>
           <h1 className="module-title">Gallery</h1>
           <p className="module-subtitle">Upload compressed gallery images, manage alt text, and control display order for the invitation gallery.</p>
         </div>
-        <label className="btn btn-primary" style={{ cursor: uploading ? 'not-allowed' : 'pointer' }}>
-          <Upload size={16} /> {uploading ? 'Uploading...' : 'Upload Image'}
-          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
-        </label>
       </div>
 
       {(message || error) && (
-        <div className="success-banner" style={error ? { color: 'var(--adm-danger)', borderColor: 'var(--adm-danger-bg)', background: 'var(--adm-danger-bg)' } : undefined}>
+        <div className="success-banner" style={error ? { color: 'var(--adm-danger)', borderColor: 'var(--adm-danger-bg)', background: 'var(--adm-danger-bg)', marginBottom: 16 } : { marginBottom: 16 }}>
           {error || <><Check size={16} /> {message}</>}
         </div>
       )}
 
-      {loading ? (
-        <div className="card">
-          <p className="module-subtitle" style={{ margin: 0 }}>Loading gallery images...</p>
+      {/* ── Hero Section Image ── */}
+      <div className="card" style={{ marginBottom: 16, padding: '20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ width: 144, height: 96, borderRadius: 10, overflow: 'hidden', background: '#f8ebe4', flexShrink: 0 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroImage?.imageUrl || '/images/default-hero.jpg'}
+              alt={heroImage ? 'Invitation hero' : 'Default invitation hero'}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ fontWeight: 700, fontSize: 16, margin: '0 0 4px', color: '#111827' }}>Hero Section Image</h2>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 14px', lineHeight: 1.5 }}>
+              This image appears as the full-screen background on your invitation.
+            </p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <label className="btn btn-primary" style={{ cursor: heroUploading ? 'not-allowed' : 'pointer', fontSize: 13, padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Upload size={14} /> {heroUploading ? 'Uploading...' : heroImage ? 'Replace Image' : 'Upload Hero'}
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleHeroUpload} disabled={heroUploading} />
+              </label>
+              {heroImage && (
+                <button
+                  className="btn btn-outline"
+                  style={{ fontSize: 13, padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  onClick={() => void deleteImage(heroImage.id)}
+                >
+                  <Trash2 size={14} /> Remove
+                </button>
+              )}
+            </div>
+            {heroImage && (
+              <p style={{ fontSize: 12, color: '#9ca3af', margin: '10px 0 0' }}>
+                {(heroImage.mimeType || 'image/jpeg').split('/')[1]?.toUpperCase() || 'IMG'} • {heroImage.width || '—'} × {heroImage.height || '—'} • {formatBytes(heroImage.sizeBytes)}
+              </p>
+            )}
+          </div>
         </div>
-      ) : images.length === 0 ? (
-        <div className="card">
-          <EmptyStatePanel
-            icon={<Grid3x3 size={40} />}
-            title="No gallery images yet"
-            description="Upload a few favorite photos now. Public gallery rendering will be connected in the next task."
-          />
+      </div>
+
+      {/* ── Message to Guests ── */}
+      <div className="card" style={{ marginBottom: 16, padding: '20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 8, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Heart size={17} color="#c45a74" fill="#c45a74" />
+          </div>
+          <div>
+            <h2 style={{ fontWeight: 700, fontSize: 15, margin: 0, color: '#111827' }}>Message to Guests</h2>
+            <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>Add a photo of you both and a personal message for your guests.</p>
+          </div>
         </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
-          {images.map((image, index) => (
-            <article key={image.id} className="card settings-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ position: 'relative', aspectRatio: '4 / 3', background: '#f8ebe4' }}>
+        <div style={{ height: 1, background: '#f3f4f6', margin: '14px 0' }} />
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, alignItems: 'start' }}>
+          {/* Left: Couple Photo */}
+          <div>
+            <p style={{ fontWeight: 600, fontSize: 13, margin: '0 0 10px', color: '#374151' }}>Couple Photo</p>
+            {couplePhoto ? (
+              <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', background: '#f8ebe4' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={image.imageUrl}
-                  alt={image.altText || 'Wedding gallery image'}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
-                <span className="badge badge-slate" style={{ position: 'absolute', top: 12, left: 12 }}>#{index + 1}</span>
+                <img src={couplePhoto.imageUrl} alt="Couple" style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', display: 'block' }} />
+                <label
+                  className="btn btn-outline"
+                  style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 11, padding: '5px 12px', background: 'rgba(255,255,255,0.92)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+                >
+                  <Upload size={12} /> Replace Photo
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCouplePhotoUpload} disabled={coupleUploading} />
+                </label>
               </div>
-              <div style={{ padding: 16, display: 'grid', gap: 12 }}>
-                <div className="form-group">
-                  <label className="form-label">Alt text</label>
-                  <input
-                    className="form-input"
-                    value={altDrafts[image.id] || ''}
-                    onChange={event => setAltDrafts(prev => ({ ...prev, [image.id]: event.target.value }))}
-                    onBlur={() => void saveAltText(image.id)}
-                    placeholder="Describe this image"
-                  />
+            ) : (
+              <label style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                border: '2px dashed #f0a8b8', borderRadius: 10, padding: '32px 16px', gap: 8,
+                background: '#fff9fb', cursor: coupleUploading ? 'not-allowed' : 'pointer', minHeight: 190,
+              }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Upload size={20} color="#c45a74" />
                 </div>
-                <div style={{ display: 'grid', gap: 6, fontSize: '0.76rem', color: 'var(--adm-text-secondary)' }}>
-                  <span>{image.width || '?'} x {image.height || '?'} px</span>
-                  <span>{formatBytes(image.sizeBytes)} · {image.mimeType || 'image'}</span>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{image.fileName}</span>
-                </div>
-                <div className="table-actions" style={{ justifyContent: 'space-between' }}>
-                  <div className="table-actions">
-                    <button className="table-action-btn" title="Move image up" aria-label="Move image up" disabled={index === 0} onClick={() => void reorder(image.id, -1)}>
-                      <ArrowUp size={14} />
-                    </button>
-                    <button className="table-action-btn" title="Move image down" aria-label="Move image down" disabled={index === images.length - 1} onClick={() => void reorder(image.id, 1)}>
-                      <ArrowDown size={14} />
-                    </button>
-                  </div>
-                  <div className="table-actions">
-                    <button className="table-action-btn" title="Save alt text" aria-label="Save alt text" disabled={savingId === image.id} onClick={() => void saveAltText(image.id)}>
-                      <Save size={14} />
-                    </button>
-                    <button className="table-action-btn" title="Delete image" aria-label="Delete image" onClick={() => void deleteImage(image.id)}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </article>
-          ))}
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: 0, textAlign: 'center' }}>Drag &amp; drop a photo here</p>
+                <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>or</p>
+                <span className="btn btn-outline" style={{ fontSize: 12, padding: '6px 14px', pointerEvents: 'none', borderColor: '#c45a74', color: '#c45a74', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Upload size={13} /> {coupleUploading ? 'Uploading…' : 'Upload Photo'}
+                </span>
+                <p style={{ fontSize: 11, color: '#9ca3af', margin: 0, textAlign: 'center' }}>JPG, PNG • Max 5MB • Recommended 1:1</p>
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCouplePhotoUpload} disabled={coupleUploading} />
+              </label>
+            )}
+          </div>
+
+          {/* Right: Message */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <p style={{ fontWeight: 600, fontSize: 13, margin: '0 0 10px', color: '#374151' }}>Message</p>
+            <textarea
+              className="form-input"
+              rows={7}
+              style={{ resize: 'vertical', fontFamily: 'inherit', fontSize: 13, flex: 1, color: isDefaultNote ? '#9ca3af' : 'inherit' }}
+              value={specialNoteText}
+              maxLength={500}
+              onClick={() => { if (isDefaultNote) { setSpecialNoteText(''); setIsDefaultNote(false); } }}
+              onChange={e => { setIsDefaultNote(false); setSpecialNoteText(e.target.value); }}
+              placeholder="Write a personal message to your guests…"
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+              <span style={{ fontSize: 12, color: '#9ca3af' }}>{isDefaultNote ? 'Default message — click to replace' : `${specialNoteText.length} / 500`}</span>
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: 13, padding: '8px 18px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                onClick={() => void saveNoteText()}
+                disabled={noteSaving}
+              >
+                <Save size={14} /> {noteSaving ? 'Saving…' : 'Save Message'}
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* ── Gallery Images ── */}
+      <div className="card" style={{ padding: '20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 8, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ImageIcon size={17} color="#c45a74" />
+          </div>
+          <div>
+            <h2 style={{ fontWeight: 700, fontSize: 15, margin: 0, color: '#111827' }}>Gallery Images</h2>
+            <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>Add images to your gallery and arrange them in the order you want them to appear.</p>
+          </div>
+        </div>
+        <div style={{ height: 1, background: '#f3f4f6', margin: '14px 0' }} />
+
+        {loading ? (
+          <p style={{ color: '#9ca3af', fontSize: 13, textAlign: 'center', padding: '20px 0', margin: 0 }}>Loading gallery images...</p>
+        ) : (
+          <>
+            {isDefaultGallery && (
+              <div style={{ background: '#fff9fb', border: '1.5px dashed #f0a8b8', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
+                <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, textAlign: 'center' }}>
+                  Sample preview — upload your own photos using the tile below and they will replace these.
+                </p>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+              {displayGallery.map((image, index) => (
+                <div key={image.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, opacity: isDefaultGallery ? 0.72 : 1 }}>
+                  {!isDefaultGallery && (
+                    <div style={{ paddingTop: 44, color: '#d1d5db', cursor: 'grab', flexShrink: 0 }} title="Drag to reorder">
+                      <GripVertical size={18} />
+                    </div>
+                  )}
+                  <div style={{ flex: 1, border: '1px solid #f3f4f6', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
+                    <div style={{ position: 'relative', aspectRatio: '16/9', background: '#f8ebe4' }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={image.imageUrl}
+                        alt={image.altText || 'Gallery image'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                      <div style={{
+                        position: 'absolute', top: 8, left: 8,
+                        width: 26, height: 26, borderRadius: '50%',
+                        background: isDefaultGallery ? 'rgba(0,0,0,0.45)' : '#c45a74',
+                        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, fontWeight: 700,
+                      }}>
+                        {index + 1}
+                      </div>
+                    </div>
+                    {!isDefaultGallery && (
+                      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <input
+                          className="form-input"
+                          style={{ fontSize: 12, padding: '6px 10px' }}
+                          value={altDrafts[image.id] || ''}
+                          onChange={e => setAltDrafts(prev => ({ ...prev, [image.id]: e.target.value }))}
+                          onBlur={() => void saveAltText(image.id)}
+                          placeholder="Alt text for this image..."
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: '#9ca3af' }}>
+                            {(image.mimeType || 'image/jpeg').split('/')[1]?.toUpperCase() || 'IMG'} • {image.width || '—'} × {image.height || '—'} • {formatBytes(image.sizeBytes)}
+                          </span>
+                          <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                            <button className="table-action-btn" title="Move up" disabled={index === 0} onClick={() => void reorder(image.id, -1)}><ArrowUp size={13} /></button>
+                            <button className="table-action-btn" title="Move down" disabled={index === galleryOnly.length - 1} onClick={() => void reorder(image.id, 1)}><ArrowDown size={13} /></button>
+                            <button className="table-action-btn" title="Save alt text" disabled={savingId === image.id} onClick={() => void saveAltText(image.id)}><Save size={13} /></button>
+                            <button className="table-action-btn" title="Delete image" onClick={() => void deleteImage(image.id)}><Trash2 size={13} /></button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Upload tile — always last in the grid */}
+              <label style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                border: '2px dashed #f0a8b8', borderRadius: 10, gap: 10,
+                background: uploading ? '#fef2f2' : '#fff9fb',
+                cursor: uploading ? 'not-allowed' : 'pointer',
+                minHeight: 180, padding: '24px 16px',
+                transition: 'background 0.15s',
+              }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Upload size={20} color="#c45a74" />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', margin: '0 0 2px' }}>
+                    {uploading
+                      ? uploadProgress
+                        ? `Uploading ${uploadProgress.current} / ${uploadProgress.total}…`
+                        : 'Uploading…'
+                      : 'Add Photos'}
+                  </p>
+                  <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>Select one or multiple images</p>
+                </div>
+                <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
+              </label>
+            </div>
+
+            {!isDefaultGallery && galleryOnly.length > 0 && (
+              <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 16, marginBottom: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+                ⓘ Drag the <GripVertical size={13} style={{ display: 'inline-block', verticalAlign: 'middle' }} /> handle or use the ↑ ↓ buttons to reorder images.
+              </p>
+            )}
+          </>
+        )}
+      </div>
     </section>
   );
 }
@@ -2252,13 +2618,24 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
 function SettingsModule({ wedding, setWedding }: any) {
   const [formData, setFormData] = useState(wedding);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSave = () => {
-    setWedding(formData);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      const updated = await patchWeddingRecord(wedding.id, formData);
+      setWedding(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err: any) {
+      setSaveError(err?.message || 'Unable to save settings.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -2269,14 +2646,19 @@ function SettingsModule({ wedding, setWedding }: any) {
           <h1 className="module-title">Wedding Settings</h1>
           <p className="module-subtitle">Manage your wedding details, venue, and contact information.</p>
         </div>
-        <button className="btn btn-primary" onClick={handleSave} id="save-settings-btn">
-          {saved ? <><Check size={16} /> Saved!</> : <><Save size={16} /> Save Changes</>}
+        <button className="btn btn-primary" onClick={() => void handleSave()} id="save-settings-btn" disabled={saving}>
+          {saving ? 'Saving…' : saved ? <><Check size={16} /> Saved!</> : <><Save size={16} /> Save Changes</>}
         </button>
       </div>
 
       {saved && (
         <div className="success-banner">
           <Check size={16} /> Settings saved successfully.
+        </div>
+      )}
+      {saveError && (
+        <div className="success-banner" style={{ color: 'var(--adm-danger)', borderColor: 'var(--adm-danger-bg)', background: 'var(--adm-danger-bg)' }}>
+          {saveError}
         </div>
       )}
 
@@ -2362,11 +2744,13 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
   const [filter, setFilter] = useState<'all' | 'bride' | 'groom' | 'confirmed' | 'pending' | 'declined'>('all');
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [editingGuest, setEditingGuest] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ name: '', side: 'Groom', whatsapp: '', type: 'Individual', maxMembers: 1, notes: '' });
   const [errorMsg, setErrorMsg] = useState('');
   const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
+  const importFileRef = React.useRef<HTMLInputElement>(null);
 
   function copyInviteLink(guestToken: string, guestId: string) {
     const link = `${window.location.origin}/invitation/${wedding?.slug}?token=${guestToken}`;
@@ -2439,7 +2823,7 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
         const res = await fetch('/api/guests', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...formData, weddingId: 'w_1' })
+          body: JSON.stringify({ ...formData, weddingId: wedding.id })
         });
         if (!res.ok) throw new Error(await res.text());
         const created = await res.json();
@@ -2464,12 +2848,27 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    const csv = [
+      'Guest Name,Family Name,Side,Invitation Type,Max Members,WhatsApp,Email,Meal Preference,Taking Liquor,Notes',
+      'John Silva,Silva Family,G,Individual,1,+94771234567,john@example.com,Non-Veg,Yes,VIP',
+      'Mary Perera,Perera Family,B,Family,4,+94779876543,mary@example.com,Veg,No,Close Friends',
+    ].join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'guest_import_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const text = await file.text();
     try {
-      const res = await fetch('/api/guests/import', {
+      const res = await fetch(`/api/guests/import?weddingId=${encodeURIComponent(wedding?.id || '')}`, {
         method: 'POST',
         headers: { 'Content-Type': 'text/csv' },
         body: text
@@ -2477,15 +2876,16 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
       if (!res.ok) throw new Error('Failed to import');
       const data = await res.json();
       setGuests([...guests, ...data.created]);
+      setShowImportModal(false);
       alert(`Imported ${data.createdCount} guests successfully.`);
     } catch (err: any) {
       alert(err.message);
     }
-    e.target.value = '';
+    if (importFileRef.current) importFileRef.current.value = '';
   };
 
   const handleExport = () => {
-    window.location.href = '/api/guests/export?weddingId=w_1';
+    window.location.href = `/api/guests/export?weddingId=${wedding.id}`;
   };
 
   return (
@@ -2500,10 +2900,9 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
           <button className="btn btn-outline" onClick={handleExport} title="Export CSV">
             <Download size={16} /> Export
           </button>
-          <label className="btn btn-outline" style={{ cursor: 'pointer' }} title="Import CSV">
+          <button className="btn btn-outline" onClick={() => setShowImportModal(true)} title="Import CSV">
             <Upload size={16} /> Import
-            <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImport} />
-          </label>
+          </button>
           <button className="btn btn-primary" id="add-guest-btn" onClick={() => openModal()}>
             <UserPlus size={16} /> Add Guest
           </button>
@@ -2686,6 +3085,113 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
               <button className="btn btn-primary" type="submit" form="guest-form" disabled={isSaving}>
                 {isSaving ? 'Saving...' : 'Save Guest'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bulk Import Modal ── */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={() => setShowImportModal(false)}>
+          <div className="modal-content" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <p className="eyebrow" style={{ color: '#b5922c', marginBottom: 4 }}>BULK IMPORT</p>
+                <h2 className="modal-title">Upload Guest File</h2>
+              </div>
+              <button className="modal-close" onClick={() => setShowImportModal(false)} aria-label="Close">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '1.25rem 1.5rem' }}>
+              {/* Info banner */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.875rem',
+                background: '#fdf8ee',
+                border: '1px dashed #d4a84b',
+                borderRadius: 10,
+                padding: '0.875rem 1rem',
+                marginBottom: '1.25rem',
+              }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 8,
+                  background: '#fef3d0',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Upload size={18} color="#b5922c" />
+                </div>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: 14, margin: 0 }}>Import from Excel or CSV</p>
+                  <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0' }}>Your file must follow the correct column structure before upload.</p>
+                </div>
+              </div>
+
+              {/* Column table */}
+              <div style={{ overflowX: 'auto', marginBottom: '1.1rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ background: '#f9fafb' }}>
+                      <th style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontWeight: 600 }}>Column</th>
+                      <th style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontWeight: 600 }}>Required</th>
+                      <th style={{ textAlign: 'left', padding: '6px 10px', borderBottom: '1px solid #e5e7eb', color: '#6b7280', fontWeight: 600 }}>Accepted Values</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { col: 'Guest Name',      req: 'Yes', hint: 'Full name of the individual' },
+                      { col: 'Family Name',     req: 'No',  hint: 'e.g. Silva Family' },
+                      { col: 'Side',            req: 'Yes', hint: 'G = Groom\'s side · B = Bride\'s side' },
+                      { col: 'Invitation Type', req: 'No',  hint: 'Individual or Family' },
+                      { col: 'Max Members',     req: 'No',  hint: 'Number 1–20 (default 1)' },
+                      { col: 'WhatsApp',        req: 'No',  hint: 'e.g. +94771234567' },
+                      { col: 'Email',           req: 'No',  hint: 'Guest email address' },
+                      { col: 'Meal Preference', req: 'No',  hint: 'e.g. Veg · Non-Veg · Halal' },
+                      { col: 'Taking Liquor',   req: 'No',  hint: 'Yes or No' },
+                      { col: 'Notes',           req: 'No',  hint: 'Tags, VIP, group name, etc.' },
+                    ].map(({ col, req, hint }) => (
+                      <tr key={col} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                        <td style={{ padding: '5px 10px', fontWeight: 600, color: '#111827', whiteSpace: 'nowrap' }}>{col}</td>
+                        <td style={{ padding: '5px 10px' }}>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                            background: req === 'Yes' ? '#fef2f2' : '#f3f4f6',
+                            color:      req === 'Yes' ? '#b91c1c' : '#6b7280',
+                          }}>{req}</span>
+                        </td>
+                        <td style={{ padding: '5px 10px', color: '#6b7280' }}>{hint}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>
+                💡 <strong>Tip:</strong> Download the ready-made template below, fill it in, and upload it back. Meal Preference and Taking Liquor will be saved as RSVP preferences automatically.
+              </p>
+            </div>
+
+            <div className="modal-footer" style={{ justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button className="btn btn-outline" onClick={handleDownloadTemplate} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <FileText size={15} /> Download Template
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{ background: '#b5922c', borderColor: '#b5922c', display: 'flex', alignItems: 'center', gap: 6 }}
+                onClick={() => importFileRef.current?.click()}
+              >
+                <Upload size={15} /> Upload Guest File
+              </button>
+              <input
+                ref={importFileRef}
+                type="file"
+                accept=".csv,.xlsx"
+                style={{ display: 'none' }}
+                onChange={handleImport}
+              />
             </div>
           </div>
         </div>

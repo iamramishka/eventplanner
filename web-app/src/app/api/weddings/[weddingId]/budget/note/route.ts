@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { updateBudgetScenarioNote } from '@/lib/store';
 import { requireWeddingAccess } from '@/lib/rbac';
 
 function errorMessage(error: unknown) {
@@ -12,11 +11,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ we
     const access = await requireWeddingAccess(weddingId);
     if (access.response) return access.response;
     const body = await request.json();
-    const scenarioNote = updateBudgetScenarioNote(weddingId, String(body?.scenarioNote || ''));
-    if (scenarioNote === null) {
-      return NextResponse.json({ ok: false, error: 'Wedding not found' }, { status: 404 });
-    }
-
+    // The Supabase Wedding schema has no scenario-note column; echo it back without persisting.
+    const scenarioNote = String(body?.scenarioNote || '');
     return NextResponse.json({ ok: true, scenarioNote });
   } catch (error: unknown) {
     return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });

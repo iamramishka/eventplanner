@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { addChecklistItem, getChecklistByWedding, getChecklistTemplates } from '@/lib/store';
+import { listChecklist, createChecklistItem, getChecklistTemplates } from '@/lib/wedding-data';
 import { requireWeddingAccess } from '@/lib/rbac';
 
 function errorMessage(error: unknown) {
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     weddingId,
-    items: getChecklistByWedding(weddingId),
+    items: await listChecklist(weddingId),
     templates: getChecklistTemplates(),
   });
 }
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     if (!body?.weddingId) return NextResponse.json({ ok: false, error: 'weddingId required' }, { status: 400 });
     const access = await requireWeddingAccess(String(body.weddingId));
     if (access.response) return access.response;
-    const created = addChecklistItem(body);
+    const created = await createChecklistItem(String(body.weddingId), body);
     return NextResponse.json(created, { status: 201 });
   } catch (e: unknown) {
     return NextResponse.json({ ok: false, error: errorMessage(e) }, { status: 400 });

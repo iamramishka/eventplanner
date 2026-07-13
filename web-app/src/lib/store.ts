@@ -21,7 +21,7 @@ type BudgetStatus = typeof BUDGET_STATUSES[number];
 
 const CHECKLIST_GROUPS = ['4 months before', '3 months before', '2 months before', '1 month before', '1 week before', 'Wedding Day', 'After Wedding'];
 
-const CHECKLIST_STARTER_TEMPLATES = [
+export const CHECKLIST_STARTER_TEMPLATES = [
   {
     id: 'essential-planning',
     name: 'Essential Planning',

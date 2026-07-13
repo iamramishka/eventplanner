@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Mail, Lock, Eye, EyeOff, User, Users, CheckCircle2, ShieldCheck, MailOpen, CalendarCheck, MapPin } from 'lucide-react';
 import styles from './register.module.css';
@@ -152,6 +153,17 @@ export default function RegisterPage() {
       if (!resp.ok) {
         setSubmitError(data?.error || 'Submission failed. Please try again.');
         setLoading(false);
+        return;
+      }
+      const result = await signIn('credentials', {
+        email: form.email,
+        password: form.password,
+        redirect: false,
+      });
+      if (result?.error) {
+        setSubmitError('Account created but sign-in failed. Please log in manually.');
+        setLoading(false);
+        router.push('/login');
         return;
       }
       setLoading(false);
@@ -373,18 +385,7 @@ export default function RegisterPage() {
                 Continue to Wedding Details →
               </button>
 
-              <div className={styles.orDivider}>or sign up with</div>
-
-              <div className={styles.socialBtns}>
-                <button type="button" className={styles.socialBtn}>
-                  <Image src="/public-site/google-mark.svg" alt="Google" width={20} height={20} /> Google
-                </button>
-                <button type="button" className={styles.socialBtn}>
-                  <Image src="/public-site/apple-mark.svg" alt="Apple" width={20} height={20} /> Apple
-                </button>
-              </div>
-
-              <div className={styles.securityNote}>
+<div className={styles.securityNote}>
                 <ShieldCheck size={24} className={styles.securityIcon} />
                 <div>
                   <div className={styles.securityTitle}>Your data is safe with us</div>

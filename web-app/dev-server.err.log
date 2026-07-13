@@ -1,0 +1,1692 @@
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/invitatio..." notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head headCacheNode={{rsc:{...}, ...}}>
+                    <__next_viewport_boundary__>
+                    <MetadataWrapper>
+                      <div
+                        hidden={true}
+-                       bis_skin_checked="1"
+                      >
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <RootLayout>
+                        <html lang="en">
+                          <body
+                            className="__variable_f367f3 __variable_0a80b4"
+                            style={{--inv-rose:"#E24B6D"}}
+-                           __processed_3a416005-3f2c-4fb2-83af-3d254e4bd2ea__="true"
+-                           bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6Im5pbWxtZWpibW5lY25hZ2hnbWJhaG1iYWRk..."
+                          >
+                  ...
+ 
+    at eval (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:5667:19)
+    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:987:30)
+    at emitPendingHydrationWarnings (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:5666:9)
+    at completeWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:12828:18)
+    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:990:13)
+    at completeUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:19133:19)
+    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:19006:11)
+    at workLoopConcurrentByScheduler (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18983:9)
+    at renderRootConcurrent (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:18965:15)
+    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:17823:11)
+    at performWorkOnRootViaSchedulerTask (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:20472:7)
+    at MessagePort.performWorkUntilDeadline (webpack-internal:///(app-pages-browser)/./node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:45:48) (webpack-internal:///(app-pages-browser)
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/couple" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head headCacheNode={{rsc:{...}, ...}}>
+                    <__next_viewport_boundary__>
+                    <MetadataWrapper>
+                      <div
+                        hidden={true}
+-                       bis_skin_checked="1"
+                      >
+                    ...
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en">
+                          <body
+                            className="inter_b2991b2-module__9mH_6q__variable playfair_display_b7700c01-module__LbZqPq..."
+                            style={{--inv-rose:"#E24B6D"}}
+-                           __processed_7bda2e25-4eaf-46b2-8ecb-960183e514a0__="true"
+-                           bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6Im5pbWxtZWpibW5lY25hZ2hnbWJhaG1iYWRk..."
+                          >
+                            ...
+                              <SegmentViewNode type="page" pagePath="(admin)/co...">
+                                <SegmentTrieNode>
+                                <CoupleDashboardPage>
+                                  <DashboardClient initialWedding={{id:"22a2a1...", ...}} initialGuests={[...]} ...>
+                                    <div
+                                      className="app-shell"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <aside className={"sidebar "}>
+                                        <div
+                                          className="sidebar-header"
+-                                         bis_skin_checked="1"
+                                        >
+                                          <div
+                                            className="sidebar-brand"
+-                                           bis_skin_checked="1"
+                                          >
+                                        <div
+                                          className="sidebar-wedding-info"
+-                                         bis_skin_checked="1"
+                                        >
+                                          <div
+                                            className="wedding-avatar"
+-                                           bis_skin_checked="1"
+                                          >
++                                           NS
+                                          <div
+                                            className="wedding-names"
+-                                           bis_skin_checked="1"
+                                          >
+                                          <div
+                                            className="wedding-date"
+-                                           bis_skin_checked="1"
+                                          >
++                                           October 5, 2026
+                                        <nav>
+                                        <div
+                                          className="sidebar-upgrade-card"
+-                                         bis_skin_checked="1"
+                                        >
+                                          <div
+                                            className="upgrade-card-icon"
+-                                           bis_skin_checked="1"
+                                          >
+                                          <div
+                                            className="upgrade-card-copy"
+-                                           bis_skin_checked="1"
+                                          >
+                                          ...
+                                        <div
+                                          className="sidebar-help"
+-                                         bis_skin_checked="1"
+                                        >
+                                          <CircleQuestionMark>
+                                          <div
+-                                           bis_skin_checked="1"
+                                          >
+                                      <main className="main-content">
+                                        <header className="top-bar">
+                                          <div
+                                            className="top-bar-left"
+-                                           bis_skin_checked="1"
+                                          >
+                                            <button>
+                                            <div
+                                              className="top-bar-wedding"
+-                                             bis_skin_checked="1"
+                                            >
+                                          <div
+                                            className="top-bar-right"
+-                                           bis_skin_checked="1"
+                                          >
+                                            <div
+                                              className="trial-badge"
+-                                             bis_skin_checked="1"
+                                            >
+                                            <button>
+                                            <div
+                                              className="user-dropdown-wrap"
+-                                             bis_skin_checked="1"
+                                            >
+                                              <button id="user-menu-btn" className="user-avata..." ...>
+                                                <div
+                                                  className="wedding-avatar"
+                                                  style={{width:36,height:36,margin:0,fontSize:"0.75rem"}}
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 NS
+                                            ...
+                                        <div
+                                          className="page-content"
+-                                         bis_skin_checked="1"
+                                        >
+                                          <OverviewModule wedding={{id:"22a2a1...", ...}} guests={[...]} rsvps={[...]} ...>
+                                            <section className="module ove..." aria-label="Dashboard ...">
+                                              <div
+                                                className="kpi-grid6"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <KpiCard icon={<Users>} colorClass="kpi-rose" value={1} ...>
+                                                  <div
+                                                    className="kpi-card kpi-rose"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="kpi-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    <div
+                                                      className="kpi-info"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="kpi-value"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       1
+                                                      <div
+                                                        className="kpi-label"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       Total Guests
+                                                      <div
+                                                        className="kpi-sub"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <KpiCard icon={<CircleCheckBig>} colorClass="kpi-green" value={1} ...>
+                                                  <div
+                                                    className="kpi-card kpi-green"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="kpi-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    <div
+                                                      className="kpi-info"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="kpi-value"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       1
+                                                      <div
+                                                        className="kpi-label"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       Confirmed
+                                                      <div
+                                                        className="kpi-sub"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       100% of total
+                                                <KpiCard icon={<Clock>} colorClass="kpi-amber" value={0} label="Pending" ...>
+                                                  <div
+                                                    className="kpi-card kpi-amber"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="kpi-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    <div
+                                                      className="kpi-info"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="kpi-value"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       0
+                                                      <div
+                                                        className="kpi-label"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       Pending
+                                                      <div
+                                                        className="kpi-sub"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       0% of total
+                                                <KpiCard icon={<X>} colorClass="kpi-red" value={0} label="Declined" ...>
+                                                  <div
+                                                    className="kpi-card kpi-red"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="kpi-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    <div
+                                                      className="kpi-info"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="kpi-value"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       0
+                                                      <div
+                                                        className="kpi-label"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       Declined
+                                                      <div
+                                                        className="kpi-sub"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       0% of total
+                                                <KpiCard icon={<Users>} colorClass="kpi-purple" value={1} ...>
+                                                  <div
+                                                    className="kpi-card kpi-purple"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="kpi-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    <div
+                                                      className="kpi-info"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="kpi-value"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       1
+                                                      <div
+                                                        className="kpi-label"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       Total Headcount
+                                                      <div
+                                                        className="kpi-sub"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       People attending
+                                                <KpiCard icon={<House>} colorClass="kpi-orange" value={0} ...>
+                                                  <div
+                                                    className="kpi-card kpi-orange"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="kpi-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    <div
+                                                      className="kpi-info"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="kpi-value"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       0
+                                                      <div
+                                                        className="kpi-label"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       Tables Created
+                                                      <div
+                                                        className="kpi-sub"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                              <div
+                                                className="overview-grid3"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <div
+                                                  className="card overview-glance-panel"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <div
+                                                    className="panel-header"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                  <div
+                                                    className="glance-photo-wrap"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="glance-photo-placeholder"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                  <div
+                                                    className="glance-details"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="glance-detail-row"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <CalendarDays>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                        <div
+                                                          className="glance-detail-label"
+-                                                         bis_skin_checked="1"
+                                                        >
++                                                         Wedding Date
+                                                        <div
+                                                          className="glance-detail-value"
+-                                                         bis_skin_checked="1"
+                                                        >
++                                                         October 5, 2026
+                                                    <div
+                                                      className="glance-detail-row"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <MapPin>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                        <div
+                                                          className="glance-detail-label"
+-                                                         bis_skin_checked="1"
+                                                        >
++                                                         Venue
+                                                        <div
+                                                          className="glance-detail-value"
+-                                                         bis_skin_checked="1"
+                                                        >
++                                                         Matara
+                                                    <div
+                                                      className="glance-detail-row"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <Clock>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                        <div
+                                                          className="glance-detail-label"
+-                                                         bis_skin_checked="1"
+                                                        >
++                                                         Time
+                                                        <div
+                                                          className="glance-detail-value"
+-                                                         bis_skin_checked="1"
+                                                        >
++                                                         10:00
+                                                    <div
+                                                      className="glance-detail-row"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <ClipboardList>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                        <div
+                                                          className="glance-detail-label"
+-                                                         bis_skin_checked="1"
+                                                        >
++                                                         RSVP Deadline
+                                                        <div
+                                                          className="glance-detail-value"
+-                                                         bis_skin_checked="1"
+                                                        >
++                                                         October 1, 2026
+                                                  ...
+                                                <div
+                                                  className="card overview-rsvp-panel"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <div
+                                                    className="panel-header"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                  <div
+                                                    className="donut-chart-wrap"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                  <div
+                                                    className="rsvp-legend"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="rsvp-legend-item"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <span>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                    <div
+                                                      className="rsvp-legend-item"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <span>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                    <div
+                                                      className="rsvp-legend-item"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <span>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                  <div
+                                                    className="rsvp-headcount-row"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="rsvp-headcount-item"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <Users>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                    <div
+                                                      className="rsvp-headcount-item"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <TrendingUp>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <div
+                                                  className="card overview-checklist-panel"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <div
+                                                    className="panel-header"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                  <div
+                                                    className="checklist-ring-wrap"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                  <div
+                                                    className="checklist-legend"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="checklist-legend-item"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    <div
+                                                      className="checklist-legend-item"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    <div
+                                                      className="checklist-legend-item"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                  <div
+                                                    className="panel-subheader"
+-                                                   bis_skin_checked="1"
+                                                  >
++                                                   Recent Tasks
+                                                  <div
+                                                    className="checklist-mini-list"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <MiniTask label="No checkli..." status="Empty" ...>
+                                                      <div
+                                                        className="mini-task"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                        <div
+                                                          className={"mini-task-check "}
+-                                                         bis_skin_checked="1"
+                                                        >
+                                                        ...
+                                              <div
+                                                className="overview-grid2"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <div
+                                                  className="card overview-activity-panel"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <div
+                                                    className="panel-header"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                  <div
+                                                    className="activity-list"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="activity-row"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="activity-avatar"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       A
+                                                      <div
+                                                        className="activity-info"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                      <div
+                                                        className="activity-time"
+-                                                       bis_skin_checked="1"
+                                                      >
++                                                       2 hours ago
+                                                    <div
+                                                      className="activity-row activity-placeholder"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="activity-avatar activity-avatar-empty"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                      <div
+                                                        className="activity-info"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <div
+                                                  className="card overview-budget-panel"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <div
+                                                    className="panel-header"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                  <div
+                                                    className="budget-donut-wrap"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                  <div
+                                                    className="budget-legend"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                    <div
+                                                      className="budget-legend-item"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <span>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                    <div
+                                                      className="budget-legend-item"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <span>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                    <div
+                                                      className="budget-legend-item"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <span>
+                                                      <div
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                <div
+                                                  className="card overview-agenda-panel"
+                                                  data-testid="dashboard-agenda-preview"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <div
+                                                    className="panel-header"
+-                                                   bis_skin_checked="1"
+                                                  >
+                                                  <EmptyStatePanel icon={<CalendarDays>} title="No agenda ..." ...>
+                                                    <div
+                                                      className="empty-state-panel"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                      <div
+                                                        className="empty-state-icon-wrap"
+-                                                       bis_skin_checked="1"
+                                                      >
+                                                      ...
+                                              <div
+                                                className="card"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <h3>
+                                                <div
+                                                  className="quick-actions-grid"
+-                                                 bis_skin_checked="1"
+                                                >
+                                                  <button className="quick-acti..." onClick={function onClick} ...>
+                                                    <div
+                                                      className="quick-action-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    ...
+                                                  <button className="quick-acti..." onClick={function onClick} ...>
+                                                    <div
+                                                      className="quick-action-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    ...
+                                                  <button className="quick-acti..." onClick={function onClick} ...>
+                                                    <div
+                                                      className="quick-action-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    ...
+                                                  <button className="quick-acti..." onClick={function onClick} ...>
+                                                    <div
+                                                      className="quick-action-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    ...
+                                                  <button className="quick-acti..." onClick={function onClick} ...>
+                                                    <div
+                                                      className="quick-action-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    ...
+                                                  <button className="quick-acti..." onClick={function onClick} ...>
+                                                    <div
+                                                      className="quick-action-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    ...
+                                                  <button className="quick-acti..." onClick={function onClick} ...>
+                                                    <div
+                                                      className="quick-action-icon"
+-                                                     bis_skin_checked="1"
+                                                    >
+                                                    ...
+                                              <div
+                                                className="countdown-banner"
+-                                               bis_skin_checked="1"
+                                              >
+                                                <Heart>
+                                                <div
+-                                                 bis_skin_checked="1"
+                                                >
+                                                <div
+                                                  className="countdown-pill"
+-                                                 bis_skin_checked="1"
+                                                >
++                                                 101 days to go
+                              ...
+                  ...
+ 
+    at <unknown> (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at emitPendingHydrationWarnings (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3438:13)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6885:102)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:131)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64) (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/invitatio..." notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head headCacheNode={{rsc:{...}, ...}}>
+                    <__next_viewport_boundary__>
+                    <MetadataWrapper>
+                      <div
+                        hidden={true}
+-                       bis_skin_checked="1"
+                      >
+                    ...
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en">
+                          <body
+                            className="inter_b2991b2-module__9mH_6q__variable playfair_display_b7700c01-module__LbZqPq..."
+                            style={{--inv-rose:"#E24B6D"}}
+-                           __processed_1a970b9f-0651-4662-b6cb-05a02576fe44__="true"
+-                           bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6Im5pbWxtZWpibW5lY25hZ2hnbWJhaG1iYWRk..."
+                          >
+                  ...
+ 
+    at <unknown> (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at emitPendingHydrationWarnings (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3438:13)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6885:102)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:131)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64) (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <RenderFromTemplateContext>
+      <ScrollAndMaybeFocusHandler cacheNode={{rsc:{...}, ...}}>
+        <InnerScrollAndFocusHandlerOld focusAndScrollRef={{scrollRef:null, ...}} cacheNode={{rsc:{...}, ...}}>
+          <ErrorBoundary errorComponent={undefined} errorStyles={undefined} errorScripts={undefined}>
+            <LoadingBoundary name="nimashi-an..." loading={[...]}>
+              <Suspense name="nimashi-an..." fallback={<Fragment>}>
+                <HTTPAccessFallbackBoundary notFound={undefined} forbidden={undefined} unauthorized={undefined}>
+                  <RedirectBoundary>
+                    <RedirectErrorBoundary router={{...}}>
+                      <InnerLayoutRouter url="/invitatio..." tree={[...]} params={{slug:"nima..."}} ...>
+                        <SegmentViewNode type="page" pagePath="invitation...">
+                          <SegmentTrieNode>
+                          <InvitationPage>
+                            <style>
+                            <div
+                              className="inv-root"
+-                             bis_skin_checked="1"
+                            >
+                              <header className="inv-hero">
+                                <img>
+                                <ImagePreload>
+                                <div
+                                  className="inv-hero-overlay"
+                                  aria-hidden="true"
+-                                 bis_skin_checked="1"
+                                >
+                                <p>
+                                <h1>
+                                <p>
+                                <div
+                                  className="inv-hero-meta"
+-                                 bis_skin_checked="1"
+                                >
+                                <div
+                                  className="inv-hero-ctas"
+-                                 bis_skin_checked="1"
+                                >
+                                <div
+                                  className="inv-scroll-hint"
+                                  aria-hidden="true"
+-                                 bis_skin_checked="1"
+                                >
++                                 Scroll
+                              <div
+                                className="inv-body"
+-                               bis_skin_checked="1"
+                              >
+                                <section className="inv-card i..." data-testid="public-eve...">
+                                  <p>
+                                  <h2>
+                                  <div
+                                    className="inv-ede-date-block"
+-                                   bis_skin_checked="1"
+                                  >
+                                  <div
+                                    className="inv-ede-divider"
+-                                   bis_skin_checked="1"
+                                  >
+                                  <div
+                                    className="inv-ede-row"
+-                                   bis_skin_checked="1"
+                                  >
+                                  <div
+                                    className="inv-ede-venue"
+-                                   bis_skin_checked="1"
+                                  >
+                                    <span>
+                                    <div
+-                                     bis_skin_checked="1"
+                                    >
+                                  ...
+                                <section>
+                                <section className="inv-card i...">
+                                  <p>
+                                  <h2>
+                                  <CountdownTimer date="2026-10-05" timezone="UTC">
+                                    <div
+                                      data-testid="public-countdown"
+                                      data-countdown-status="upcoming"
+                                      data-event-timezone="UTC"
+                                      data-event-label="Monday, October 5, 2026 at 12:00 AM UTC"
+                                      data-target-ms="1791158400000"
+                                      role="timer"
+                                      aria-label="Countdown to Monday, October 5, 2026 at 12:00 AM UTC"
+-                                     bis_skin_checked="1"
+                                    >
+                                      <div
+                                        style={{display:"grid",gridTemplateColumns:"repeat(4, ...",gap:10,marginTop:14}}
+-                                       bis_skin_checked="1"
+                                      >
+                                        <CountdownUnit>
+                                        <CountdownUnit>
+                                        <CountdownUnit value={15} label="Minutes">
+                                          <span style={{display:"grid", ...}}>
+                                            <strong style={{color:"#4b2230",fontSize:"clamp(1.4r...",lineHeight:1}}>
++                                             15
+-                                             17
+                                            ...
+                                        ...
+                                      ...
+                                ...
+                              ...
+                        ...
+                      ...
+          ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at throwOnHydrationMismatch (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3318:56)
+    at prepareToHydrateHostInstance (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3372:23)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6922:60)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64)
+    at strong (<anonymous>)
+    at CountdownUnit (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:260:229)
+    at CountdownTimer (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:217:237)
+    at InvitationPage (src\app\invitation\[slug]\page.tsx:430:15)
+  428 |               <p className="inv-section-label" style={{marginBottom:6}}>Counting down to</p>
+  429 |               <h2 className="inv-section-title" style={{textAlign:'center',marginBottom:2...
+> 430 |               <CountdownTimer date={date} timezone={'UTC'} />
+      |               ^
+  431 |             </section>
+  432 |           )}
+  433 |
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/invitatio..." notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en">
+                          <body
+                            className="inter_b2991b2-module__9mH_6q__variable playfair_display_b7700c01-module__LbZqPq..."
+                            style={{--inv-rose:"#E24B6D"}}
+-                           __processed_4a2be78b-4281-48e9-ba25-770808834b30__="true"
+                          >
+                  ...
+ 
+    at <unknown> (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at emitPendingHydrationWarnings (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3438:13)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6885:102)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:131)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64) (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <RedirectBoundary>
+      <RedirectErrorBoundary router={{...}}>
+        <InnerLayoutRouter url="/invitatio..." tree={[...]} params={{slug:"nima..."}} cacheNode={{rsc:{...}, ...}} ...>
+          <SegmentViewNode type="page" pagePath="invitation...">
+            <SegmentTrieNode>
+            <InvitationPage>
+              <style>
+              <div className="inv-root">
+                <header>
+                <div className="inv-body">
+                  <section>
+                  <section>
+                  <section className="inv-card i...">
+                    <p>
+                    <h2>
+                    <CountdownTimer date="2026-10-05" timezone="UTC">
+                      <div data-testid="public-cou..." data-countdown-status="upcoming" data-event-timezone="UTC" ...>
+                        <div style={{display:"grid", ...}}>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit value={54} label="Seconds">
+                            <span style={{display:"grid", ...}}>
+                              <strong style={{color:"#4b2230",fontSize:"clamp(1.4r...",lineHeight:1}}>
++                               54
+-                               56
+                              ...
+                        ...
+                  ...
+                ...
+          ...
+        ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at throwOnHydrationMismatch (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3318:56)
+    at prepareToHydrateHostInstance (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3372:23)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6922:60)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64)
+    at strong (<anonymous>)
+    at CountdownUnit (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:260:229)
+    at CountdownTimer (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:225:237)
+    at InvitationPage (src\app\invitation\[slug]\page.tsx:430:15)
+  428 |               <p className="inv-section-label" style={{marginBottom:6}}>Counting down to</p>
+  429 |               <h2 className="inv-section-title" style={{textAlign:'center',marginBottom:2...
+> 430 |               <CountdownTimer date={date} timezone={'UTC'} />
+      |               ^
+  431 |             </section>
+  432 |           )}
+  433 |
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <RedirectBoundary>
+      <RedirectErrorBoundary router={{...}}>
+        <InnerLayoutRouter url="/invitatio..." tree={[...]} params={{slug:"nima..."}} cacheNode={{rsc:{...}, ...}} ...>
+          <SegmentViewNode type="page" pagePath="invitation...">
+            <SegmentTrieNode>
+            <InvitationPage>
+              <style>
+              <div className="inv-root">
+                <header>
+                <div className="inv-body">
+                  <section>
+                  <section>
+                  <section className="inv-card i...">
+                    <p>
+                    <h2>
+                    <CountdownTimer date="2026-10-05" timezone="UTC">
+                      <div data-testid="public-cou..." data-countdown-status="upcoming" data-event-timezone="UTC" ...>
+                        <div style={{display:"grid", ...}}>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit value={41} label="Seconds">
+                            <span style={{display:"grid", ...}}>
+                              <strong style={{color:"#4b2230",fontSize:"clamp(1.4r...",lineHeight:1}}>
++                               41
+-                               42
+                              ...
+                        ...
+                  ...
+                ...
+          ...
+        ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at throwOnHydrationMismatch (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3318:56)
+    at prepareToHydrateHostInstance (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3372:23)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6922:60)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64)
+    at strong (<anonymous>)
+    at CountdownUnit (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:260:229)
+    at CountdownTimer (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:225:237)
+    at InvitationPage (src\app\invitation\[slug]\page.tsx:430:15)
+  428 |               <p className="inv-section-label" style={{marginBottom:6}}>Counting down to</p>
+  429 |               <h2 className="inv-section-title" style={{textAlign:'center',marginBottom:2...
+> 430 |               <CountdownTimer date={date} timezone={'UTC'} />
+      |               ^
+  431 |             </section>
+  432 |           )}
+  433 |
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/invitatio..." notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en">
+                          <body
+                            className="inter_b2991b2-module__9mH_6q__variable playfair_display_b7700c01-module__LbZqPq..."
+                            style={{--inv-rose:"#E24B6D"}}
+-                           __processed_0368e2bb-9b65-4447-99db-b6825ca2aed3__="true"
+                          >
+                  ...
+ 
+    at <unknown> (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at emitPendingHydrationWarnings (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3438:13)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6885:102)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:131)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64) (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <RedirectBoundary>
+      <RedirectErrorBoundary router={{...}}>
+        <InnerLayoutRouter url="/invitatio..." tree={[...]} params={{slug:"nima..."}} cacheNode={{rsc:{...}, ...}} ...>
+          <SegmentViewNode type="page" pagePath="invitation...">
+            <SegmentTrieNode>
+            <InvitationPage>
+              <style>
+              <div className="inv-root">
+                <header>
+                <div className="inv-body">
+                  <section>
+                  <section>
+                  <section className="inv-card i...">
+                    <p>
+                    <h2>
+                    <CountdownTimer date="2026-10-05" timezone="UTC">
+                      <div data-testid="public-cou..." data-countdown-status="upcoming" data-event-timezone="UTC" ...>
+                        <div style={{display:"grid", ...}}>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit value={28} label="Seconds">
+                            <span style={{display:"grid", ...}}>
+                              <strong style={{color:"#4b2230",fontSize:"clamp(1.4r...",lineHeight:1}}>
++                               28
+-                               31
+                              ...
+                        ...
+                  ...
+                ...
+          ...
+        ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at throwOnHydrationMismatch (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3318:56)
+    at prepareToHydrateHostInstance (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3372:23)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6922:60)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64)
+    at strong (<anonymous>)
+    at CountdownUnit (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:260:229)
+    at CountdownTimer (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:225:237)
+    at InvitationPage (src\app\invitation\[slug]\page.tsx:431:15)
+  429 |               <p className="inv-section-label" style={{marginBottom:6}}>Counting down to</p>
+  430 |               <h2 className="inv-section-title" style={{textAlign:'center',marginBottom:2...
+> 431 |               <CountdownTimer date={date} timezone={'UTC'} />
+      |               ^
+  432 |             </section>
+  433 |           )}
+  434 |
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <RedirectBoundary>
+      <RedirectErrorBoundary router={{...}}>
+        <InnerLayoutRouter url="/invitatio..." tree={[...]} params={{slug:"nima..."}} cacheNode={{rsc:{...}, ...}} ...>
+          <SegmentViewNode type="page" pagePath="invitation...">
+            <SegmentTrieNode>
+            <InvitationPage>
+              <style>
+              <div className="inv-root">
+                <header>
+                <div className="inv-body">
+                  <section>
+                  <section>
+                  <section className="inv-card i...">
+                    <p>
+                    <h2>
+                    <CountdownTimer date="2026-10-05" timezone="UTC">
+                      <div data-testid="public-cou..." data-countdown-status="upcoming" data-event-timezone="UTC" ...>
+                        <div style={{display:"grid", ...}}>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit value={54} label="Seconds">
+                            <span style={{display:"grid", ...}}>
+                              <strong style={{color:"#4b2230",fontSize:"clamp(1.4r...",lineHeight:1}}>
++                               54
+-                               55
+                              ...
+                        ...
+                  ...
+                ...
+          ...
+        ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at throwOnHydrationMismatch (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3318:56)
+    at prepareToHydrateHostInstance (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3372:23)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6922:60)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64)
+    at strong (<anonymous>)
+    at CountdownUnit (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:260:229)
+    at CountdownTimer (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:225:237)
+    at InvitationPage (src\app\invitation\[slug]\page.tsx:431:15)
+  429 |               <p className="inv-section-label" style={{marginBottom:6}}>Counting down to</p>
+  430 |               <h2 className="inv-section-title" style={{textAlign:'center',marginBottom:2...
+> 431 |               <CountdownTimer date={date} timezone={'UTC'} />
+      |               ^
+  432 |             </section>
+  433 |           )}
+  434 |
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/rsvp/rsvp..." notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head headCacheNode={{rsc:{...}, ...}}>
+                    <__next_viewport_boundary__>
+                    <MetadataWrapper>
+                      <div
+                        hidden={true}
+-                       bis_skin_checked="1"
+                      >
+                    ...
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en">
+                          <body
+                            className="inter_b2991b2-module__9mH_6q__variable playfair_display_b7700c01-module__LbZqPq..."
+                            style={{--inv-rose:"#E24B6D"}}
+-                           __processed_40ea3330-85fa-4e04-b743-d2406c0c025f__="true"
+-                           bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6Im5pbWxtZWpibW5lY25hZ2hnbWJhaG1iYWRk..."
+                          >
+                            ...
+                              <RsvpTokenPage>
+                                <RsvpTokenForm token="rsvp_4SFd2..." context={{wedding:{...}, ...}}>
+                                  <main style={{...}}>
+                                    <style>
+                                    <section style={{width:"min...", ...}}>
+                                      <div
+                                        style={{textAlign:"center",display:"grid",gap:10}}
+-                                       bis_skin_checked="1"
+                                      >
+                                      <form onSubmit={function submit} style={{...}}>
+                                        <input>
+                                        <div
+-                                         bis_skin_checked="1"
+                                        >
+                                        <div
+                                          style={{display:"grid",gridTemplateColumns:"repeat(aut...",gap:12}}
+-                                         bis_skin_checked="1"
+                                        >
+                                        <div
+                                          style={{display:"grid",gap:16}}
+-                                         bis_skin_checked="1"
+                                        >
+                                          <label>
+                                          <div
+                                            style={{display:"grid",gridTemplateColumns:"repeat(aut...",gap:12}}
+-                                           bis_skin_checked="1"
+                                          >
+                                        ...
+                  ...
+ 
+    at <unknown> (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at emitPendingHydrationWarnings (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3438:13)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6885:102)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:131)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64) (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <RedirectBoundary>
+      <RedirectErrorBoundary router={{...}}>
+        <InnerLayoutRouter url="/invitatio..." tree={[...]} params={{slug:"nima..."}} cacheNode={{rsc:<Fragment>, ...}} ...>
+          <SegmentViewNode type="page" pagePath="invitation...">
+            <SegmentTrieNode>
+            <InvitationPage>
+              <style>
+              <div className="inv-root">
+                <header>
+                <div className="inv-body">
+                  <section>
+                  <section>
+                  <section className="inv-card i...">
+                    <p>
+                    <h2>
+                    <CountdownTimer date="2026-10-05" timezone="UTC">
+                      <div data-testid="public-cou..." data-countdown-status="upcoming" data-event-timezone="UTC" ...>
+                        <div style={{display:"grid", ...}}>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit value={39} label="Minutes">
+                            <span style={{display:"grid", ...}}>
+                              <strong style={{color:"#4b2230",fontSize:"clamp(1.4r...",lineHeight:1}}>
++                               39
+-                               48
+                              ...
+                          ...
+                        ...
+                  ...
+                ...
+          ...
+        ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at throwOnHydrationMismatch (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3318:56)
+    at prepareToHydrateHostInstance (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3372:23)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6922:60)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64)
+    at strong (<anonymous>)
+    at CountdownUnit (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:260:229)
+    at CountdownTimer (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:217:237)
+    at InvitationPage (src\app\invitation\[slug]\page.tsx:431:15)
+  429 |               <p className="inv-section-label" style={{marginBottom:6}}>Counting down to</p>
+  430 |               <h2 className="inv-section-title" style={{textAlign:'center',marginBottom:2...
+> 431 |               <CountdownTimer date={date} timezone={'UTC'} />
+      |               ^
+  432 |             </section>
+  433 |           )}
+  434 |
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/invitatio..." notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html lang="en">
+                          <body
+                            className="inter_b2991b2-module__9mH_6q__variable playfair_display_b7700c01-module__LbZqPq..."
+                            style={{--inv-rose:"#E24B6D"}}
+-                           __processed_2095e5da-e7e5-4fde-a3fd-2e98e08199f1__="true"
+-                           bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6Im5pbWxtZWpibW5lY25hZ2hnbWJhaG1iYWRk..."
+                          >
+                  ...
+ 
+    at <unknown> (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at emitPendingHydrationWarnings (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3438:13)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6885:102)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:131)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64) (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3439:25)
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <RedirectBoundary>
+      <RedirectErrorBoundary router={{...}}>
+        <InnerLayoutRouter url="/invitatio..." tree={[...]} params={{slug:"nima..."}} cacheNode={{rsc:<Fragment>, ...}} ...>
+          <SegmentViewNode type="page" pagePath="invitation...">
+            <SegmentTrieNode>
+            <InvitationPage>
+              <style>
+              <div className="inv-root">
+                <header>
+                <div className="inv-body">
+                  <section>
+                  <section>
+                  <section className="inv-card i...">
+                    <p>
+                    <h2>
+                    <CountdownTimer date="2026-10-05" timezone="UTC">
+                      <div data-testid="public-cou..." data-countdown-status="upcoming" data-event-timezone="UTC" ...>
+                        <div style={{display:"grid", ...}}>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit value={39} label="Minutes">
+                            <span style={{display:"grid", ...}}>
+                              <strong style={{color:"#4b2230",fontSize:"clamp(1.4r...",lineHeight:1}}>
++                               39
+-                               48
+                              ...
+                          ...
+                        ...
+                  ...
+                ...
+          ...
+        ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at throwOnHydrationMismatch (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3318:56)
+    at prepareToHydrateHostInstance (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3372:23)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6922:60)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64)
+    at strong (<anonymous>)
+    at CountdownUnit (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:260:229)
+    at CountdownTimer (.next\dev\static\chunks\web-app_src_app_invitation_[slug]_1-4hh63._.js:217:237)
+    at InvitationPage (src\app\invitation\[slug]\page.tsx:431:15)
+  429 |               <p className="inv-section-label" style={{marginBottom:6}}>Counting down to</p>
+  430 |               <h2 className="inv-section-title" style={{textAlign:'center',marginBottom:2...
+> 431 |               <CountdownTimer date={date} timezone={'UTC'} />
+      |               ^
+  432 |             </section>
+  433 |           )}
+  434 |
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+[browser] Uncaught Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <RedirectBoundary>
+      <RedirectErrorBoundary router={{...}}>
+        <InnerLayoutRouter url="/invitatio..." tree={[...]} params={{slug:"nima..."}} cacheNode={{rsc:{...}, ...}} ...>
+          <SegmentViewNode type="page" pagePath="invitation...">
+            <SegmentTrieNode>
+            <InvitationPage>
+              <style>
+              <div className="inv-root">
+                <header>
+                <div className="inv-body">
+                  <section>
+                  <section>
+                  <section className="inv-card i...">
+                    <p>
+                    <h2>
+                    <CountdownTimer date="2026-10-05" timezone="UTC">
+                      <div data-testid="public-cou..." data-countdown-status="upcoming" data-event-timezone="UTC" ...>
+                        <div style={{display:"grid", ...}}>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit>
+                          <CountdownUnit value={10} label="Seconds">
+                            <span style={{display:"grid", ...}}>
+                              <strong style={{color:"#4b2230",fontSize:"clamp(1.4r...",lineHeight:1}}>
++                               10
+-                               11
+                              ...
+                        ...
+                  ...
+                ...
+          ...
+        ...
+
+    at <unknown> (https://react.dev/link/hydration-mismatch)
+    at throwOnHydrationMismatch (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3318:56)
+    at prepareToHydrateHostInstance (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:3372:23)
+    at completeWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:6922:60)
+    at runWithFiberInDEV (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:965:74)
+    at completeUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9622:23)
+    at performUnitOfWork (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9557:28)
+    at workLoopConcurrentByScheduler (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9551:58)
+    at renderRootConcurrent (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9534:71)
+    at performWorkOnRoot (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (.next\dev\static\chunks\09d6_next_dist_compiled_react-dom_1ivcjv1._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (.next\dev\static\chunks\09d6_next_dist_compiled_0lcbdqr._.js:2647:64)
+    at strong (<anonymous>)
+    at CountdownUnit (.next\dev\static\chunks\web-app_src_0y38i79._.js:260:229)
+    at CountdownTimer (.next\dev\static\chunks\web-app_src_0y38i79._.js:225:237)
+    at InvitationPage (src\app\invitation\[slug]\page.tsx:432:15)
+  430 |               <p className="inv-section-label" style={{marginBottom:6}}>Counting down to</p>
+  431 |               <h2 className="inv-section-title" style={{textAlign:'center',marginBottom:2...
+> 432 |               <CountdownTimer date={date} timezone={'UTC'} />
+      |               ^
+  433 |             </section>
+  434 |           )}
+  435 |
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase

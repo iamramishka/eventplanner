@@ -45,19 +45,26 @@ npm run lint       # lint check
 ```
 
 ## Branch Strategy
-- `main` — stable production branch, PR-only merges
-- `dev` — integration branch, all feature merges go here first
-- `codex/*` — feature worktrees (see `claude/worktree.md`)
-- Never force-push to `main` or `dev`
+- `main` — live production branch, PR-only merges, never force-push
+- The old `dev` integration branch is merged into `main` and deleted; branch new work
+  directly from `main` (`fix/...`, `feat/...`)
 - Conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
 
-## Agent & Skill System
-All agent assignments, skills, worktree commands, GitHub workflow, rules, and todo list live in `claude/`. Read those files before starting any significant task.
+## Phase & Skill System
+The build is complete and live — the project is in **maintenance** (small bug fixes + small
+feature changes). Runnable skills live in `.claude/skills/`:
+- `/fix-bug` — bug-fix workflow
+- `/add-small-feature` — small feature / feature-change workflow
+- `/ship-check` — build + lint + typecheck + smoke quality gate
+
+Standards and rules live in `claude/` (`skills.md`, `rules.md`, `github.md`, `todo.md`).
+The original 12-agent build process is archived in `claude/archive/`. Read the relevant
+`claude/` docs before any significant task.
 
 ## Important Rules
 1. The production app is `web-app/`. Root `src/` is deprecated.
 2. Brand name is **WedPlan** everywhere (not WedInvite).
-3. Each worktree lane owns its scope — do not overwrite other lanes' work.
+3. Maintenance phase — make the smallest correct change; don't redesign features or expand the schema unless a fix requires it.
 4. Protected data: never delete `web-app/prisma/dev_sqlite.db` or `web-app/logs/audit.log`.
 5. Postgres is the production DB. SQLite (`dev_sqlite.db`) is local dev only.
 6. All new API routes need session + role + ownership checks.

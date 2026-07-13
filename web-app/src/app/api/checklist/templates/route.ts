@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { applyChecklistTemplate } from '@/lib/store';
+import { applyChecklistTemplateById } from '@/lib/wedding-data';
 import { requireWeddingAccess } from '@/lib/rbac';
 
 function errorMessage(error: unknown) {
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     if (access.response) return access.response;
     if (!body?.templateId) return NextResponse.json({ ok: false, error: 'templateId required' }, { status: 400 });
 
-    return NextResponse.json(applyChecklistTemplate(body.weddingId, body.templateId), { status: 201 });
+    return NextResponse.json(await applyChecklistTemplateById(String(body.weddingId), String(body.templateId)), { status: 201 });
   } catch (e: unknown) {
     return NextResponse.json({ ok: false, error: errorMessage(e) }, { status: 400 });
   }

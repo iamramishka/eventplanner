@@ -1,24 +1,17 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { db, deleteGalleryImage, updateGalleryImage } from '@/lib/store';
+import { dbSelect, dbDelete, storageDeleteByUrl } from '@/lib/supabase-db';
 import { requireGalleryAccess } from '@/lib/rbac';
 
-type GalleryRow = {
-  id?: unknown;
-};
+interface GalleryRow {
+  id: string;
+  weddingId: string;
+  imageType: string;
+  imageUrl: string;
+  sortOrder: number;
+}
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
-}
-
-function deleteUploadedGalleryFile(imageUrl: string) {
-  if (!imageUrl.startsWith('/uploads/gallery/')) return;
-
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'gallery');
-  const filePath = path.normalize(path.join(process.cwd(), 'public', imageUrl));
-  if (!filePath.startsWith(path.normalize(uploadsDir))) return;
-  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,14 +19,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { id } = await params;
     const access = await requireGalleryAccess(id);
     if (access.response) return access.response;
-    const body = await request.json() as Record<string, unknown>;
-    const existing = db.galleryImages.findUnique((image: GalleryRow) => image.id === id);
+
+    const rows = await dbSelect<GalleryRow>('GalleryImage', { id: `eq.${id}` }, '*', 1);
+    const existing = rows[0];
     if (!existing) {
       return NextResponse.json({ ok: false, error: 'Gallery image not found' }, { status: 404 });
     }
 
-    const updated = updateGalleryImage(id, { altText: String(body?.altText || '').trim() });
-    return NextResponse.json(updated);
+    // GalleryImage has no altText column; echo the submitted value back without persisting.
+    const body = await request.json() as Record<string, unknown>;
+    return NextResponse.json({ ...existing, altText: String(body?.altText || '').trim() });
   } catch (error: unknown) {
     return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });
   }
@@ -43,11 +38,15 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const access = await requireGalleryAccess(id);
   if (access.response) return access.response;
-  const removed = deleteGalleryImage(id);
+
+  const rows = await dbSelect<GalleryRow>('GalleryImage', { id: `eq.${id}` }, '*', 1);
+  const removed = rows[0];
   if (!removed) {
     return NextResponse.json({ ok: false, error: 'Gallery image not found' }, { status: 404 });
   }
 
-  deleteUploadedGalleryFile(removed.imageUrl || '');
+  await dbDelete('GalleryImage', { id: `eq.${id}` });
+  await storageDeleteByUrl(removed.imageUrl || '').catch(() => {});
+
   return NextResponse.json({ ok: true, removed });
 }

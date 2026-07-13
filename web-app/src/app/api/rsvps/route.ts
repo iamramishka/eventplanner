@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db, addRsvp } from '@/lib/store';
+import { listRsvpsByWedding, addRsvpForGuestId } from '@/lib/wedding-data';
 import { auditLog } from '@/lib/audit';
 import { requireWeddingAccess } from '@/lib/rbac';
 
@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   if (!weddingId) return NextResponse.json({ ok: false, error: 'weddingId required' }, { status: 400 });
   const access = await requireWeddingAccess(weddingId);
   if (access.response) return access.response;
-  const rows = db.rsvps.findMany(r => r.weddingId === weddingId);
+  const rows = await listRsvpsByWedding(weddingId);
   return NextResponse.json(rows);
 }
 
@@ -23,10 +23,11 @@ export async function POST(req: Request) {
     if (!body?.weddingId) return NextResponse.json({ ok: false, error: 'weddingId required' }, { status: 400 });
     const access = await requireWeddingAccess(String(body.weddingId));
     if (access.response) return access.response;
-    const created = addRsvp({
+    if (!body?.guestId) return NextResponse.json({ ok: false, error: 'guestId required' }, { status: 400 });
+    const created = await addRsvpForGuestId(String(body.guestId), {
       ...body,
-      attending: body.status === 'confirmed',
-      memberCount: body.attendingCount
+      attending: body.status === 'confirmed' || body.attending === true,
+      memberCount: body.attendingCount ?? body.memberCount,
     });
     await auditLog({ action: 'create-rsvp', targetId: created.id, data: body });
     return NextResponse.json(created, { status: 201 });
