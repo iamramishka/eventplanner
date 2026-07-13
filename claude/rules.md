@@ -1,12 +1,11 @@
 # Project Rules
 
 ## Git & Branch Rules
-- Never force-push to `main` or `dev`
-- Always branch from `dev` for new work
-- Worktree branches use `codex/` prefix
+- `main` is the live production branch — PR-only, never force-push
+- The old `dev` integration branch was merged into `main` and **deleted**; branch new work
+  directly from `main` (e.g. `fix/...`, `feat/...`)
 - Commit messages: `type(scope): description` (conventional commits)
 - PR must pass `npm run build` before merge
-- Merge order: stabilize → design-system → data-auth → features → qa → security → docs
 
 ## Code Rules
 - TypeScript strict mode — no `any` without justification
@@ -14,7 +13,7 @@
 - No in-memory stores in production paths — use Prisma
 - No secrets in code — use `.env` (already in `.gitignore`)
 - Prisma migrations only via `prisma migrate dev` or `prisma migrate deploy`
-- Never modify `web-app/prisma/schema.prisma` without coordinating Data/Auth lane
+- Avoid schema changes in maintenance; treat `web-app/prisma/schema.prisma` as high-risk
 
 ## UI Rules
 - Brand name: **WedPlan** (not WedInvite)
@@ -24,11 +23,10 @@
 - Empty states and loading states are required — not optional
 - Design mockup PNGs are in `Couple Dashboard/`, `Super Admin/`, `Vendor Portal/`, `invitation Page/`, `Public Website/` — read-only references
 
-## Lane Rules (Worktrees)
-- Each agent owns its lane only (see `claude/agents.md`)
-- If a lane needs a shared file, document the reason in commit notes
-- Never revert another lane's committed work
-- Shared files that need coordination: `prisma/schema.prisma`, `src/lib/auth.ts`, `middleware.ts`
+## High-risk shared files (change carefully)
+- `prisma/schema.prisma`, `src/lib/auth.ts`, `middleware.ts` — touch only when the fix
+  genuinely requires it, and call it out explicitly in the commit.
+- The 12-lane worktree process is retired; see `claude/archive/` for that historical setup.
 
 ## Security Rules
 - Guest data (names, RSVPs) must never be exposed in public endpoints without auth

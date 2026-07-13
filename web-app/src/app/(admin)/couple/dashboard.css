@@ -2416,8 +2416,9 @@ body {
 }
 
 .table-action-btn {
-  width: 30px;
+  min-width: 30px;
   height: 30px;
+  padding: 0 8px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
@@ -2425,6 +2426,9 @@ body {
   background: transparent;
   border: 1px solid var(--adm-border);
   color: var(--adm-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.15s;
 }

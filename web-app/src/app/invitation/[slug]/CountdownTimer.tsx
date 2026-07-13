@@ -89,9 +89,6 @@ export default function CountdownTimer({ date, time, timezone = 'UTC' }: Countdo
         <CountdownUnit value={countdown.minutes} label="Minutes" />
         <CountdownUnit value={countdown.seconds} label="Seconds" />
       </div>
-      <div style={countdownMutedStyle}>
-        {countdown.status === 'past' ? 'Today is the big day!' : `Until ${eventLabel}`}
-      </div>
     </div>
   );
 }

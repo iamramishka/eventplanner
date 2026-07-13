@@ -16,6 +16,7 @@ import {
   Home, Upload, Download, Trash2, GripVertical, Printer, Copy, FileText,
   BarChart2,
 } from 'lucide-react';
+import { AGENDA_ICON_SET, AgendaIcon } from '@/components/agenda-icons';
 import './dashboard.css';
 import InvitationEditorModule, { InvitationPreview } from './InvitationEditorModule';
 import TablesModule from './TablesModule';
@@ -458,7 +459,7 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
           {activeModule === 'guests'    && <GuestsModule    wedding={wedding} guests={guests} setGuests={setGuests} rsvps={rsvps} onNavigate={handleNavigate} />}
           {activeModule === 'rsvps'     && <RsvpsModule     guests={guests} rsvps={rsvps} onNavigate={handleNavigate} />}
           {activeModule === 'analytics' && <CoupleAnalyticsModule weddingId={wedding?.id} />}
-          {activeModule === 'tables'    && <TablesModule    wedding={wedding} guests={guests} />}
+          {activeModule === 'tables'    && <TablesModule    wedding={wedding} guests={guests} rsvps={rsvps} />}
           {activeModule === 'vendors'   && <VendorsModule   wedding={wedding} setWedding={setWedding} />}
           {activeModule === 'notifications' && <NotificationsModule wedding={wedding} guests={guests} rsvps={rsvps} checklist={checklist} budget={budget} setWedding={setWedding} onNavigate={handleNavigate} />}
           {activeModule === 'account'   && <AccountModule   wedding={wedding} onNavigate={handleNavigate} />}
@@ -1235,20 +1236,42 @@ Generated from WedPlan Theme & Design on ${new Date().toLocaleString()}.
 /* ════════════════════════════════════════
    AGENDA MODULE
 ════════════════════════════════════════ */
-const AGENDA_ICON_OPTIONS = [
-  { value: 'CalendarDays', label: 'Calendar' },
-  { value: 'Ring', label: 'Ceremony' },
-  { value: 'GlassWater', label: 'Toast' },
-  { value: 'Music', label: 'Music' },
-  { value: 'MapPin', label: 'Venue' },
-  { value: 'PartyPopper', label: 'Party' },
+// Common predefined ceremony items — click or drag onto the timeline.
+const AGENDA_TEMPLATES: { title: string; icon: string }[] = [
+  { title: 'Guest Arrival & Welcome Drinks', icon: 'drinks' },
+  { title: 'Religious Blessing Ceremony', icon: 'bell' },
+  { title: 'Ring Exchange Ceremony', icon: 'ring' },
+  { title: 'Poruwa Ceremony', icon: 'poruwa' },
+  { title: 'Signing of Marriage Register', icon: 'register' },
+  { title: 'Lighting of Traditional Oil Lamp', icon: 'oillamp' },
+  { title: 'Cake Cutting Ceremony', icon: 'cake' },
+  { title: 'Speech Session', icon: 'mic' },
+  { title: 'Group Photography Session', icon: 'camera' },
+  { title: 'Buffet Lunch / Dinner', icon: 'dining' },
+  { title: 'Entertainment (Music / Dancing)', icon: 'music' },
+  { title: "Couple's First Dance", icon: 'dance' },
+  { title: 'Vote of Thanks', icon: 'heart' },
+  { title: "Couple's Departure", icon: 'departure' },
 ];
+
+// Auto-assign the next time slot: starts after the last item ends (or wedding start time).
+function nextAgendaSlot(events: AgendaEventRecord[], wedding: any) {
+  let startTime = wedding.time || '16:00';
+  if (events.length > 0) {
+    const sorted = [...events].sort((a, b) => a.sortOrder - b.sortOrder);
+    const last = sorted[sorted.length - 1];
+    if (last?.endTime) startTime = last.endTime;
+  }
+  return { startTime, endTime: addMinutesToClock(startTime, 30) };
+}
 
 function AgendaModule({ wedding, agenda, setAgenda }: any) {
   const [events, setEvents] = useState<AgendaEventRecord[]>(agenda || []);
   const [draft, setDraft] = useState(() => createAgendaDraft(wedding));
   const [editingId, setEditingId] = useState('');
   const [draggingId, setDraggingId] = useState('');
+  const [draggingTemplate, setDraggingTemplate] = useState<{ title: string; icon: string } | null>(null);
+  const [dropActive, setDropActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -1320,6 +1343,27 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
     ordered.splice(to, 0, moved);
     setDraggingId('');
     void persistOrder(ordered);
+  };
+
+  const addTemplate = (tpl: { title: string; icon: string }) => {
+    const { startTime, endTime } = nextAgendaSlot(events, wedding);
+    void saveEvent({
+      title: tpl.title,
+      icon: tpl.icon,
+      startTime,
+      endTime,
+      timezone: wedding.timezone || 'UTC',
+      location: wedding.venueName || '',
+      description: '',
+    });
+  };
+
+  const handleTemplateDrop = () => {
+    setDropActive(false);
+    if (draggingTemplate) {
+      addTemplate(draggingTemplate);
+      setDraggingTemplate(null);
+    }
   };
 
   const saveEvent = async (payload: any, id?: string) => {
@@ -1442,15 +1486,27 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
           </div>
 
           {events.length === 0 ? (
-            <div className="card">
+            <div
+              className="card"
+              onDragOver={e => { if (draggingTemplate) { e.preventDefault(); setDropActive(true); } }}
+              onDragLeave={() => setDropActive(false)}
+              onDrop={handleTemplateDrop}
+              style={dropActive ? { outline: '2px dashed var(--adm-primary)', outlineOffset: 4 } : undefined}
+            >
               <EmptyStatePanel
                 icon={<CalendarDays size={40} />}
                 title="No agenda items yet"
-                description="Add the ceremony, reception, photos, speeches, and vendor handoff moments to create a usable day-of schedule."
+                description="Click a ceremony card above, or drag one here. You can also add the ceremony, reception, photos, speeches, and vendor handoff moments manually."
               />
             </div>
           ) : (
-            <div className="agenda-list">
+            <div
+              className="agenda-list"
+              onDragOver={e => { if (draggingTemplate) { e.preventDefault(); setDropActive(true); } }}
+              onDragLeave={e => { if (e.currentTarget === e.target) setDropActive(false); }}
+              onDrop={handleTemplateDrop}
+              style={dropActive ? { outline: '2px dashed var(--adm-primary)', outlineOffset: 4, borderRadius: 12 } : undefined}
+            >
               {events.map((event, index) => {
                 const isEditing = editingId === event.id;
                 return (
@@ -1482,13 +1538,14 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
                       ) : (
                         <>
                           <div className="agenda-item-title-row">
-                            <h3><span aria-hidden="true">{agendaIconText(event.icon)}</span>{event.title}</h3>
+                            <h3 style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                              <span aria-hidden="true" style={{ display: 'inline-flex', color: 'var(--adm-primary)' }}><AgendaIcon icon={event.icon} size={18} /></span>
+                              {event.title}
+                            </h3>
                             <span className="badge badge-slate">{formatAgendaDuration(event)}</span>
                           </div>
                           <div className="agenda-meta">
                             <span><Clock size={14} /> {event.startTime}-{event.endTime}</span>
-                            <span><MapPin size={14} /> {event.location || wedding.venueName || 'Venue TBD'}</span>
-                            <span><CalendarDays size={14} /> {event.timezone || wedding.timezone}</span>
                           </div>
                           {event.description && <p className="agenda-description">{event.description}</p>}
                         </>
@@ -1508,6 +1565,38 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
             </div>
           )}
 
+          <div className="card agenda-templates-card">
+            <div className="settings-section-header">
+              <Plus size={18} style={{ color: 'var(--adm-primary)' }} /><h3>Common Ceremony Cards</h3>
+            </div>
+            <p style={{ fontSize: 12, color: '#9ca3af', margin: '0 0 12px' }}>
+              Click a card to add it, or drag it onto your timeline above. Times are auto-assigned — edit them anytime.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {AGENDA_TEMPLATES.map(tpl => (
+                <button
+                  key={tpl.title}
+                  type="button"
+                  draggable
+                  onDragStart={() => { setDraggingTemplate(tpl); setDraggingId(''); }}
+                  onDragEnd={() => setDraggingTemplate(null)}
+                  onClick={() => addTemplate(tpl)}
+                  disabled={saving}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    padding: '9px 12px', border: '1px solid var(--adm-border, #e5e7eb)',
+                    borderRadius: 10, background: '#fff', cursor: saving ? 'not-allowed' : 'grab',
+                    fontSize: 13, fontWeight: 600, color: '#374151', userSelect: 'none',
+                  }}
+                >
+                  <span aria-hidden="true" style={{ display: 'inline-flex', color: 'var(--adm-primary)' }}><AgendaIcon icon={tpl.icon} size={16} /></span>
+                  {tpl.title}
+                  <Plus size={13} style={{ opacity: 0.45 }} />
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="card agenda-print-preview">
             <div className="settings-section-header">
               <Printer size={18} style={{ color: 'var(--adm-primary)' }} /><h3>Printable Schedule</h3>
@@ -1521,9 +1610,13 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
 }
 
 function AgendaEditor({ value, saving, submitLabel, error, onChange, onSubmit, onCancel }: any) {
-  const update = (patch: Record<string, string>) => onChange({ ...value, ...patch });
+  const [touched, setTouched] = useState(false);
+  // Reset the "touched" flag whenever the form clears (e.g. after a successful add),
+  // so the "Title is required" hint never shows on a fresh, untouched form.
+  useEffect(() => { if (!value.title) setTouched(false); }, [value.title]);
+  const update = (patch: Record<string, string>) => { setTouched(true); onChange({ ...value, ...patch }); };
   return (
-    <form className="agenda-editor" onSubmit={event => { event.preventDefault(); onSubmit(); }}>
+    <form className="agenda-editor" onSubmit={event => { event.preventDefault(); setTouched(true); onSubmit(); }}>
       <div className="form-grid-3">
         <div className="form-group">
           <label className="form-label">Title</label>
@@ -1538,30 +1631,42 @@ function AgendaEditor({ value, saving, submitLabel, error, onChange, onSubmit, o
           <input className="form-input" type="time" value={value.endTime || ''} onChange={event => update({ endTime: event.target.value })} required />
         </div>
       </div>
-      <div className="form-grid-3">
-        <div className="form-group">
-          <label className="form-label">Timezone</label>
-          <input className="form-input" value={value.timezone || ''} onChange={event => update({ timezone: event.target.value })} placeholder="Asia/Colombo" required />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Location</label>
-          <input className="form-input" value={value.location || ''} onChange={event => update({ location: event.target.value })} placeholder="Garden lawn" />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Icon</label>
-          <select className="form-input" value={value.icon || 'CalendarDays'} onChange={event => update({ icon: event.target.value })}>
-            {AGENDA_ICON_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
+      <div className="form-group">
+        <label className="form-label">Icon</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {AGENDA_ICON_SET.map(option => {
+            const selected = (value.icon || 'calendar') === option.value;
+            const Icon = option.Icon;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                title={option.label}
+                aria-label={option.label}
+                aria-pressed={selected}
+                onClick={() => update({ icon: option.value })}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
+                  border: `1.5px solid ${selected ? 'var(--adm-primary)' : 'var(--adm-border, #e5e7eb)'}`,
+                  background: selected ? 'var(--adm-primary-bg, #fdecef)' : '#fff',
+                  color: selected ? 'var(--adm-primary)' : '#6b7280',
+                }}
+              >
+                <Icon size={18} />
+              </button>
+            );
+          })}
         </div>
       </div>
       <div className="form-group">
         <label className="form-label">Notes</label>
         <textarea className="form-input" rows={3} value={value.description || ''} onChange={event => update({ description: event.target.value })} placeholder="Vendor cues, guest instructions, or family notes" />
       </div>
-      {error && <div className="agenda-inline-error"><AlertCircle size={14} /> {error}</div>}
+      {touched && error && <div className="agenda-inline-error"><AlertCircle size={14} /> {error}</div>}
       <div className="agenda-editor-actions">
         {onCancel && <button type="button" className="btn btn-outline" onClick={onCancel}>Cancel</button>}
-        <button type="submit" className="btn btn-primary" disabled={saving || !!error}>
+        <button type="submit" className="btn btn-primary" disabled={saving || (touched && !!error)}>
           {saving ? 'Saving...' : <><Save size={16} /> {submitLabel}</>}
         </button>
       </div>
@@ -1578,7 +1683,7 @@ function createAgendaDraft(wedding: any) {
     timezone: wedding.timezone || 'UTC',
     location: wedding.venueName || '',
     description: '',
-    icon: 'CalendarDays',
+    icon: 'calendar',
   };
 }
 
@@ -1633,18 +1738,6 @@ function formatAgendaDuration(event: AgendaEventRecord) {
   const hours = Math.floor(total / 60);
   const minutes = total % 60;
   return minutes ? `${hours} hr ${minutes} min` : `${hours} hr`;
-}
-
-function agendaIconText(icon: string) {
-  const map: Record<string, string> = {
-    CalendarDays: 'Cal',
-    Ring: 'Cer',
-    GlassWater: 'Tst',
-    Music: 'Mus',
-    MapPin: 'Map',
-    PartyPopper: 'Fun',
-  };
-  return map[icon] || 'Cal';
 }
 
 function buildAgendaMarkdown(wedding: any, events: AgendaEventRecord[]) {
@@ -3000,7 +3093,7 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
       {/* ── Bulk Import Modal ── */}
       {showImportModal && (
         <div className="modal-overlay" onClick={() => setShowImportModal(false)}>
-          <div className="modal-container" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+          <div className="modal-content" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div>
                 <p className="eyebrow" style={{ color: '#b5922c', marginBottom: 4 }}>BULK IMPORT</p>

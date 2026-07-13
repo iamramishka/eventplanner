@@ -99,7 +99,7 @@ async function runQaChecks() {
     // 6. Check Find Event API
     console.log('Checking Find Event API...');
     await checkFileExists('src/app/api/events/search/route.ts');
-    await checkFileContent('src/app/api/events/search/route.ts', ['db.weddings.findMany', 'NextResponse']);
+    await checkFileContent('src/app/api/events/search/route.ts', ['dbSelect', 'NextResponse']);
     console.log('✅ Find Event API smoke check passed.\n');
 
     console.log('All Sprint 10 smoke checks passed successfully! 🎉');
