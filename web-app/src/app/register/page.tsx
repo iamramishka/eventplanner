@@ -235,7 +235,15 @@ export default function RegisterPage() {
         </div>
 
         <div className={styles.illustration}>
-          <Image src="/public-site/wedding-couple.png" alt="Wedding couple" fill sizes="(max-width: 900px) 100vw, 42vw" className={styles.illustrationImage} />
+          <Image
+            src="/public-site/wedding-couple.png"
+            alt="Wedding couple"
+            fill
+            sizes="(max-width: 900px) 100vw, 42vw"
+            loading="eager"
+            fetchPriority="high"
+            className={styles.illustrationImage}
+          />
         </div>
       </div>
 
