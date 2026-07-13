@@ -16,7 +16,6 @@
 # next.js
 /.next/
 /out/
-/vercel-public/
 
 # production
 /build
@@ -40,3 +39,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+web-app/logs/task*.log

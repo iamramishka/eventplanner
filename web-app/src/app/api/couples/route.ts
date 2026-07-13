@@ -10,6 +10,30 @@ type CreatedWedding = ReturnType<typeof addWedding> & {
   profileImage?: string;
 };
 
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+const minWeddingDate = toDateInputValue(new Date());
+const maxWeddingDate = `${new Date().getFullYear() + 10}-12-31`;
+
+function parseWeddingDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  const isRealDate =
+    parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day;
+
+  if (!isRealDate || value < minWeddingDate || value > maxWeddingDate) return null;
+  return parsed;
+}
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -32,20 +56,23 @@ async function uniqueWeddingSlug(baseSlug: string) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const groomName = body?.groomName as string | undefined;
-    const brideName = body?.brideName as string | undefined;
+    const groomName = String(body?.groomName || '').trim();
+    const brideName = String(body?.brideName || '').trim();
     const date = body?.date as string | undefined;
+    const dateDeciding = !!body?.dateDeciding;
     const email = String(body?.email || '').trim().toLowerCase();
     const password = String(body?.password || '');
     const profileImageBase64 = body?.profileImageBase64 as string | undefined;
 
-    if (!groomName || !brideName || !date || !email || !password) {
-      return NextResponse.json({ ok: false, error: 'groomName, brideName, date, email and password required' }, { status: 400 });
-    }
+    if (!groomName) return NextResponse.json({ ok: false, error: "Groom's first name is required." }, { status: 400 });
+    if (!brideName) return NextResponse.json({ ok: false, error: "Bride's first name is required." }, { status: 400 });
+    if (!email) return NextResponse.json({ ok: false, error: 'Email is required.' }, { status: 400 });
+    if (!password) return NextResponse.json({ ok: false, error: 'Password is required.' }, { status: 400 });
+    if (!dateDeciding && !date) return NextResponse.json({ ok: false, error: 'Please select a wedding date or mark it as "still deciding".' }, { status: 400 });
 
-    const eventDate = new Date(date);
-    if (Number.isNaN(eventDate.getTime())) {
-      return NextResponse.json({ ok: false, error: 'Valid wedding date required' }, { status: 400 });
+    const eventDate = date ? parseWeddingDate(date) : null;
+    if (!dateDeciding && !eventDate) {
+      return NextResponse.json({ ok: false, error: `Please select a valid date between ${minWeddingDate} and ${maxWeddingDate}.` }, { status: 400 });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -71,8 +98,8 @@ export async function POST(req: Request) {
           userId: user.id,
           groomFirstName: groomName,
           brideFirstName: brideName,
-          eventDate,
-          venueName: body?.venueName || null,
+          eventDate: eventDate ?? null,
+          venueName: body?.venueDeciding ? null : (body?.venueName || null),
           slug,
           setupCompleted: true,
           estimatedGuests: Number.isFinite(Number(body?.estimatedGuests)) ? Number(body.estimatedGuests) : null,

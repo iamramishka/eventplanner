@@ -41,25 +41,31 @@ None.
 
 ## Infrastructure
 
-### Postgres Migration (Production)
-- Status: **PENDING** — only SQLite dev DB verified locally
-- When ready:
-  1. Set `DATABASE_URL` in `web-app/.env` to Postgres
-  2. `npx prisma generate`
-  3. `npx prisma migrate deploy`
-  4. `npm run prisma:seed`
+### Vercel Production Deployment
+- Status: **LIVE** ✅ — https://invitemyguestplanner.vercel.app/
+- Deployed 2026-06-21 — all routes return 200 (/, /login, /api/auth/session)
+- Supabase Postgres schema (20 tables) applied — project `rfkxrtovvukikxqsyvyl` (ap-northeast-1)
+- Seed data inserted (User + Wedding + 2 Guests)
+- Local dev uses SQLite (`DATABASE_URL=file:./dev_sqlite.db`) — ISP DPI blocks Postgres wire protocol locally
+- Key fixes applied to get Vercel working:
+  - `postinstall`: runs `prisma-schema-switch.js` → swaps to Postgres schema → `prisma generate`
+  - `postbuild`: symlinks `web-app/.next` and `web-app/node_modules` to repo root (Vercel adapter looks there)
+  - `outputFileTracingRoot: path.join(__dirname, '../')` — traces as `web-app/...` paths, Vercel finds them
+  - Data/log stubs at repo root (`data/*.json`, `logs/*.log`) — satisfy file-trace lstat checks
+  - Removed deprecated root-level Sentry files that caused build conflicts
 
 ### Lint Debt
 - Status: **RESOLVED** — 0 errors, 0 warnings (PR #30)
 - All `no-explicit-any` suppressed with file-level disable (store returns untyped values)
 - All `no-img-element` suppressed with line-level disable (base64 data URL upload previews)
 
-### Security Vulnerabilities (accepted risk)
-- Status: **PARTIAL** — 2 of 6 fixed (PR #31, `npm audit fix`)
-- Remaining 4 (all moderate):
-  - `postcss < 8.5.10` — locked in `next@16`; fix would downgrade Next.js to 9.x
-  - `uuid < 11.1.1` — locked in `next-auth@4`; fix would downgrade to next-auth 3.x
-- Blocked until Next.js / next-auth release updated versions
+### Security Vulnerabilities
+- Status: **3 of 6 fixed** — postcss fixed via `overrides` in package.json
+- `postcss`: **FIXED** — forced to `>=8.5.10` via npm overrides (was 8.4.31, now 8.5.15)
+- Remaining 2 (moderate, not exploitable in this codebase):
+  - `uuid < 11.1.1` via `next-auth@4.24.14` — vuln only triggers on v3/v5/v6 with explicit `buf` arg; next-auth uses `v4()` without buf → **not exploitable**
+  - Fix would require downgrading to `next-auth@3.29.10` (breaking change)
+- Blocked until next-auth v4 ships a uuid update
 
 ---
 

@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import path from 'path';
 
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
@@ -27,10 +28,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: process.cwd(),
-  },
-  outputFileTracingRoot: process.cwd(),
+  // Monorepo root — traces become web-app/... paths so Vercel resolves them correctly
+  outputFileTracingRoot: path.join(__dirname, '../'),
   async headers() {
     return [
       {
