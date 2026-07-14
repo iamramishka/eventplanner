@@ -252,11 +252,11 @@ export async function listAgenda(weddingId: string): Promise<DashboardAgenda[]> 
 }
 
 export async function createAgenda(weddingId: string, data: {
-  title: string; startTime: string; endTime: string; description?: string; icon?: string;
+  title: string; startTime: string; endTime?: string; description?: string; icon?: string;
 }): Promise<DashboardAgenda> {
   const existing = await dbSelect<AgendaRow>('AgendaItem', { weddingId: `eq.${weddingId}` }, 'sortOrder', 200);
   const nextOrder = existing.reduce((max, r) => Math.max(max, r.sortOrder ?? 0), 0) + 1;
-  const duration = minutesOf(data.endTime) - minutesOf(data.startTime);
+  const duration = data.endTime ? minutesOf(data.endTime) - minutesOf(data.startTime) : null;
   const row = await dbInsert<AgendaRow>('AgendaItem', {
     id: crypto.randomUUID(),
     weddingId,
@@ -275,9 +275,9 @@ export async function updateAgendaById(id: string, data: Record<string, unknown>
   if (data.title !== undefined) cols.title = String(data.title).trim();
   if (data.description !== undefined) cols.description = String(data.description || '').trim();
   if (data.icon !== undefined) cols.iconKey = String(data.icon || 'CalendarDays').trim();
-  if (data.startTime !== undefined && data.endTime !== undefined) {
+  if (data.startTime !== undefined) {
     cols.eventTime = `${AGENDA_BASE_DATE}T${String(data.startTime)}:00`;
-    cols.durationMinutes = minutesOf(String(data.endTime)) - minutesOf(String(data.startTime));
+    cols.durationMinutes = data.endTime ? minutesOf(String(data.endTime)) - minutesOf(String(data.startTime)) : null;
   }
   await dbUpdate('AgendaItem', { id: `eq.${id}` }, cols);
   const rows = await dbSelect<AgendaRow>('AgendaItem', { id: `eq.${id}` }, '*', 1);
@@ -387,9 +387,9 @@ export async function createChecklistItem(weddingId: string, data: Record<string
     title,
     description: String(data.description || ''),
     isCompleted,
-    dueDate: data.dueDate ? `${String(data.dueDate).slice(0, 10)}T00:00:00` : null,
+    dueDate: data.dueDate ? new Date(`${String(data.dueDate).slice(0, 10)}T00:00:00.000Z`) : null,
     priority: String(data.priority || 'medium'),
-    reminderAt: data.reminderAt ? new Date(String(data.reminderAt)).toISOString() : null,
+    reminderAt: data.reminderAt ? new Date(String(data.reminderAt)) : null,
     state: isCompleted ? 'completed' : String(data.state || 'pending'),
     templateId: String(data.templateId || ''),
   });
@@ -409,8 +409,8 @@ export async function updateChecklistItemById(id: string, data: Record<string, u
   }
   if (data.description !== undefined) cols.description = String(data.description || '');
   if (data.priority !== undefined) cols.priority = String(data.priority || 'medium');
-  if (data.dueDate !== undefined) cols.dueDate = data.dueDate ? `${String(data.dueDate).slice(0, 10)}T00:00:00` : null;
-  if (data.reminderAt !== undefined) cols.reminderAt = data.reminderAt ? new Date(String(data.reminderAt)).toISOString() : null;
+  if (data.dueDate !== undefined) cols.dueDate = data.dueDate ? new Date(`${String(data.dueDate).slice(0, 10)}T00:00:00.000Z`) : null;
+  if (data.reminderAt !== undefined) cols.reminderAt = data.reminderAt ? new Date(String(data.reminderAt)) : null;
   if (data.templateId !== undefined) cols.templateId = String(data.templateId || '');
 
   let groupName = '';
@@ -651,13 +651,17 @@ function toDashboardRsvp(row: RsvpRow, weddingId: string): DashboardRsvp {
     id: row.id,
     weddingId,
     guestId: row.guestId,
-    attending: (row.status || '').toLowerCase() === 'attending',
+    attending: isAttendingStatus(row.status),
     memberCount: Number(row.attendingCount || 0),
     mealPreference: row.mealPreference || '',
     liquorPreference: row.liquorPreference || '',
     notes: row.specialNote || '',
     updatedAt: row.updatedAt || '',
   };
+}
+
+function isAttendingStatus(status?: string | null): boolean {
+  return ['attending', 'accepted', 'confirmed', 'yes'].includes((status || '').toLowerCase());
 }
 
 /** GuestRsvp.status (e.g. 'attending'/'declined') → dashboard label. */
@@ -746,7 +750,8 @@ export async function updateRsvpById(id: string, data: Record<string, unknown>):
   const cols: Record<string, unknown> = { updatedAt: nowIso() };
   if (data.attending !== undefined) cols.status = data.attending ? 'attending' : 'declined';
   if (data.status !== undefined && data.attending === undefined) {
-    cols.status = String(data.status) === 'confirmed' ? 'attending' : (String(data.status) === 'declined' ? 'declined' : String(data.status));
+    const status = String(data.status).toLowerCase();
+    cols.status = isAttendingStatus(status) ? 'attending' : (status === 'declined' ? 'declined' : status);
   }
   if (data.memberCount !== undefined) cols.attendingCount = Number(data.memberCount) || 0;
   if (data.attendingCount !== undefined) cols.attendingCount = Number(data.attendingCount) || 0;
@@ -769,7 +774,7 @@ export async function deleteRsvpById(id: string): Promise<boolean> {
 export async function addRsvpForGuestId(guestId: string, data: Record<string, unknown>): Promise<DashboardRsvp> {
   const guest = await getGuestRow(guestId);
   if (!guest) throw new Error('guest not found');
-  const attending = !!data.attending;
+  const attending = data.attending !== undefined ? !!data.attending : isAttendingStatus(String(data.status || ''));
   return upsertRsvpForGuest(guest, {
     attending,
     memberCount: typeof data.memberCount === 'number' ? data.memberCount : (attending ? 1 : 0),

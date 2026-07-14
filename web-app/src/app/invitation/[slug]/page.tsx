@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { getInvitationContent, renderMarkdownBlocks } from '@/lib/invitation-content';
 import CountdownTimer from './CountdownTimer';
 import FindTableInline from './FindTableInline';
+import FloatingMusicPlayer from './FloatingMusicPlayer';
 import { AgendaIcon } from '@/components/agenda-icons';
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -41,9 +42,12 @@ interface WeddingRow {
   venueMapLink: string | null;
   rsvpDeadline: string | null;
   specialNoteText: string | null;
+  contactEmail: string | null;
+  contactWhatsApp: string | null;
 }
 interface GalleryRow { id: string; imageType: string; imageUrl: string; sortOrder: number }
 interface AgendaRow { id: string; title: string; eventTime: string | null; durationMinutes: number | null; description: string | null; iconKey: string | null; sortOrder: number }
+interface SiteSettingsRow { id: string; weddingId: string; musicSettings: string | null }
 
 function timeFromTimestamp(ts?: string | null): string {
   if (!ts) return '';
@@ -147,17 +151,18 @@ export default async function InvitationPage({ params, searchParams }: Props) {
   const venueMapLink = wedding.venueMapLink || '';
   const rsvpDeadline = wedding.rsvpDeadline ? wedding.rsvpDeadline.slice(0, 10) : '';
   const specialNoteText = wedding.specialNoteText || '';
+  const contactWhatsApp = wedding.contactWhatsApp || '';
+  const contactEmail = wedding.contactEmail || '';
+  const footerContacts = [contactWhatsApp, contactEmail].filter(Boolean);
   const title = `${brideName} & ${groomName}`;
   const description = `Join ${brideName} and ${groomName} on ${formatDate(date)} at ${venueName || 'our celebration'}`;
   // Show only the Wedding Details card on the invitation page. Flip to false to restore all sections.
   const ONLY_DETAILS: boolean = false;
 
-  const allImages = await dbSelect<GalleryRow>(
-    'GalleryImage',
-    { weddingId: `eq.${wedding.id}`, order: 'sortOrder.asc' },
-    '*',
-    500,
-  );
+  const [allImages, siteSettingsRows] = await Promise.all([
+    dbSelect<GalleryRow>('GalleryImage', { weddingId: `eq.${wedding.id}`, order: 'sortOrder.asc' }, '*', 500),
+    dbSelect<SiteSettingsRow>('SiteSettings', { weddingId: `eq.${wedding.id}` }, 'id,weddingId,musicSettings', 1),
+  ]);
   const heroRow = allImages.find((img) => img.imageType === 'hero');
   const couplePhotoRow = allImages.find((img) => img.imageType === 'couple');
   const galleryImages = allImages.filter((img) => (img.imageType || 'gallery') === 'gallery');
@@ -173,6 +178,17 @@ export default async function InvitationPage({ params, searchParams }: Props) {
 
   const content = getInvitationContent({ date, venueName });
   const messageBlocks = renderMarkdownBlocks(content.messageMarkdown);
+
+  const rawMusicSettings = siteSettingsRows[0]?.musicSettings;
+  let musicEnabled = false;
+  let musicSrc = '/audio/default.mp3';
+  if (rawMusicSettings) {
+    try {
+      const ms = JSON.parse(rawMusicSettings) as { enabled?: boolean; sourceUrl?: string };
+      musicEnabled = ms.enabled !== false;
+      if (ms.sourceUrl) musicSrc = ms.sourceUrl;
+    } catch { /* ignore */ }
+  }
 
   const primary = '#C45A74';
   const gold = '#C9A574';
@@ -275,15 +291,21 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         .inv-story-card h3{font-family:'Playfair Display',Georgia,serif;font-size:1.4rem;font-weight:500;color:var(--inv-text);margin-bottom:.6em}
 
         /* ── Agenda ── */
-        .inv-agenda-track{display:grid;gap:0;position:relative;padding-left:40px}
-        .inv-agenda-track::before{content:'';position:absolute;left:19px;top:24px;bottom:24px;width:2px;background:linear-gradient(to bottom,transparent,var(--inv-gold) 10%,var(--inv-gold) 90%,transparent);opacity:.4}
-        .inv-agenda-entry{display:grid;grid-template-columns:auto 1fr;gap:0 16px;padding-bottom:28px;position:relative}
+        .inv-agenda-track{position:relative;display:flex;flex-direction:column;padding:8px 0}
+        .inv-agenda-track::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:1.5px;transform:translateX(-50%);background:linear-gradient(to bottom,transparent,var(--inv-gold) 6%,var(--inv-gold) 94%,transparent);opacity:.38}
+        .inv-agenda-entry{display:grid;grid-template-columns:1fr 56px 1fr;align-items:center;gap:0 16px;padding-bottom:36px;position:relative}
         .inv-agenda-entry:last-child{padding-bottom:0}
-        .inv-agenda-dot{width:40px;height:40px;border-radius:50%;background:#fff;border:2px solid var(--inv-gold);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;box-shadow:0 4px 14px rgba(201,165,116,0.25);position:relative;z-index:1}
-        .inv-agenda-content{padding-top:8px;min-width:0}
-        .inv-agenda-time{font-size:.8rem;color:var(--inv-primary);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
-        .inv-agenda-title{font-size:1.05rem;font-weight:600;color:var(--inv-text);margin-bottom:4px}
-        .inv-agenda-desc{font-size:.87rem;color:var(--inv-muted);line-height:1.6}
+        .inv-agenda-dot{width:48px;height:48px;border-radius:50%;background:#fff;border:2px solid var(--inv-gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 18px rgba(201,165,116,0.28);position:relative;z-index:1;justify-self:center}
+        .inv-agenda-col-l{text-align:right;min-width:0}
+        .inv-agenda-col-r{text-align:left;min-width:0}
+        .inv-agenda-time{display:block;font-size:.76rem;color:var(--inv-primary);font-weight:700;letter-spacing:.08em;text-transform:uppercase;line-height:1.5}
+        .inv-agenda-title{font-size:1rem;font-weight:600;color:var(--inv-text);margin-bottom:3px;line-height:1.3}
+        .inv-agenda-desc{font-size:.84rem;color:var(--inv-muted);line-height:1.6;margin-top:2px}
+        @media(max-width:480px){
+          .inv-agenda-entry{grid-template-columns:1fr 44px 1fr;gap:0 10px}
+          .inv-agenda-title{font-size:.9rem}
+          .inv-agenda-time{font-size:.7rem}
+        }
 
         /* ── Masonry Gallery ── */
         .inv-masonry-card{padding:0;overflow:hidden;width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);border-radius:0;border-left:0;border-right:0}
@@ -447,25 +469,37 @@ export default async function InvitationPage({ params, searchParams }: Props) {
 
 {/* ── Agenda ── */}
           {agenda.length > 0 && (
-            <section className="inv-card" data-testid="public-agenda">
+            <section className="inv-card" data-testid="public-agenda" style={{textAlign:'center'}}>
               <p className="inv-section-label">The day</p>
               <h2 className="inv-section-title">Day&apos;s Schedule</h2>
-              <p className="inv-section-body" style={{marginBottom:28}}>
+              <p className="inv-section-body" style={{maxWidth:460,margin:'0 auto 32px'}}>
                 The celebration timeline — we can&apos;t wait to share these moments with you.
               </p>
               <div className="inv-agenda-track" data-testid="public-agenda-list" role="list">
-                {agenda.map((item) => {
+                {agenda.map((item, idx) => {
                   const start = timeFromTimestamp(item.eventTime);
-                  const end = addMinutes(item.eventTime, item.durationMinutes);
+                  const contentLeft = idx % 2 === 0;
+                  const timeEl = (
+                    <time className="inv-agenda-time" data-testid="public-agenda-time">
+                      {formatTime(start)}
+                    </time>
+                  );
+                  const contentEl = (
+                    <>
+                      <h3 className="inv-agenda-title" data-testid="public-agenda-title">{item.title}</h3>
+                      {item.description && <p className="inv-agenda-desc" data-testid="public-agenda-description">{item.description}</p>}
+                    </>
+                  );
                   return (
                     <article key={item.id} className="inv-agenda-entry" data-testid="public-agenda-item" role="listitem">
-                      <div className="inv-agenda-dot" data-testid="public-agenda-icon" style={{ color: 'var(--inv-primary)' }}><AgendaIcon icon={item.iconKey} size={22} /></div>
-                      <div className="inv-agenda-content">
-                        <time className="inv-agenda-time" data-testid="public-agenda-time">
-                          {formatTime(start)}{end ? ` – ${formatTime(end)}` : ''}
-                        </time>
-                        <h3 className="inv-agenda-title" data-testid="public-agenda-title">{item.title}</h3>
-                        {item.description && <p className="inv-agenda-desc" data-testid="public-agenda-description">{item.description}</p>}
+                      <div className="inv-agenda-col-l">
+                        {contentLeft ? contentEl : timeEl}
+                      </div>
+                      <div className="inv-agenda-dot" data-testid="public-agenda-icon" style={{color:'var(--inv-primary)'}}>
+                        <AgendaIcon icon={item.iconKey} size={22} />
+                      </div>
+                      <div className="inv-agenda-col-r">
+                        {contentLeft ? timeEl : contentEl}
                       </div>
                     </article>
                   );
@@ -546,6 +580,14 @@ export default async function InvitationPage({ params, searchParams }: Props) {
             {date && venueName && <span> · </span>}
             {venueName && <span>{venueName}</span>}
           </p>
+          {footerContacts.length > 0 && (
+            <p>{footerContacts.map((item, index) => (
+              <React.Fragment key={item}>
+                {index > 0 && <span> · </span>}
+                <span>{item}</span>
+              </React.Fragment>
+            ))}</p>
+          )}
           <p style={{marginTop:16}}>Created with <Link href="/">WedPlan</Link></p>
         </footer>
         )}
@@ -565,6 +607,9 @@ export default async function InvitationPage({ params, searchParams }: Props) {
           }}
         />
       </div>
+
+      {/* Floating music player */}
+      {musicEnabled && <FloatingMusicPlayer src={musicSrc} />}
     </>
   );
 }

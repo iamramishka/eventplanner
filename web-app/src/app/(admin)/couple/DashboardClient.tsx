@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, Settings, Users, CheckSquare,
@@ -163,7 +163,16 @@ function getDaysUntil(dateStr: string): number {
   const target = new Date(dateStr);
   const now    = new Date();
   now.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
   return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function formatTrialStatus(days: number | null) {
+  if (days === null) return 'Trial active';
+  if (days > 1) return `${days} days left`;
+  if (days === 1) return '1 day left';
+  if (days === 0) return 'ends today';
+  return 'expired';
 }
 
 function formatDate(dateStr: string) {
@@ -184,20 +193,22 @@ function formatClockDisplay(timeStr: string) {
 }
 
 function formatAgendaRangeDisplay(event: Partial<AgendaEventRecord> & Record<string, any>) {
-  const start = event.startTime || event.time || '';
-  const end = event.endTime || '';
-  if (start && end && start !== end) return `${formatClockDisplay(start)} - ${formatClockDisplay(end)}`;
-  return formatClockDisplay(start);
+  return formatClockDisplay(event.startTime || event.time || '');
 }
 
 const BUDGET_CATEGORY_OPTIONS = ['Venue', 'Catering', 'Photography', 'Decor', 'Attire', 'Entertainment', 'Other'];
 const BUDGET_STATUS_OPTIONS: BudgetStatus[] = ['planned', 'reserved', 'paid'];
-const CHECKLIST_GROUP_OPTIONS = ['4 months before', '3 months before', '2 months before', '1 month before', '1 week before', 'Wedding Day', 'After Wedding'];
+const CHECKLIST_GROUP_OPTIONS = ['4 months before', '3 months before', '2 months before', '1 month before', '2 weeks before', '1 week before', 'Day before', 'Wedding Day', 'After Wedding'];
 const CHECKLIST_PRIORITY_OPTIONS = ['high', 'medium', 'low'] as const;
 const CHECKLIST_TEMPLATE_FALLBACKS: ChecklistTemplateRecord[] = [
-  { id: 'essential-planning', name: 'Essential Planning', description: 'Core planning tasks every couple needs to track.', taskCount: 3 },
-  { id: 'venue-vendors', name: 'Venue & Vendors', description: 'Booking and confirmation tasks for major suppliers.', taskCount: 3 },
-  { id: 'wedding-week', name: 'Wedding Week', description: 'Final checks for the last few days.', taskCount: 3 },
+  { id: 'four-months-before', name: '4 Months Before', description: 'Lock the big decisions, book the main vendors, and start choosing outfits.', taskCount: 19 },
+  { id: 'three-months-before', name: '3 Months Before', description: 'Guest list, invitations, vendor packages, jewelry, and day-of roles.', taskCount: 20 },
+  { id: 'two-months-before', name: '2 Months Before', description: 'Fittings and beauty prep, function details, song picks, and documents.', taskCount: 21 },
+  { id: 'one-month-before', name: '1 Month Before', description: 'Re-confirm everything, finalize bride & groom prep, and ceremony items.', taskCount: 21 },
+  { id: 'two-weeks-before', name: '2 Weeks Before', description: 'Final guest count, payments, collect items, emergency kit, and rehearsal.', taskCount: 24 },
+  { id: 'one-week-before', name: '1 Week Before', description: 'Final vendor calls, schedules, and personal preparation.', taskCount: 10 },
+  { id: 'day-before', name: 'Day Before', description: 'Get everything ready the night before so the morning is calm.', taskCount: 6 },
+  { id: 'final-day-checklist', name: 'Final Day Checklist', description: 'The simple list of everything to have in hand on the wedding day.', taskCount: 13 },
 ];
 
 const lkrFormatter = new Intl.NumberFormat('en-LK', {
@@ -294,13 +305,16 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
 
   const [wedding, setWedding] = useState(initialWedding);
   const [guests, setGuests]   = useState(initialGuests);
-  const [rsvps]               = useState(initialRsvps);
+  const [rsvps, setRsvps]     = useState(initialRsvps);
   const [agenda, setAgenda]   = useState(initialAgenda);
   const [budget, setBudget]   = useState<BudgetResponse | null>(initialBudget || null);
   const [checklist, setChecklist] = useState<ChecklistItemRecord[]>(initialChecklist || []);
 
   const initials = getInitials(`${wedding?.brideName} ${wedding?.groomName}`);
   const daysLeft = wedding?.date ? getDaysUntil(wedding.date) : null;
+  const isTrialPlan = wedding?.plan !== 'premium';
+  const trialDaysLeft = isTrialPlan && wedding?.trialEnds ? getDaysUntil(wedding.trialEnds) : null;
+  const trialStatus = formatTrialStatus(trialDaysLeft);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -356,14 +370,16 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
         </nav>
 
         {/* Trial upgrade card */}
-        <div className="sidebar-upgrade-card">
-          <div className="upgrade-card-icon"><Diamond size={20} /></div>
-          <div className="upgrade-card-copy">
-            <strong>Premium Plan</strong>
-            <span>Trial ends in 12 days</span>
+        {isTrialPlan && (
+          <div className="sidebar-upgrade-card">
+            <div className="upgrade-card-icon"><Diamond size={20} /></div>
+            <div className="upgrade-card-copy">
+              <strong>Premium Plan</strong>
+              <span>Trial {trialStatus}</span>
+            </div>
+            <button className="btn btn-upgrade">Upgrade Now</button>
           </div>
-          <button className="btn btn-upgrade">Upgrade Now</button>
-        </div>
+        )}
 
         {/* Help */}
         <div className="sidebar-help">
@@ -397,15 +413,11 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
             </div>
           </div>
           <div className="top-bar-right">
-            {/* Trial badge */}
-            <div className="trial-badge">
-              Trial &nbsp;<span>12 days left</span>
-            </div>
-            {/* Notifications */}
-            <button className="icon-btn" aria-label="Notifications" onClick={() => handleNavigate('notifications')}>
-              <Bell size={18} />
-              <span className="notif-dot" />
-            </button>
+            {isTrialPlan && (
+              <div className="trial-badge">
+                Trial &nbsp;<span>{trialStatus}</span>
+              </div>
+            )}
             {/* User avatar */}
             <div className="user-dropdown-wrap">
               <button
@@ -457,7 +469,7 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
           {activeModule === 'budget'     && <BudgetModule wedding={wedding} initialBudget={budget} setBudget={setBudget} />}
           {activeModule === 'checklist'  && <ChecklistModule wedding={wedding} checklist={checklist} setChecklist={setChecklist} />}
           {activeModule === 'guests'    && <GuestsModule    wedding={wedding} guests={guests} setGuests={setGuests} rsvps={rsvps} onNavigate={handleNavigate} />}
-          {activeModule === 'rsvps'     && <RsvpsModule     guests={guests} rsvps={rsvps} onNavigate={handleNavigate} />}
+          {activeModule === 'rsvps'     && <RsvpsModule     wedding={wedding} guests={guests} setGuests={setGuests} rsvps={rsvps} setRsvps={setRsvps} onNavigate={handleNavigate} />}
           {activeModule === 'analytics' && <CoupleAnalyticsModule weddingId={wedding?.id} />}
           {activeModule === 'tables'    && <TablesModule    wedding={wedding} guests={guests} rsvps={rsvps} />}
           {activeModule === 'vendors'   && <VendorsModule   wedding={wedding} setWedding={setWedding} />}
@@ -1254,15 +1266,15 @@ const AGENDA_TEMPLATES: { title: string; icon: string }[] = [
   { title: "Couple's Departure", icon: 'departure' },
 ];
 
-// Auto-assign the next time slot: starts after the last item ends (or wedding start time).
+// Auto-assign the next time slot: starts after the last item's start (or wedding start time).
 function nextAgendaSlot(events: AgendaEventRecord[], wedding: any) {
   let startTime = wedding.time || '16:00';
   if (events.length > 0) {
     const sorted = [...events].sort((a, b) => a.sortOrder - b.sortOrder);
     const last = sorted[sorted.length - 1];
-    if (last?.endTime) startTime = last.endTime;
+    if (last?.startTime) startTime = addMinutesToClock(last.startTime, 30);
   }
-  return { startTime, endTime: addMinutesToClock(startTime, 30) };
+  return { startTime };
 }
 
 function AgendaModule({ wedding, agenda, setAgenda }: any) {
@@ -1346,12 +1358,11 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
   };
 
   const addTemplate = (tpl: { title: string; icon: string }) => {
-    const { startTime, endTime } = nextAgendaSlot(events, wedding);
+    const { startTime } = nextAgendaSlot(events, wedding);
     void saveEvent({
       title: tpl.title,
       icon: tpl.icon,
       startTime,
-      endTime,
       timezone: wedding.timezone || 'UTC',
       location: wedding.venueName || '',
       description: '',
@@ -1522,7 +1533,6 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
                     <div className="agenda-drag-handle" title="Drag to reorder"><GripVertical size={18} /></div>
                     <div className="agenda-time-block">
                       <strong>{event.startTime}</strong>
-                      <span>{event.endTime}</span>
                     </div>
                     <div className="agenda-item-body">
                       {isEditing ? (
@@ -1545,7 +1555,7 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
                             <span className="badge badge-slate">{formatAgendaDuration(event)}</span>
                           </div>
                           <div className="agenda-meta">
-                            <span><Clock size={14} /> {event.startTime}-{event.endTime}</span>
+                            <span><Clock size={14} /> {event.startTime}</span>
                           </div>
                           {event.description && <p className="agenda-description">{event.description}</p>}
                         </>
@@ -1617,7 +1627,7 @@ function AgendaEditor({ value, saving, submitLabel, error, onChange, onSubmit, o
   const update = (patch: Record<string, string>) => { setTouched(true); onChange({ ...value, ...patch }); };
   return (
     <form className="agenda-editor" onSubmit={event => { event.preventDefault(); setTouched(true); onSubmit(); }}>
-      <div className="form-grid-3">
+      <div className="form-grid-2">
         <div className="form-group">
           <label className="form-label">Title</label>
           <input className="form-input" value={value.title || ''} onChange={event => update({ title: event.target.value })} placeholder="Ceremony" required />
@@ -1625,10 +1635,6 @@ function AgendaEditor({ value, saving, submitLabel, error, onChange, onSubmit, o
         <div className="form-group">
           <label className="form-label">Start</label>
           <input className="form-input" type="time" value={value.startTime || ''} onChange={event => update({ startTime: event.target.value })} required />
-        </div>
-        <div className="form-group">
-          <label className="form-label">End</label>
-          <input className="form-input" type="time" value={value.endTime || ''} onChange={event => update({ endTime: event.target.value })} required />
         </div>
       </div>
       <div className="form-group">
@@ -1679,7 +1685,6 @@ function createAgendaDraft(wedding: any) {
   return {
     title: '',
     startTime,
-    endTime: addMinutesToClock(startTime, 30),
     timezone: wedding.timezone || 'UTC',
     location: wedding.venueName || '',
     description: '',
@@ -1689,26 +1694,16 @@ function createAgendaDraft(wedding: any) {
 
 function validateAgendaDraft(event: any) {
   const start = String(event.startTime || '');
-  const end = String(event.endTime || '');
   if (!String(event.title || '').trim()) return 'Title is required.';
-  if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return 'Start and end times are required.';
-  if (clockMinutes(end) <= clockMinutes(start)) return 'End time must be after start time.';
-  if (!isBrowserValidTimezone(String(event.timezone || ''))) return 'Use a valid IANA timezone such as Asia/Colombo.';
+  if (!/^\d{2}:\d{2}$/.test(start)) return 'Start time is required.';
   return '';
 }
 
-function validateAgendaEvents(events: AgendaEventRecord[], wedding: any) {
+function validateAgendaEvents(events: AgendaEventRecord[], _wedding: any) {
   const messages: string[] = [];
   events.forEach((event, index) => {
     const itemError = validateAgendaDraft(event);
     if (itemError) messages.push(`${event.title || `Item ${index + 1}`}: ${itemError}`);
-    if (wedding.timezone && event.timezone !== wedding.timezone) {
-      messages.push(`${event.title}: timezone ${event.timezone} differs from wedding timezone ${wedding.timezone}.`);
-    }
-    const prev = events[index - 1];
-    if (prev && clockMinutes(event.startTime) < clockMinutes(prev.endTime)) {
-      messages.push(`${event.title} starts before ${prev.title} ends.`);
-    }
   });
   return { isValid: messages.length === 0, messages };
 }
@@ -1751,7 +1746,7 @@ function buildAgendaMarkdown(wedding: any, events: AgendaEventRecord[]) {
     '',
     '| Time | Event | Location | Notes |',
     '| --- | --- | --- | --- |',
-    ...events.map(event => `| ${event.startTime}-${event.endTime} | ${event.title} | ${event.location || '-'} | ${(event.description || '-').replace(/\|/g, '/')} |`),
+    ...events.map(event => `| ${event.startTime} | ${event.title} | ${event.location || '-'} | ${(event.description || '-').replace(/\|/g, '/')} |`),
   ];
   return lines.join('\n');
 }
@@ -2750,6 +2745,7 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
   const [formData, setFormData] = useState({ name: '', side: 'Groom', whatsapp: '', type: 'Individual', maxMembers: 1, notes: '' });
   const [errorMsg, setErrorMsg] = useState('');
   const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
+  const [deletingGuestId, setDeletingGuestId] = useState<string | null>(null);
   const importFileRef = React.useRef<HTMLInputElement>(null);
 
   function copyInviteLink(guestToken: string, guestId: string) {
@@ -2816,7 +2812,10 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData)
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error || 'Failed to save guest.');
+        }
         const updated = await res.json();
         setGuests(guests.map((g: any) => g.id === updated.id ? updated : g));
       } else {
@@ -2825,7 +2824,10 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...formData, weddingId: wedding.id })
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error || 'Failed to save guest.');
+        }
         const created = await res.json();
         setGuests([...guests, created]);
       }
@@ -2837,14 +2839,17 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this guest?')) return;
+  const handleDelete = async (guest: any) => {
+    if (!confirm(`Delete ${guest.name || 'this guest'}? This will also remove their RSVP data.`)) return;
+    setDeletingGuestId(guest.id);
     try {
-      const res = await fetch(`/api/guests/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/guests/${guest.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete');
-      setGuests(guests.filter((g: any) => g.id !== id));
+      setGuests((prev: any[]) => prev.filter((g: any) => g.id !== guest.id));
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setDeletingGuestId(null);
     }
   };
 
@@ -3018,7 +3023,13 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
                           <button className="table-action-btn" title="Edit guest" onClick={() => openModal(g)}>
                             <Edit3 size={14} />
                           </button>
-                          <button className="table-action-btn" title="Delete guest" onClick={() => handleDelete(g.id)}>
+                          <button
+                            className="table-action-btn table-action-danger"
+                            title="Delete guest"
+                            aria-label={`Delete ${g.name}`}
+                            disabled={deletingGuestId === g.id}
+                            onClick={() => handleDelete(g)}
+                          >
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -3225,6 +3236,12 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
     return checklist.filter(task => filter === 'all' || getChecklistState(task) === filter);
   }, [checklist, filter]);
 
+  // Templates that currently have at least one task in the checklist (i.e. already added).
+  const appliedTemplateIds = useMemo(
+    () => new Set(checklist.map(item => item.templateId).filter(Boolean)),
+    [checklist],
+  );
+
   useEffect(() => {
     let mounted = true;
     async function loadTemplates() {
@@ -3340,6 +3357,26 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
     }
   };
 
+  const handleDeleteGroup = async (group: string, tasks: ChecklistItemRecord[]) => {
+    if (tasks.length === 0) return;
+    if (!confirm(`Delete all ${tasks.length} task${tasks.length === 1 ? '' : 's'} in "${group}"?`)) return;
+    try {
+      const results = await Promise.allSettled(tasks.map(async task => {
+        const res = await fetch(`/api/checklist/${task.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        return task.id;
+      }));
+      const deleted = new Set(
+        results.filter(r => r.status === 'fulfilled').map(r => (r as PromiseFulfilledResult<string>).value),
+      );
+      setChecklist(checklist.filter(item => !deleted.has(item.id)));
+      const failed = tasks.length - deleted.size;
+      showMessage(failed ? `Deleted ${deleted.size}; ${failed} could not be removed.` : `Deleted all tasks in "${group}".`);
+    } catch (err: any) {
+      setError(err?.message || 'Unable to delete group.');
+    }
+  };
+
   const applyTemplate = async (templateId: string) => {
     setSaving(true);
     setError('');
@@ -3388,7 +3425,13 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
           <div className="checklist-ring-wrap"><RingProgress pct={stats.pct} /></div>
           <div className="checklist-summary-copy">
             <strong>{stats.pct}% complete</strong>
-            <span>{stats.completed} done, {stats.pending} pending, {stats.dueSoon} due soon, {stats.overdue} overdue</span>
+            <span>{stats.completed} of {stats.total} tasks done</span>
+            <div className="checklist-stat-legend">
+              <span className="cl-stat"><i className="cl-dot cl-dot-done" /> Done <b>{stats.completed}</b></span>
+              <span className="cl-stat"><i className="cl-dot cl-dot-pending" /> Pending <b>{stats.pending}</b></span>
+              <span className="cl-stat"><i className="cl-dot cl-dot-due" /> Due soon <b>{stats.dueSoon}</b></span>
+              <span className="cl-stat"><i className="cl-dot cl-dot-overdue" /> Overdue <b>{stats.overdue}</b></span>
+            </div>
           </div>
         </div>
         <div className="card checklist-template-panel">
@@ -3396,16 +3439,25 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
             <h3>Starter Templates</h3>
           </div>
           <div className="checklist-template-grid">
-            {templates.map(template => (
-              <button key={template.id} className="template-btn" onClick={() => applyTemplate(template.id)} disabled={saving}>
-                <FileText size={16} />
-                <span>
-                  <strong>{template.name}</strong>
-                  <small>{template.description}</small>
-                </span>
-                <span className="badge badge-slate">{template.taskCount}</span>
-              </button>
-            ))}
+            {templates.map(template => {
+              const applied = appliedTemplateIds.has(template.id);
+              return (
+                <button
+                  key={template.id}
+                  className={`template-btn ${applied ? 'is-applied' : ''}`}
+                  onClick={() => applyTemplate(template.id)}
+                  disabled={saving}
+                  title={applied ? 'Already added — click to re-add any removed tasks' : 'Add these tasks to your checklist'}
+                >
+                  {applied ? <CheckCircle size={16} /> : <FileText size={16} />}
+                  <span>
+                    <strong>{template.name}</strong>
+                    <small>{template.description}</small>
+                  </span>
+                  <span className={`badge ${applied ? 'badge-green' : 'badge-slate'}`}>{applied ? 'Added' : template.taskCount}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -3444,7 +3496,16 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
             <div className="card checklist-group-card" key={section.group}>
               <div className="checklist-group-heading">
                 <span><CalendarDays size={16} /> {section.group}</span>
-                <span className="badge badge-slate">{section.tasks.filter(task => task.isCompleted).length}/{section.tasks.length}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <span className="badge badge-slate">{section.tasks.filter(task => task.isCompleted).length}/{section.tasks.length}</span>
+                  <button
+                    className="table-action-btn"
+                    title={`Delete all tasks in ${section.group}`}
+                    onClick={() => void handleDeleteGroup(section.group, section.tasks)}
+                  >
+                    <Trash2 size={14} /> Delete all
+                  </button>
+                </span>
               </div>
               <div className="checklist-task-list">
                 {section.tasks.map(task => {
@@ -3729,16 +3790,22 @@ function VendorsModule({ wedding, setWedding }: any) {
 /* ════════════════════════════════════════
    MUSIC MODULE
 ════════════════════════════════════════ */
+const DEFAULT_MUSIC_URL = '/audio/default.mp3';
+
 function MusicModule({ wedding, setWedding }: any) {
   const [form, setForm] = useState({
     enabled: wedding.music?.enabled !== false && wedding.sections?.music !== false,
-    track: wedding.music?.track || '',
     sourceUrl: wedding.music?.sourceUrl || '',
     muteDefault: wedding.music?.muteDefault !== false,
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const usingDefault = !form.sourceUrl;
+  const activeUrl = form.sourceUrl || DEFAULT_MUSIC_URL;
 
   async function saveMusic(e: React.FormEvent) {
     e.preventDefault();
@@ -3756,14 +3823,43 @@ function MusicModule({ wedding, setWedding }: any) {
     }
   }
 
-  function previewTrack() {
-    if (!form.sourceUrl) {
-      setMessage('Add an MP3 URL to preview. The invitation will still show the selected track name.');
-      return;
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isMp3 = /audio\/(mpeg|mp3)/.test(file.type) || file.name.toLowerCase().endsWith('.mp3');
+    if (!isMp3) { setError('Please choose an MP3 file.'); return; }
+    if (file.size > 10 * 1024 * 1024) { setError('Audio must be under 10 MB.'); return; }
+
+    setUploading(true);
+    setError('');
+    setMessage('');
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error('Could not read the file.'));
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch(`/api/weddings/${wedding.id}/music`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ audioBase64: dataUrl, fileName: file.name }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Upload failed.');
+      setForm(f => ({ ...f, sourceUrl: data.url }));
+      setMessage('MP3 uploaded — click “Save Music” to apply it.');
+    } catch (err: any) {
+      setError(err?.message || 'Upload failed.');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
     }
-    const audio = new Audio(form.sourceUrl);
-    audio.volume = 0.45;
-    audio.play().catch(() => setError('Browser blocked playback. Click preview again or check the audio URL.'));
+  }
+
+  function removeCustomTrack() {
+    setForm(f => ({ ...f, sourceUrl: '' }));
+    setMessage('Reverted to the default track — click “Save Music” to apply.');
   }
 
   return (
@@ -3781,21 +3877,41 @@ function MusicModule({ wedding, setWedding }: any) {
           <span><strong>Enable music section</strong><small>Show the floating music control on the invitation.</small></span>
           <input type="checkbox" checked={form.enabled} onChange={e => setForm(f => ({ ...f, enabled: e.target.checked }))} />
         </label>
-        <label className="form-field">
-          <span>Track title</span>
-          <input className="form-input" value={form.track} onChange={e => setForm(f => ({ ...f, track: e.target.value }))} placeholder="A Thousand Years" />
-        </label>
-        <label className="form-field">
-          <span>MP3 URL</span>
-          <input className="form-input" value={form.sourceUrl} onChange={e => setForm(f => ({ ...f, sourceUrl: e.target.value }))} placeholder="https://cdn.example.com/song.mp3" />
-        </label>
+
+        <div className="form-field">
+          <span>Music file</span>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <button type="button" className="btn btn-outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
+              <Upload size={15} /> {uploading ? 'Uploading…' : 'Upload MP3'}
+            </button>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontSize: 13, fontWeight: 600,
+              color: usingDefault ? 'var(--adm-text-secondary)' : '#16a34a',
+            }}>
+              {usingDefault ? '♪ Using default track' : '✓ Custom track uploaded'}
+            </span>
+            {!usingDefault && (
+              <button type="button" className="table-action-btn" onClick={removeCustomTrack}>
+                <Trash2 size={14} /> Remove
+              </button>
+            )}
+            <input ref={fileRef} type="file" accept="audio/mpeg,.mp3" hidden onChange={handleUpload} />
+          </div>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <audio controls src={activeUrl} style={{ width: '100%', marginTop: 12 }} />
+          <small style={{ color: 'var(--adm-text-secondary)', fontSize: 12 }}>
+            MP3 only, up to 10 MB. Leave it on the default track to use the built-in music.
+          </small>
+        </div>
+
         <label className="toggle-row">
           <span><strong>Mute by default</strong><small>Recommended so guests choose when audio starts.</small></span>
           <input type="checkbox" checked={form.muteDefault} onChange={e => setForm(f => ({ ...f, muteDefault: e.target.checked }))} />
         </label>
+
         <div className="module-actions">
-          <button className="btn btn-outline" type="button" onClick={previewTrack}><Music size={15} /> Preview</button>
-          <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Music'}</button>
+          <button className="btn btn-primary" type="submit" disabled={saving || uploading}>{saving ? 'Saving...' : 'Save Music'}</button>
         </div>
       </form>
     </section>
@@ -3958,12 +4074,83 @@ function AccountModule({ wedding, onNavigate }: any) {
 /* ════════════════════════════════════════
    RSVPs MODULE
 ════════════════════════════════════════ */
-function RsvpsModule({ guests, rsvps, onNavigate }: any) {
+function RsvpsModule({ wedding, guests, setGuests, rsvps, setRsvps, onNavigate }: any) {
+  const [contactingGuestId, setContactingGuestId] = useState<string | null>(null);
+  const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
+  const [sentGuestId, setSentGuestId] = useState<string | null>(null);
+  const [loadingRsvps, setLoadingRsvps] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const confirmed = rsvps.filter((r: any) => r.attending === true).length;
   const declined  = rsvps.filter((r: any) => r.attending === false).length;
   const pending   = guests.length - rsvps.length;
   const attending = rsvps.filter((r: any) => r.attending).reduce((acc: number, r: any) => acc + (r.memberCount || 1), 0);
   const withLiquor = rsvps.filter((r: any) => r.liquorPreference === 'Yes').length;
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadLatestRsvps() {
+      if (!wedding?.id) return;
+      setLoadingRsvps(true);
+      setLoadError('');
+      try {
+        const res = await fetch(`/api/rsvps?weddingId=${encodeURIComponent(wedding.id)}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Unable to load RSVP responses.');
+        if (mounted) setRsvps(Array.isArray(data) ? data : []);
+      } catch (err: any) {
+        if (mounted) setLoadError(err?.message || 'Unable to load RSVP responses.');
+      } finally {
+        if (mounted) setLoadingRsvps(false);
+      }
+    }
+    void loadLatestRsvps();
+    return () => { mounted = false; };
+  }, [wedding?.id, setRsvps]);
+
+  async function markInviteSent(guestId: string) {
+    const res = await fetch(`/api/guests/${guestId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inviteSentAt: new Date().toISOString() }),
+    });
+    if (!res.ok) throw new Error('Unable to update invite status.');
+    const updated = await res.json();
+    setGuests((prev: any[]) => prev.map((guest: any) => guest.id === guestId ? { ...guest, ...updated } : guest));
+  }
+
+  async function contactGuest(guest: any) {
+    const inviteUrl = `${window.location.origin}/invitation/${wedding?.slug}${guest.token ? `?token=${guest.token}` : ''}`;
+    const title = wedding?.weddingTitle || `${wedding?.brideName || ''} & ${wedding?.groomName || ''}`.trim() || 'our wedding';
+    const message = `Hi ${guest.name}, please RSVP for ${title} here: ${inviteUrl}`;
+
+    setContactingGuestId(guest.id);
+    try {
+      if (guest.whatsapp) {
+        window.open(`https://wa.me/${String(guest.whatsapp).replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+      } else {
+        await navigator.clipboard.writeText(inviteUrl);
+      }
+      await markInviteSent(guest.id);
+      setSentGuestId(guest.id);
+      window.setTimeout(() => setSentGuestId(null), 2000);
+    } catch (err: any) {
+      alert(err?.message || 'Unable to send RSVP link.');
+    } finally {
+      setContactingGuestId(null);
+    }
+  }
+
+  async function copyInviteLink(guest: any) {
+    const inviteUrl = `${window.location.origin}/invitation/${wedding?.slug}${guest.token ? `?token=${guest.token}` : ''}`;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      await markInviteSent(guest.id);
+      setCopiedGuestId(guest.id);
+      window.setTimeout(() => setCopiedGuestId(null), 2000);
+    } catch (err: any) {
+      alert(err?.message || 'Unable to copy RSVP link.');
+    }
+  }
 
   return (
     <section className="module">
@@ -3973,7 +4160,27 @@ function RsvpsModule({ guests, rsvps, onNavigate }: any) {
           <h1 className="module-title">RSVP Management</h1>
           <p className="module-subtitle">Track and manage guest responses and preferences.</p>
         </div>
+        <button
+          className="btn btn-outline"
+          onClick={() => {
+            if (!wedding?.id) return;
+            setLoadingRsvps(true);
+            setLoadError('');
+            fetch(`/api/rsvps?weddingId=${encodeURIComponent(wedding.id)}`, { cache: 'no-store' })
+              .then(async res => {
+                const data = await res.json();
+                if (!res.ok) throw new Error(data?.error || 'Unable to refresh RSVP responses.');
+                setRsvps(Array.isArray(data) ? data : []);
+              })
+              .catch((err: any) => setLoadError(err?.message || 'Unable to refresh RSVP responses.'))
+              .finally(() => setLoadingRsvps(false));
+          }}
+          disabled={loadingRsvps}
+        >
+          <RefreshCw size={16} /> {loadingRsvps ? 'Refreshing...' : 'Refresh'}
+        </button>
       </div>
+      {loadError && <p style={{ margin: '0 0 1rem', color: 'var(--adm-danger)', fontWeight: 600 }}>{loadError}</p>}
 
       {/* Summary chips */}
       <div className="rsvp-summary-bar">
@@ -4043,8 +4250,24 @@ function RsvpsModule({ guests, rsvps, onNavigate }: any) {
                       <td>{rsvp?.notes || '—'}</td>
                       <td>
                         <div className="table-actions">
-                          <button className="table-action-btn" title="Contact guest">
-                            <Send size={14} />
+                          <button
+                            className="table-action-btn"
+                            title={copiedGuestId === g.id ? 'Copied!' : 'Copy invite link'}
+                            aria-label={`Copy invite link for ${g.name}`}
+                            onClick={() => void copyInviteLink(g)}
+                            style={copiedGuestId === g.id ? { color: '#16a34a', borderColor: '#86efac', background: '#f0fdf4' } : undefined}
+                          >
+                            {copiedGuestId === g.id ? <Check size={14} /> : <Copy size={14} />}
+                          </button>
+                          <button
+                            className="table-action-btn"
+                            title={g.whatsapp ? 'Send RSVP link via WhatsApp' : 'Copy RSVP link'}
+                            aria-label={`${g.whatsapp ? 'Send RSVP link to' : 'Copy RSVP link for'} ${g.name}`}
+                            disabled={contactingGuestId === g.id}
+                            onClick={() => void contactGuest(g)}
+                            style={sentGuestId === g.id ? { color: '#16a34a', borderColor: '#86efac', background: '#f0fdf4' } : undefined}
+                          >
+                            {sentGuestId === g.id ? <Check size={14} /> : <Send size={14} />}
                           </button>
                         </div>
                       </td>

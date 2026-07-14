@@ -73,6 +73,16 @@ export default function RegisterPage() {
   const [budgetDeciding, setBudgetDeciding] = useState(false);
   const [budgetAmount, setBudgetAmount] = useState(2500000);
 
+  function handleNameChange(field: 'firstName' | 'lastName' | 'groomName' | 'brideName', raw: string) {
+    // Strip anything that isn't an English letter
+    const letters = raw.replace(/[^a-zA-Z]/g, '');
+    // Auto-capitalise the first character
+    const value = letters.length > 0
+      ? letters[0].toUpperCase() + letters.slice(1)
+      : '';
+    update({ [field]: value });
+  }
+
   function update(up: Partial<FormState>) {
     setForm((s) => ({ ...s, ...up }));
     const keys = Object.keys(up) as (keyof FormState)[];
@@ -87,7 +97,9 @@ export default function RegisterPage() {
     const e: FieldErrors = {};
     if (s === 1) {
       if (!form.firstName?.trim()) e.firstName = 'First name is required.';
+      else if (!/^[A-Z][a-zA-Z]*$/.test(form.firstName.trim())) e.firstName = 'English letters only, starting with a capital letter.';
       if (!form.lastName?.trim()) e.lastName = 'Last name is required.';
+      else if (!/^[A-Z][a-zA-Z]*$/.test(form.lastName.trim())) e.lastName = 'English letters only, starting with a capital letter.';
       if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
         e.email = 'Valid email is required.';
       }
@@ -106,7 +118,9 @@ export default function RegisterPage() {
     }
     if (s === 2) {
       if (!form.groomName?.trim()) e.groomName = "Groom's first name is required.";
+      else if (!/^[A-Z][a-zA-Z]*$/.test(form.groomName.trim())) e.groomName = "English letters only, starting with a capital letter.";
       if (!form.brideName?.trim()) e.brideName = "Bride's first name is required.";
+      else if (!/^[A-Z][a-zA-Z]*$/.test(form.brideName.trim())) e.brideName = "English letters only, starting with a capital letter.";
       if (!dateDeciding && !form.date) e.date = 'Please select a wedding date or check "Still deciding".';
       else if (!dateDeciding && form.date && !isValidWeddingDate(form.date)) e.date = weddingDateMessage;
     }
@@ -273,7 +287,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.firstName ? styles.error : ''}`}
                       placeholder="Enter your first name"
                       value={form.firstName || ''}
-                      onChange={(e) => update({ firstName: e.target.value })}
+                      onChange={(e) => handleNameChange('firstName', e.target.value)}
                     />
                   </div>
                   {errors.firstName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.firstName}</div>}
@@ -287,7 +301,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.lastName ? styles.error : ''}`}
                       placeholder="Enter your last name"
                       value={form.lastName || ''}
-                      onChange={(e) => update({ lastName: e.target.value })}
+                      onChange={(e) => handleNameChange('lastName', e.target.value)}
                     />
                   </div>
                   {errors.lastName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.lastName}</div>}
@@ -399,7 +413,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.groomName ? styles.error : ''}`}
                       placeholder="Enter groom's first name"
                       value={form.groomName || ''}
-                      onChange={(e) => update({ groomName: e.target.value })}
+                      onChange={(e) => handleNameChange('groomName', e.target.value)}
                     />
                   </div>
                   {errors.groomName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.groomName}</div>}
@@ -413,7 +427,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.brideName ? styles.error : ''}`}
                       placeholder="Enter bride's first name"
                       value={form.brideName || ''}
-                      onChange={(e) => update({ brideName: e.target.value })}
+                      onChange={(e) => handleNameChange('brideName', e.target.value)}
                     />
                   </div>
                   {errors.brideName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.brideName}</div>}

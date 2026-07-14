@@ -29,6 +29,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [simulateLoading, setSimulateLoading] = useState(false);
   const [simulateEmpty, setSimulateEmpty] = useState(false);
+  const [platformSettings, setPlatformSettings] = useState(initialSettings || {});
   
   const handleNavClick = (mod: string) => {
     setActiveModule(mod);
@@ -120,12 +121,12 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
 
         <main className={cn("page-content")}>
           {activeModule === 'dashboard' && <DashboardModule couples={simulateEmpty ? [] : initialCouples} vendors={simulateEmpty ? [] : initialVendors} weddings={simulateEmpty ? [] : initialWeddings} loading={simulateLoading} />}
-          {activeModule === 'couples' && <CouplesModule couples={initialCouples} />}
+          {activeModule === 'couples' && <CouplesModule couples={initialCouples} platformSettings={platformSettings} />}
           {activeModule === 'vendors' && <VendorsModule vendors={initialVendors} />}
-          {activeModule === 'templates' && <TemplatesModule initialSettings={initialSettings} />}
+          {activeModule === 'templates' && <TemplatesModule initialSettings={platformSettings} />}
           {activeModule === 'plans' && <PlansModule initialPlans={initialPlans} />}
           {activeModule === 'cleanup' && <CleanupModule />}
-          {activeModule === 'settings' && <SettingsModule initialSettings={initialSettings} />}
+          {activeModule === 'settings' && <SettingsModule initialSettings={platformSettings} onSaved={setPlatformSettings} />}
           {activeModule === 'logs' && <LogsModule />}
           {activeModule === 'analytics' && <AnalyticsModule />}
         </main>
@@ -232,7 +233,7 @@ function KpiCard({ color, icon, value, label, trend, up, down, loading }: any) {
   );
 }
 
-function CouplesModule({ couples: initialCouples }: any) {
+function CouplesModule({ couples: initialCouples, platformSettings }: any) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [couples, setCouples] = useState(initialCouples || []);
@@ -364,7 +365,13 @@ function CouplesModule({ couples: initialCouples }: any) {
         </div>
       </div>
 
-      <CoupleDetailModal open={detailOpen} couple={selected} onClose={() => setDetailOpen(false)} onSaved={handleSaved} />
+      <CoupleDetailModal
+        open={detailOpen}
+        couple={selected}
+        defaultTrialDays={platformSettings?.trial?.defaultTrialDays || 14}
+        onClose={() => setDetailOpen(false)}
+        onSaved={handleSaved}
+      />
       <ConfirmDialog open={confirmOpen} title="Delete Couple" message="Are you sure you want to permanently delete this couple?" onConfirm={doDelete} onCancel={() => setConfirmOpen(false)} />
     </section>
   );
@@ -629,7 +636,7 @@ function PlansModule({ initialPlans }: any) {
   );
 }
 
-function SettingsModule({ initialSettings }: any) {
+function SettingsModule({ initialSettings, onSaved }: any) {
   const [settings, setSettings] = useState(initialSettings || {});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -663,6 +670,7 @@ function SettingsModule({ initialSettings }: any) {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to save settings');
       setSettings(data.data.settings);
+      onSaved?.(data.data.settings);
       setMessage('Settings saved.');
     } catch (e: any) {
       setMessage(e.message || 'Failed to save settings');
@@ -707,6 +715,23 @@ function SettingsModule({ initialSettings }: any) {
             <input type="checkbox" checked={Boolean(settings.publicSite?.maintenanceMode)} onChange={e => updateSection('publicSite', 'maintenanceMode', e.target.checked)} />
             Maintenance Mode
           </label>
+        </SettingsCard>
+
+        <SettingsCard title="Trial Settings">
+          <label style={{ display: 'grid', gap: 6, color: 'var(--adm-text-secondary)', fontSize: 13 }}>
+            Default trial days for new couples
+            <input
+              type="number"
+              min={1}
+              max={365}
+              className={cn("input")}
+              value={settings.trial?.defaultTrialDays || 14}
+              onChange={e => updateSection('trial', 'defaultTrialDays', Number(e.target.value))}
+            />
+          </label>
+          <p style={{ margin: 0, color: 'var(--adm-text-muted)', fontSize: 12, lineHeight: 1.5 }}>
+            New couple accounts receive this trial length automatically. Existing couples can still be adjusted one by one from Couple Management.
+          </p>
         </SettingsCard>
 
         <SettingsCard title="CMS Blocks">
