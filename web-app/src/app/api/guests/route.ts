@@ -53,7 +53,9 @@ export async function POST(req: Request) {
         ? adminCouple.guestLimit
         : entitlements.maxGuests;
       const existing = guestSumMembers(await listGuests(String(body.weddingId)));
-      const incoming = body?.type === 'Family' ? 4 : (typeof body?.maxMembers === 'number' ? body.maxMembers : 1);
+      const incoming = Number.isFinite(Number(body?.maxMembers)) && Number(body?.maxMembers) > 0
+        ? Number(body.maxMembers)
+        : (body?.type === 'Family' ? 4 : 1);
       if (existing + incoming > maxGuests) {
         return NextResponse.json({
           ok: false,

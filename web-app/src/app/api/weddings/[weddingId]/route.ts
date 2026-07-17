@@ -4,6 +4,10 @@ import { requireWeddingAccess } from '@/lib/rbac';
 import { getAdminSettings } from '@/lib/adminSettings';
 import { getAdminCouples } from '@/lib/adminCouples';
 
+function toTitleCase(s: string) {
+  return s.trim().replace(/\S+/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+}
+
 interface WeddingRow {
   id: string;
   userId: string;
@@ -29,6 +33,8 @@ interface SiteSettingsRow {
   id: string;
   weddingId: string;
   musicSettings: string | null;
+  sectionToggles: string | null;
+  colors: string | null;
 }
 
 /** Supabase row → the flat shape the dashboard expects. */
@@ -86,11 +92,11 @@ async function loadWedding(weddingId: string) {
 }
 
 async function loadSiteSettings(weddingId: string) {
-  const rows = await dbSelect<SiteSettingsRow>('SiteSettings', { weddingId: `eq.${weddingId}` }, 'id,weddingId,musicSettings', 1);
+  const rows = await dbSelect<SiteSettingsRow>('SiteSettings', { weddingId: `eq.${weddingId}` }, 'id,weddingId,musicSettings,sectionToggles,colors', 1);
   return rows[0] || null;
 }
 
-function parseMusicSettings(raw: string | null | undefined) {
+function parseJsonColumn(raw: string | null | undefined) {
   if (!raw) return null;
   try { return JSON.parse(raw) as Record<string, unknown>; } catch { return null; }
 }
@@ -103,8 +109,15 @@ export async function GET(_: Request, { params }: { params: Promise<{ weddingId:
   if (!wedding) {
     return NextResponse.json({ error: 'Wedding not found' }, { status: 404 });
   }
-  const music = parseMusicSettings(siteSettings?.musicSettings);
-  return NextResponse.json({ ...withTrialMetadata(toDashboardWedding(wedding)), ...(music ? { music } : {}) });
+  const music = parseJsonColumn(siteSettings?.musicSettings);
+  const sections = parseJsonColumn(siteSettings?.sectionToggles);
+  const theme = parseJsonColumn(siteSettings?.colors);
+  return NextResponse.json({
+    ...withTrialMetadata(toDashboardWedding(wedding)),
+    ...(music ? { music } : {}),
+    ...(sections ? { sections } : {}),
+    ...(theme ? { theme } : {}),
+  });
 }
 
 function validateWeddingPayload(payload: Record<string, unknown>): string | null {
@@ -194,8 +207,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ we
   }
 
   const cols: Record<string, unknown> = { updatedAt: new Date() };
-  if (payload.brideName !== undefined) cols.brideFirstName = String(payload.brideName || '').trim();
-  if (payload.groomName !== undefined) cols.groomFirstName = String(payload.groomName || '').trim();
+  if (payload.brideName !== undefined) cols.brideFirstName = toTitleCase(String(payload.brideName || ''));
+  if (payload.groomName !== undefined) cols.groomFirstName = toTitleCase(String(payload.groomName || ''));
   if (payload.date !== undefined) cols.eventDate = payload.date ? new Date(`${String(payload.date).slice(0, 10)}T00:00:00.000Z`) : null;
   if (payload.time !== undefined) cols.eventTime = payload.time ? String(payload.time) : null;
   if (payload.venueName !== undefined) cols.venueName = payload.venueName ? String(payload.venueName).trim() : null;
@@ -212,14 +225,27 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ we
   await dbUpdate('Wedding', { id: `eq.${weddingId}` }, cols);
 
   let savedMusic: Record<string, unknown> | null = null;
-  if (payload.music !== undefined) {
+  let savedSections: Record<string, unknown> | null = null;
+  let savedTheme: Record<string, unknown> | null = null;
+  if (payload.music !== undefined || payload.sections !== undefined || payload.theme !== undefined) {
     const siteSettings = await loadSiteSettings(weddingId);
-    await dbUpsert<SiteSettingsRow>('SiteSettings', {
+    const settingsCols: Record<string, unknown> = {
       ...(siteSettings ? { id: siteSettings.id } : {}),
       weddingId,
-      musicSettings: JSON.stringify(payload.music),
-    }, 'weddingId');
-    savedMusic = payload.music as Record<string, unknown>;
+    };
+    if (payload.music !== undefined) {
+      settingsCols.musicSettings = JSON.stringify(payload.music);
+      savedMusic = payload.music as Record<string, unknown>;
+    }
+    if (payload.sections !== undefined) {
+      settingsCols.sectionToggles = JSON.stringify(payload.sections);
+      savedSections = payload.sections as Record<string, unknown>;
+    }
+    if (payload.theme !== undefined) {
+      settingsCols.colors = JSON.stringify(payload.theme);
+      savedTheme = payload.theme as Record<string, unknown>;
+    }
+    await dbUpsert<SiteSettingsRow>('SiteSettings', settingsCols, 'weddingId');
   }
 
   const updated = await loadWedding(weddingId);
@@ -227,5 +253,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ we
     ...payload,
     ...withTrialMetadata(toDashboardWedding(updated as WeddingRow)),
     ...(savedMusic ? { music: savedMusic } : {}),
+    ...(savedSections ? { sections: savedSections } : {}),
+    ...(savedTheme ? { theme: savedTheme } : {}),
   });
 }

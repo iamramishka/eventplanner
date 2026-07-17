@@ -28,6 +28,7 @@ export interface GuestRow {
   maxAllowedMembers: number | null;
   note: string | null;
   inviteToken: string | null;
+  inviteSentAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -44,6 +45,7 @@ export interface DashboardGuest {
   notes: string;
   token: string;
   rsvpStatus: string;
+  inviteSentAt: string | null;
 }
 
 function toDashboardGuest(row: GuestRow, rsvpStatus = 'Pending'): DashboardGuest {
@@ -61,19 +63,25 @@ function toDashboardGuest(row: GuestRow, rsvpStatus = 'Pending'): DashboardGuest
     notes: row.note || '',
     token: row.inviteToken || '',
     rsvpStatus,
+    inviteSentAt: row.inviteSentAt || null,
   };
+}
+
+function toTitleCase(s: string) {
+  return s.trim().replace(/\S+/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
 }
 
 /** Map an incoming dashboard-shaped guest payload to Supabase columns. */
 function toGuestColumns(data: Record<string, unknown>) {
   const out: Record<string, unknown> = {};
-  if (data.name !== undefined) out.name = String(data.name || '');
+  if (data.name !== undefined) out.name = toTitleCase(String(data.name || ''));
   if (data.side !== undefined) out.side = String(data.side || 'Guest');
   if (data.whatsapp !== undefined) out.whatsappNumber = String(data.whatsapp || '');
   if (data.email !== undefined) out.email = String(data.email || '');
   if (data.type !== undefined) out.invitationType = String(data.type || 'Individual');
   if (data.maxMembers !== undefined) out.maxAllowedMembers = Number(data.maxMembers) || 1;
   if (data.notes !== undefined) out.note = String(data.notes || '');
+  if (data.inviteSentAt !== undefined) out.inviteSentAt = data.inviteSentAt || null;
   return out;
 }
 
@@ -838,8 +846,10 @@ async function assignmentsByTable(tableIds: string[]): Promise<Map<string, strin
 }
 
 /**
- * Seats each guest occupies at a table: confirmed RSVP attending count once they've
- * replied, otherwise their max allowed members (reserve space). Minimum 1.
+ * Seats each guest occupies at a table:
+ *  - attending → their confirmed party count (min 1)
+ *  - declined (replied, not attending) → 0 chairs
+ *  - no reply yet → reserve their max allowed members (min 1)
  */
 async function seatCountsForGuests(guestIds: string[]): Promise<Map<string, number>> {
   const map = new Map<string, number>();
@@ -851,9 +861,14 @@ async function seatCountsForGuests(guestIds: string[]): Promise<Map<string, numb
   const rsvpByGuest = new Map(rsvps.map((r) => [r.guestId, r]));
   for (const g of guests) {
     const rsvp = rsvpByGuest.get(g.id);
-    const seats = rsvp && (rsvp.status || '').toLowerCase() === 'attending'
-      ? Math.max(1, Number(rsvp.attendingCount) || 1)
-      : Math.max(1, Number(g.maxAllowedMembers) || 1);
+    let seats: number;
+    if (rsvp) {
+      seats = (rsvp.status || '').toLowerCase() === 'attending'
+        ? Math.max(1, Number(rsvp.attendingCount) || 1)
+        : 0; // declined — occupies no chairs
+    } else {
+      seats = Math.max(1, Number(g.maxAllowedMembers) || 1);
+    }
     map.set(g.id, seats);
   }
   return map;
@@ -926,8 +941,8 @@ export async function assignGuestToTable(weddingId: string, tableId: string, gue
   // Seat-based capacity: a family occupies as many chairs as its members.
   const othersAtTarget = target.assignedGuestIds.filter((id) => id !== guestId);
   const seatMap = await seatCountsForGuests([...othersAtTarget, guestId]);
-  const guestSeats = seatMap.get(guestId) || 1;
-  const usedSeats = othersAtTarget.reduce((sum, id) => sum + (seatMap.get(id) || 1), 0);
+  const guestSeats = seatMap.get(guestId) ?? 1;
+  const usedSeats = othersAtTarget.reduce((sum, id) => sum + (seatMap.get(id) ?? 1), 0);
   // Skip the capacity check when the guest is merely being re-saved onto the same table.
   if (source?.id !== tableId && usedSeats + guestSeats > (target.capacity || 0)) {
     throw new Error('table is full');
@@ -966,6 +981,9 @@ export async function restoreTableAssignmentSnapshot(weddingId: string, snapshot
   if (!Array.isArray(snapshot)) throw new Error('valid snapshot required');
   const tables = await listTables(weddingId);
   const tableIds = new Set(tables.map((t) => t.id));
+  // Recompute real seat counts so restored family assignments keep the right chair count.
+  const allGuestIds = snapshot.flatMap((entry) => entry.assignedGuestIds || []);
+  const seatMap = await seatCountsForGuests(allGuestIds);
   // Clear existing assignments for this wedding's tables, then re-insert from snapshot.
   for (const t of tables) {
     await dbDelete('TableAssignment', { tableId: `eq.${t.id}` }).catch(() => {});
@@ -973,7 +991,7 @@ export async function restoreTableAssignmentSnapshot(weddingId: string, snapshot
   for (const entry of snapshot) {
     if (!tableIds.has(entry.tableId)) continue;
     for (const guestId of entry.assignedGuestIds || []) {
-      await dbInsert('TableAssignment', { id: crypto.randomUUID(), tableId: entry.tableId, guestId, assignedCount: 1 });
+      await dbInsert('TableAssignment', { id: crypto.randomUUID(), tableId: entry.tableId, guestId, assignedCount: seatMap.get(guestId) ?? 1 });
     }
   }
   return listTables(weddingId);

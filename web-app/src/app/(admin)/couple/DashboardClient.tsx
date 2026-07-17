@@ -18,13 +18,13 @@ import {
 } from 'lucide-react';
 import { AGENDA_ICON_SET, AgendaIcon } from '@/components/agenda-icons';
 import './dashboard.css';
-import InvitationEditorModule, { InvitationPreview } from './InvitationEditorModule';
 import TablesModule from './TablesModule';
 import CoupleAnalyticsModule from './CoupleAnalyticsModule';
 import {
   FONT_PRESETS,
   InvitationTheme,
   PALETTE_PRESETS,
+  DEFAULT_INVITATION_SECTIONS,
   normalizeInvitationTheme,
 } from '@/lib/invitation-content';
 
@@ -141,7 +141,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'guests',       icon: Users,            label: 'Guests' },
   { id: 'rsvps',        icon: CheckSquare,      label: 'RSVPs' },
   { id: 'analytics',   icon: BarChart2,         label: 'Analytics' },
-  { id: 'invitation',   icon: Edit3,            label: 'Invitation Editor' },
   { id: 'theme',        icon: Palette,          label: 'Theme & Design' },
   { id: 'gallery',      icon: Grid3x3,          label: 'Gallery' },
   { id: 'music',        icon: Music,            label: 'Music' },
@@ -157,6 +156,21 @@ const NAV_ITEMS: NavItem[] = [
 /* ─── Helpers ─── */
 function getInitials(name: string) {
   return name?.split(' ').slice(0, 2).map((n: string) => n[0]?.toUpperCase()).join('') || 'PK';
+}
+
+function formatRelativeTime(iso?: string): string {
+  if (!iso) return '';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '';
+  const diffSec = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (diffSec < 60) return 'Just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} hour${diffHr !== 1 ? 's' : ''} ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 30) return `${diffDay} day${diffDay !== 1 ? 's' : ''} ago`;
+  return new Date(iso).toLocaleDateString();
 }
 
 function getDaysUntil(dateStr: string): number {
@@ -461,7 +475,6 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
         <div className="page-content">
           {activeModule === 'overview'  && <OverviewModule  wedding={wedding} guests={guests} rsvps={rsvps} agenda={agenda} budget={budget} checklist={checklist} onNavigate={handleNavigate} />}
           {activeModule === 'settings'  && <SettingsModule  wedding={wedding} setWedding={setWedding} />}
-          {activeModule === 'invitation' && <InvitationEditorModule wedding={wedding} setWedding={setWedding} />}
           {activeModule === 'theme'      && <ThemeDesignModule wedding={wedding} setWedding={setWedding} />}
           {activeModule === 'gallery'    && <GalleryModule wedding={wedding} />}
           {activeModule === 'music'      && <MusicModule wedding={wedding} setWedding={setWedding} />}
@@ -508,22 +521,24 @@ function OverviewModule({ wedding, guests, rsvps, agenda, budget, checklist, onN
   const safeBudgetTotal = Math.max(1, budgetTotal);
   const agendaPreview = [...(agenda || [])].sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0)).slice(0, 4);
 
-  /* Recent activity from rsvps */
-  const recentActivity = rsvps.slice(-4).reverse().map((r: any) => {
-    const g = guests.find((g: any) => g.id === r.guestId);
-    return {
-      name: g?.name || 'Guest',
-      status: r.attending ? 'RSVP Confirmed' : 'RSVP Declined',
-      detail: r.attending ? `${r.memberCount || 1} member${(r.memberCount || 1) !== 1 ? 's' : ''}` : '',
-      type: r.attending ? 'confirmed' : 'declined',
-      time: '2 hours ago',
-    };
-  });
+  /* Recent activity from rsvps — sorted by actual submission time, most recent first */
+  const recentActivity = [...rsvps]
+    .sort((a: any, b: any) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+    .slice(0, 4)
+    .map((r: any) => {
+      const g = guests.find((g: any) => g.id === r.guestId);
+      return {
+        name: g?.name || 'Guest',
+        status: r.attending ? 'RSVP Confirmed' : 'RSVP Declined',
+        detail: r.attending ? `${r.memberCount || 1} member${(r.memberCount || 1) !== 1 ? 's' : ''}` : '',
+        type: r.attending ? 'confirmed' : 'declined',
+        time: formatRelativeTime(r.updatedAt),
+      };
+    });
 
   const quickActions = [
     { icon: UserPlus,     label: 'Add Guest',       action: 'guests' },
     { icon: Send,         label: 'Send Invitations', action: 'guests' },
-    { icon: Edit3,        label: 'Edit Invitation',  action: 'invitation' },
     { icon: Calendar,     label: 'Add Agenda',       action: 'agenda' },
     { icon: DollarSign,   label: 'Add Expense',      action: 'budget' },
     { icon: Home,         label: 'Create Table',     action: 'tables' },
@@ -1045,38 +1060,105 @@ function EmptyStatePanel({ icon, title, description, cta, onCta }: any) {
 /* ════════════════════════════════════════
    THEME & DESIGN MODULE
 ════════════════════════════════════════ */
+const SECTION_TOGGLE_ORDER = [
+  ['loadingScreen', 'Loading Screen'],
+  ['envelope',      'Envelope'],
+  ['hero',          'Hero'],
+  ['message',       'Message'],
+  ['details',       'Details'],
+  ['countdown',     'Countdown'],
+  ['agenda',        'Agenda'],
+  ['gallery',       'Gallery'],
+  ['rsvp',          'RSVP'],
+  ['findTable',     'Find Your Table'],
+  ['specialMessage','Special Message'],
+] as const;
+
 function ThemeDesignModule({ wedding, setWedding }: any) {
   const [theme, setTheme] = useState<InvitationTheme>(() => normalizeInvitationTheme(wedding.theme));
+  const [sections, setSections] = useState<Record<string, boolean>>(() => ({ ...DEFAULT_INVITATION_SECTIONS, ...(wedding.sections || {}) }));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [previewKey, setPreviewKey] = useState(0);
+  const sectionSaveTimer = useRef<number | null>(null);
+  const themeSaveTimer = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (sectionSaveTimer.current) window.clearTimeout(sectionSaveTimer.current);
+    if (themeSaveTimer.current) window.clearTimeout(themeSaveTimer.current);
+  }, []);
+
+  const saveTheme = async (next: InvitationTheme) => {
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/weddings/${wedding.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: next }),
+      });
+      if (!res.ok) throw new Error('Failed to save theme');
+      const updated = await res.json();
+      setWedding(updated);
+      setPreviewKey(k => k + 1); // reload the live preview iframe
+    } catch (err: any) {
+      setError(err?.message || 'Unable to save theme changes.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const scheduleThemeSave = (next: InvitationTheme) => {
+    if (themeSaveTimer.current) window.clearTimeout(themeSaveTimer.current);
+    themeSaveTimer.current = window.setTimeout(() => { void saveTheme(next); }, 600);
+  };
 
   const selectPalette = (presetId: string) => {
     const preset = PALETTE_PRESETS.find(item => item.id === presetId);
     if (!preset) return;
-    setTheme(prev => ({
-      ...prev,
-      palettePreset: preset.id,
-      ...preset.colors,
-    }));
+    const next = { ...theme, palettePreset: preset.id, ...preset.colors };
+    setTheme(next);
     setSaved(false);
+    scheduleThemeSave(next);
   };
 
   const selectFont = (presetId: string) => {
     const preset = FONT_PRESETS.find(item => item.id === presetId);
     if (!preset) return;
-    setTheme(prev => ({
-      ...prev,
-      fontPreset: preset.id,
-      headingFont: preset.headingFont,
-      bodyFont: preset.bodyFont,
-    }));
+    const next = { ...theme, fontPreset: preset.id, headingFont: preset.headingFont, bodyFont: preset.bodyFont };
+    setTheme(next);
     setSaved(false);
+    scheduleThemeSave(next);
   };
 
-  const previewWedding = {
-    ...wedding,
-    theme,
+  const saveSections = async (next: Record<string, boolean>) => {
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/weddings/${wedding.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sections: next }),
+      });
+      if (!res.ok) throw new Error('Failed to save section visibility');
+      const updated = await res.json();
+      setWedding(updated);
+      setPreviewKey(k => k + 1); // reload the live preview iframe
+    } catch (err: any) {
+      setError(err?.message || 'Unable to save section changes.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleSection = (key: string) => {
+    const next = { ...sections, [key]: !sections[key] };
+    setSections(next);
+    setSaved(false);
+    // Debounce: rapid toggles batch into a single save + preview reload.
+    if (sectionSaveTimer.current) window.clearTimeout(sectionSaveTimer.current);
+    sectionSaveTimer.current = window.setTimeout(() => { void saveSections(next); }, 600);
   };
 
   const handleSave = async () => {
@@ -1086,12 +1168,13 @@ function ThemeDesignModule({ wedding, setWedding }: any) {
       const res = await fetch(`/api/weddings/${wedding.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme }),
+        body: JSON.stringify({ theme, sections }),
       });
       if (!res.ok) throw new Error('Failed to save theme');
       const updated = await res.json();
       setWedding(updated);
       setSaved(true);
+      setPreviewKey(k => k + 1);
       window.setTimeout(() => setSaved(false), 2500);
     } catch (err: any) {
       setError(err?.message || 'Unable to save theme changes.');
@@ -1186,13 +1269,62 @@ function ThemeDesignModule({ wedding, setWedding }: any) {
               ))}
             </div>
           </div>
+
+          <div className="card settings-card">
+            <div className="settings-section-header">
+              <Eye size={18} style={{ color: 'var(--adm-primary)' }} /><h3>Section Toggles</h3>
+            </div>
+            <p className="module-subtitle" style={{ marginBottom: 16 }}>
+              Show or hide each section. Changes save automatically and the preview refreshes.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+              {SECTION_TOGGLE_ORDER.map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`btn ${sections[key] ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={() => toggleSection(key)}
+                  style={{ justifyContent: 'space-between' }}
+                >
+                  <span>{label}</span>
+                  <span>{sections[key] ? 'On' : 'Off'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="card settings-card" style={{ background: theme.surfaceColor }}>
-          <div className="settings-section-header">
-            <Eye size={18} style={{ color: theme.primaryColor }} /><h3>Live Preview</h3>
+        <div className="card settings-card">
+          <div className="settings-section-header" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <Eye size={18} style={{ color: 'var(--adm-primary)' }} /><h3 style={{ margin: 0 }}>Live Preview</h3>
+            </span>
+            <span style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn btn-outline" style={{ padding: '6px 12px' }} onClick={() => setPreviewKey(k => k + 1)} title="Reload preview">
+                <RefreshCw size={14} /> Reload
+              </button>
+              <button type="button" className="btn btn-outline" style={{ padding: '6px 12px' }} onClick={() => wedding.slug && window.open(`/invitation/${wedding.slug}`, '_blank')} title="Open full page">
+                <ExternalLink size={14} /> Open
+              </button>
+            </span>
           </div>
-          <InvitationPreview wedding={previewWedding} />
+          {wedding.slug ? (
+            <>
+              <p className="module-subtitle" style={{ marginBottom: 12 }}>
+                The actual public invitation page. Click <strong>Save Theme</strong>, then <strong>Reload</strong> to see changes.
+              </p>
+              <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid var(--adm-border-light)', background: '#fff' }}>
+                <iframe
+                  key={previewKey}
+                  src={`/invitation/${wedding.slug}`}
+                  title="Invitation live preview"
+                  style={{ width: '100%', height: 760, border: 'none', display: 'block' }}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="module-subtitle">Set your wedding slug to preview the public invitation page.</p>
+          )}
         </div>
       </div>
     </section>
@@ -2753,16 +2885,14 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
     navigator.clipboard.writeText(link).then(() => {
       setCopiedGuestId(guestId);
       setTimeout(() => setCopiedGuestId(null), 2000);
-      // Mark the invite as sent so status column reflects it
+      const sentAt = new Date().toISOString();
+      // Update local state immediately so badge flips to "Sent" right away
+      setGuests((prev: any[]) => prev.map((g: any) => g.id === guestId ? { ...g, inviteSentAt: sentAt } : g));
+      // Persist to DB (best-effort)
       fetch(`/api/guests/${guestId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteSentAt: new Date().toISOString() }),
-      }).then(async res => {
-        if (res.ok) {
-          const updated = await res.json();
-          setGuests((prev: any[]) => prev.map((g: any) => g.id === guestId ? { ...g, ...updated } : g));
-        }
+        body: JSON.stringify({ inviteSentAt: sentAt }),
       }).catch(() => {/* non-blocking */});
     });
   }

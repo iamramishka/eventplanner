@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
@@ -64,6 +64,22 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
+  const [emailChecking, setEmailChecking] = useState(false);
+
+  const checkEmailExists = useCallback(async (email: string) => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+    setEmailChecking(true);
+    try {
+      const res = await fetch(`/api/check-email?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      setEmailExists(!!data.exists);
+    } catch {
+      // silently ignore — full validation still happens on submit
+    } finally {
+      setEmailChecking(false);
+    }
+  }, []);
 
   // Step 2 specific states
   const [venueDeciding, setVenueDeciding] = useState(false);
@@ -314,13 +330,21 @@ export default function RegisterPage() {
                   <Mail size={18} className={styles.inputIcon} />
                   <input
                     type="email"
-                    className={`${styles.input} ${errors.email ? styles.error : ''}`}
+                    className={`${styles.input} ${errors.email || emailExists ? styles.error : ''}`}
                     placeholder="Enter your email address"
                     value={form.email || ''}
-                    onChange={(e) => update({ email: e.target.value })}
+                    onChange={(e) => { setEmailExists(false); update({ email: e.target.value }); }}
+                    onBlur={(e) => checkEmailExists(e.target.value)}
                   />
+                  {emailChecking && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#888' }}>Checking…</span>}
                 </div>
                 {errors.email && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.email}</div>}
+                {!errors.email && emailExists && (
+                  <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>
+                    An account with this email already exists.{' '}
+                    <a href="/login" style={{ color: 'red', textDecoration: 'underline' }}>Sign in instead?</a>
+                  </div>
+                )}
               </div>
 
               <div className={styles.formGroup}>
@@ -387,7 +411,7 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <button type="button" className={styles.submitBtn} onClick={next}>
+              <button type="button" className={styles.submitBtn} onClick={next} disabled={emailExists || emailChecking}>
                 Continue to Wedding Details →
               </button>
 
