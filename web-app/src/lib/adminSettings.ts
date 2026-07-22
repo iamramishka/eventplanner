@@ -37,6 +37,9 @@ export type PlatformSettings = {
     ctaHref: string;
     maintenanceMode: boolean;
   };
+  trial: {
+    defaultTrialDays: number;
+  };
   cmsBlocks: {
     featuresIntro: string;
     templatesIntro: string;
@@ -97,6 +100,12 @@ function cleanPositiveInt(value: unknown, fallback: number) {
   return Math.max(0, Math.floor(numeric));
 }
 
+function cleanTrialDays(value: unknown, fallback: number) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return fallback;
+  return Math.min(365, Math.max(1, Math.floor(numeric)));
+}
+
 function cleanCurrency(value: unknown, fallback: string) {
   if (typeof value !== 'string') return fallback;
   const currency = value.trim().toLowerCase();
@@ -133,6 +142,9 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettingsState = {
       ctaLabel: 'Start Free Trial',
       ctaHref: '/register',
       maintenanceMode: false,
+    },
+    trial: {
+      defaultTrialDays: 14,
     },
     cmsBlocks: {
       featuresIntro: 'Invitation templates, guest management, vendor discovery, and collaborative planning tools.',
@@ -199,6 +211,7 @@ export function getAdminSettings(): AdminSettingsState {
       branding: { ...DEFAULT_ADMIN_SETTINGS.settings.branding, ...asRecord(parsed.settings?.branding) },
       contact: { ...DEFAULT_ADMIN_SETTINGS.settings.contact, ...asRecord(parsed.settings?.contact) },
       publicSite: { ...DEFAULT_ADMIN_SETTINGS.settings.publicSite, ...asRecord(parsed.settings?.publicSite) },
+      trial: { ...DEFAULT_ADMIN_SETTINGS.settings.trial, ...asRecord(parsed.settings?.trial) },
       cmsBlocks: { ...DEFAULT_ADMIN_SETTINGS.settings.cmsBlocks, ...asRecord(parsed.settings?.cmsBlocks) },
       templates: Array.isArray(parsed.settings?.templates) ? parsed.settings.templates : DEFAULT_ADMIN_SETTINGS.settings.templates,
     };
@@ -212,6 +225,7 @@ export function getAdminSettings(): AdminSettingsState {
         branding: { ...DEFAULT_ADMIN_SETTINGS.settings.branding, ...(cleanedSettings.branding || {}) },
         contact: { ...DEFAULT_ADMIN_SETTINGS.settings.contact, ...(cleanedSettings.contact || {}) },
         publicSite: { ...DEFAULT_ADMIN_SETTINGS.settings.publicSite, ...(cleanedSettings.publicSite || {}) },
+        trial: { ...DEFAULT_ADMIN_SETTINGS.settings.trial, ...(cleanedSettings.trial || {}) },
         cmsBlocks: { ...DEFAULT_ADMIN_SETTINGS.settings.cmsBlocks, ...(cleanedSettings.cmsBlocks || {}) },
         templates: cleanedSettings.templates || DEFAULT_ADMIN_SETTINGS.settings.templates,
       },
@@ -234,6 +248,7 @@ export function saveAdminSettings(next: Partial<PlatformSettings>) {
       branding: { ...current.settings.branding, ...(cleaned.branding || {}) },
       contact: { ...current.settings.contact, ...(cleaned.contact || {}) },
       publicSite: { ...current.settings.publicSite, ...(cleaned.publicSite || {}) },
+      trial: { ...current.settings.trial, ...(cleaned.trial || {}) },
       cmsBlocks: { ...current.settings.cmsBlocks, ...(cleaned.cmsBlocks || {}) },
       templates: cleaned.templates || current.settings.templates,
     },
@@ -287,6 +302,13 @@ export function normalizeSettingsPatch(next: Partial<PlatformSettings>, current:
       ctaLabel: cleanString(publicSite.ctaLabel, current.publicSite.ctaLabel, 50),
       ctaHref: cleanHref(publicSite.ctaHref, current.publicSite.ctaHref),
       maintenanceMode: cleanBoolean(publicSite.maintenanceMode, current.publicSite.maintenanceMode),
+    };
+  }
+
+  if ('trial' in input) {
+    const trial = asRecord(input.trial);
+    patch.trial = {
+      defaultTrialDays: cleanTrialDays(trial.defaultTrialDays, current.trial.defaultTrialDays),
     };
   }
 

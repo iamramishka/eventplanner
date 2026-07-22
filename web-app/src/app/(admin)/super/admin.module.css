@@ -320,13 +320,13 @@
   justify-content: center;
   flex-shrink: 0;
 }
-.kpi-rose .kpi-icon { background: #FFF0F3; color: #E24B6D; }
-.kpi-purple .kpi-icon { background: #F5F3FF; color: #8B5CF6; }
-.kpi-green .kpi-icon { background: #ECFDF5; color: #10B981; }
-.kpi-orange .kpi-icon { background: #FFF7ED; color: #F97316; }
-.kpi-blue .kpi-icon { background: #EFF6FF; color: #3B82F6; }
-.kpi-amber .kpi-icon { background: #FFFBEB; color: #D97706; }
-.kpi-red .kpi-icon { background: #FEF2F2; color: #EF4444; }
+.kpi-rose .kpi-icon { background: var(--adm-primary-bg); color: var(--inv-rose); }
+.kpi-purple .kpi-icon { background: var(--adm-purple-bg); color: var(--adm-purple); }
+.kpi-green .kpi-icon { background: var(--adm-success-bg); color: var(--adm-success); }
+.kpi-orange .kpi-icon { background: var(--adm-orange-bg); color: var(--adm-orange); }
+.kpi-blue .kpi-icon { background: var(--adm-info-bg); color: var(--adm-info); }
+.kpi-amber .kpi-icon { background: var(--adm-warning-bg); color: var(--adm-warning-dark); }
+.kpi-red .kpi-icon { background: var(--adm-danger-bg); color: var(--adm-danger); }
 
 .kpi-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
 .kpi-value { font-size: 1.75rem; font-weight: var(--weight-bold); color: var(--adm-text-primary); line-height: 1; }
@@ -488,9 +488,9 @@
 .action-danger { color: var(--adm-danger); }
 .action-danger:hover { background: var(--adm-danger-bg); color: var(--adm-danger); }
 .action-star { color: var(--adm-text-muted); }
-.action-star.starred { color: #F59E0B; }
-.action-star:hover { background: #FFFBEB; color: #F59E0B; }
-.tab-badge { background: var(--adm-danger); color: white; border-radius: 9999px; font-size: 10px; padding: 1px 6px; font-weight: 700; }
+.action-star.starred { color: var(--adm-warning); }
+.action-star:hover { background: var(--adm-warning-bg); color: var(--adm-warning); }
+.tab-badge { background: var(--adm-danger); color: white; border-radius: var(--radius-full); font-size: 10px; padding: 1px 6px; font-weight: 700; }
 .text-muted { color: var(--adm-text-muted); }
 
 @media (max-width: 1024px) {
@@ -503,7 +503,7 @@
   background: linear-gradient(90deg, #f0f0f0 0%, #e8e8e8 50%, #f0f0f0 100%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite linear;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   min-height: 14px;
 }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }

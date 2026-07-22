@@ -11,6 +11,7 @@ export type AdminCouple = {
   suspended: boolean;
   billingState?: 'active' | 'past_due' | 'canceled' | 'refunded';
   adminNotes?: string;
+  guestLimit?: number;
 };
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'admin-couples.json');
@@ -67,6 +68,14 @@ function cleanCouplePatch(current: AdminCouple, patch: Partial<AdminCouple>) {
     const adminNotes = cleanOptionalString(input.adminNotes, current.adminNotes || '', 2000);
     if (adminNotes) cleaned.adminNotes = adminNotes;
     else delete cleaned.adminNotes;
+  }
+  if ('guestLimit' in input) {
+    const v = Number(input.guestLimit);
+    if (input.guestLimit === null || input.guestLimit === '' || !Number.isFinite(v)) {
+      delete cleaned.guestLimit;
+    } else {
+      cleaned.guestLimit = Math.max(0, Math.floor(v));
+    }
   }
 
   return cleaned;
@@ -139,6 +148,20 @@ export function updateAdminCouple(id: string, patch: Partial<AdminCouple>) {
   const updated = cleanCouplePatch(couples[index], patch);
   updated.id = id;
   couples[index] = updated;
+  writeCouples(couples);
+  return updated;
+}
+
+export function upsertAdminCouple(couple: AdminCouple) {
+  const couples = getAdminCouples();
+  const index = couples.findIndex((item) => item.id === couple.id);
+  const base = index >= 0 ? couples[index] : couple;
+  const updated = cleanCouplePatch(base, couple);
+  updated.id = couple.id;
+
+  if (index >= 0) couples[index] = updated;
+  else couples.push(updated);
+
   writeCouples(couples);
   return updated;
 }

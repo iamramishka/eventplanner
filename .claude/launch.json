@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "wedplan-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "-p", "5001"],
+      "cwd": "web-app",
+      "port": 5001,
+      "autoPort": false
+    }
+  ]
+}

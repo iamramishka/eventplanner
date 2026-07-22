@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, Settings, Users, CheckSquare,
@@ -18,13 +18,13 @@ import {
 } from 'lucide-react';
 import { AGENDA_ICON_SET, AgendaIcon } from '@/components/agenda-icons';
 import './dashboard.css';
-import InvitationEditorModule, { InvitationPreview } from './InvitationEditorModule';
 import TablesModule from './TablesModule';
 import CoupleAnalyticsModule from './CoupleAnalyticsModule';
 import {
   FONT_PRESETS,
   InvitationTheme,
   PALETTE_PRESETS,
+  DEFAULT_INVITATION_SECTIONS,
   normalizeInvitationTheme,
 } from '@/lib/invitation-content';
 
@@ -141,7 +141,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'guests',       icon: Users,            label: 'Guests' },
   { id: 'rsvps',        icon: CheckSquare,      label: 'RSVPs' },
   { id: 'analytics',   icon: BarChart2,         label: 'Analytics' },
-  { id: 'invitation',   icon: Edit3,            label: 'Invitation Editor' },
   { id: 'theme',        icon: Palette,          label: 'Theme & Design' },
   { id: 'gallery',      icon: Grid3x3,          label: 'Gallery' },
   { id: 'music',        icon: Music,            label: 'Music' },
@@ -159,11 +158,35 @@ function getInitials(name: string) {
   return name?.split(' ').slice(0, 2).map((n: string) => n[0]?.toUpperCase()).join('') || 'PK';
 }
 
+function formatRelativeTime(iso?: string): string {
+  if (!iso) return '';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '';
+  const diffSec = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (diffSec < 60) return 'Just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} hour${diffHr !== 1 ? 's' : ''} ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 30) return `${diffDay} day${diffDay !== 1 ? 's' : ''} ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
 function getDaysUntil(dateStr: string): number {
   const target = new Date(dateStr);
   const now    = new Date();
   now.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
   return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function formatTrialStatus(days: number | null) {
+  if (days === null) return 'Trial active';
+  if (days > 1) return `${days} days left`;
+  if (days === 1) return '1 day left';
+  if (days === 0) return 'ends today';
+  return 'expired';
 }
 
 function formatDate(dateStr: string) {
@@ -184,20 +207,22 @@ function formatClockDisplay(timeStr: string) {
 }
 
 function formatAgendaRangeDisplay(event: Partial<AgendaEventRecord> & Record<string, any>) {
-  const start = event.startTime || event.time || '';
-  const end = event.endTime || '';
-  if (start && end && start !== end) return `${formatClockDisplay(start)} - ${formatClockDisplay(end)}`;
-  return formatClockDisplay(start);
+  return formatClockDisplay(event.startTime || event.time || '');
 }
 
 const BUDGET_CATEGORY_OPTIONS = ['Venue', 'Catering', 'Photography', 'Decor', 'Attire', 'Entertainment', 'Other'];
 const BUDGET_STATUS_OPTIONS: BudgetStatus[] = ['planned', 'reserved', 'paid'];
-const CHECKLIST_GROUP_OPTIONS = ['4 months before', '3 months before', '2 months before', '1 month before', '1 week before', 'Wedding Day', 'After Wedding'];
+const CHECKLIST_GROUP_OPTIONS = ['4 months before', '3 months before', '2 months before', '1 month before', '2 weeks before', '1 week before', 'Day before', 'Wedding Day', 'After Wedding'];
 const CHECKLIST_PRIORITY_OPTIONS = ['high', 'medium', 'low'] as const;
 const CHECKLIST_TEMPLATE_FALLBACKS: ChecklistTemplateRecord[] = [
-  { id: 'essential-planning', name: 'Essential Planning', description: 'Core planning tasks every couple needs to track.', taskCount: 3 },
-  { id: 'venue-vendors', name: 'Venue & Vendors', description: 'Booking and confirmation tasks for major suppliers.', taskCount: 3 },
-  { id: 'wedding-week', name: 'Wedding Week', description: 'Final checks for the last few days.', taskCount: 3 },
+  { id: 'four-months-before', name: '4 Months Before', description: 'Lock the big decisions, book the main vendors, and start choosing outfits.', taskCount: 19 },
+  { id: 'three-months-before', name: '3 Months Before', description: 'Guest list, invitations, vendor packages, jewelry, and day-of roles.', taskCount: 20 },
+  { id: 'two-months-before', name: '2 Months Before', description: 'Fittings and beauty prep, function details, song picks, and documents.', taskCount: 21 },
+  { id: 'one-month-before', name: '1 Month Before', description: 'Re-confirm everything, finalize bride & groom prep, and ceremony items.', taskCount: 21 },
+  { id: 'two-weeks-before', name: '2 Weeks Before', description: 'Final guest count, payments, collect items, emergency kit, and rehearsal.', taskCount: 24 },
+  { id: 'one-week-before', name: '1 Week Before', description: 'Final vendor calls, schedules, and personal preparation.', taskCount: 10 },
+  { id: 'day-before', name: 'Day Before', description: 'Get everything ready the night before so the morning is calm.', taskCount: 6 },
+  { id: 'final-day-checklist', name: 'Final Day Checklist', description: 'The simple list of everything to have in hand on the wedding day.', taskCount: 13 },
 ];
 
 const lkrFormatter = new Intl.NumberFormat('en-LK', {
@@ -291,16 +316,22 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
   const [activeModule, setActiveModule]         = useState('overview');
   const [sidebarOpen, setSidebarOpen]           = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [formDirty, setFormDirty]               = useState(false);
+  const [pendingNav, setPendingNav]             = useState<string | null>(null);
+  const saveFormRef = useRef<(() => Promise<boolean | void>) | null>(null);
 
   const [wedding, setWedding] = useState(initialWedding);
   const [guests, setGuests]   = useState(initialGuests);
-  const [rsvps]               = useState(initialRsvps);
+  const [rsvps, setRsvps]     = useState(initialRsvps);
   const [agenda, setAgenda]   = useState(initialAgenda);
   const [budget, setBudget]   = useState<BudgetResponse | null>(initialBudget || null);
   const [checklist, setChecklist] = useState<ChecklistItemRecord[]>(initialChecklist || []);
 
   const initials = getInitials(`${wedding?.brideName} ${wedding?.groomName}`);
   const daysLeft = wedding?.date ? getDaysUntil(wedding.date) : null;
+  const isTrialPlan = wedding?.plan !== 'premium';
+  const trialDaysLeft = isTrialPlan && wedding?.trialEnds ? getDaysUntil(wedding.trialEnds) : null;
+  const trialStatus = formatTrialStatus(trialDaysLeft);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -312,13 +343,51 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const GUARDED_MODULES = ['settings', 'theme', 'music', 'notifications'];
+  const activeModuleLabel = NAV_ITEMS.find(item => item.id === activeModule)?.label || 'this page';
+
   const handleNavigate = (module: string) => {
+    if (GUARDED_MODULES.includes(activeModule) && formDirty && module !== activeModule) {
+      setPendingNav(module);
+      return;
+    }
     setActiveModule(module);
     setSidebarOpen(false);
   };
 
+  const confirmNavSave = async () => {
+    const saved = await saveFormRef.current?.();
+    if (saved === false) return;
+    setFormDirty(false);
+    setActiveModule(pendingNav!);
+    setSidebarOpen(false);
+    setPendingNav(null);
+  };
+
+  const confirmNavDiscard = () => {
+    setFormDirty(false);
+    setActiveModule(pendingNav!);
+    setSidebarOpen(false);
+    setPendingNav(null);
+  };
+
   return (
     <div className="app-shell">
+      {/* ── Unsaved Changes Modal ── */}
+      {pendingNav && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}>
+          <div style={{ background: 'var(--adm-card-bg, #fff)', borderRadius: 16, padding: '32px 28px', maxWidth: 420, width: '90%', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
+            <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 10, color: 'var(--adm-text)' }}>Unsaved Changes</div>
+            <p style={{ color: 'var(--adm-text-muted)', fontSize: 15, lineHeight: 1.6, marginBottom: 28 }}>
+              You have unsaved changes in {activeModuleLabel}. If you leave now, your changes will be lost.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline" style={{ color: 'var(--adm-danger, #e53935)', borderColor: 'var(--adm-danger, #e53935)' }} onClick={confirmNavDiscard}>Discard Changes</button>
+              <button className="btn btn-primary" onClick={() => void confirmNavSave()}>Save &amp; Continue</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* ── Sidebar ── */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         {/* Brand */}
@@ -356,14 +425,16 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
         </nav>
 
         {/* Trial upgrade card */}
-        <div className="sidebar-upgrade-card">
-          <div className="upgrade-card-icon"><Diamond size={20} /></div>
-          <div className="upgrade-card-copy">
-            <strong>Premium Plan</strong>
-            <span>Trial ends in 12 days</span>
+        {isTrialPlan && (
+          <div className="sidebar-upgrade-card">
+            <div className="upgrade-card-icon"><Diamond size={20} /></div>
+            <div className="upgrade-card-copy">
+              <strong>Premium Plan</strong>
+              <span>Trial {trialStatus}</span>
+            </div>
+            <button className="btn btn-upgrade">Upgrade Now</button>
           </div>
-          <button className="btn btn-upgrade">Upgrade Now</button>
-        </div>
+        )}
 
         {/* Help */}
         <div className="sidebar-help">
@@ -397,15 +468,11 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
             </div>
           </div>
           <div className="top-bar-right">
-            {/* Trial badge */}
-            <div className="trial-badge">
-              Trial &nbsp;<span>12 days left</span>
-            </div>
-            {/* Notifications */}
-            <button className="icon-btn" aria-label="Notifications" onClick={() => handleNavigate('notifications')}>
-              <Bell size={18} />
-              <span className="notif-dot" />
-            </button>
+            {isTrialPlan && (
+              <div className="trial-badge">
+                Trial &nbsp;<span>{trialStatus}</span>
+              </div>
+            )}
             {/* User avatar */}
             <div className="user-dropdown-wrap">
               <button
@@ -448,20 +515,19 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
         {/* Page content */}
         <div className="page-content">
           {activeModule === 'overview'  && <OverviewModule  wedding={wedding} guests={guests} rsvps={rsvps} agenda={agenda} budget={budget} checklist={checklist} onNavigate={handleNavigate} />}
-          {activeModule === 'settings'  && <SettingsModule  wedding={wedding} setWedding={setWedding} />}
-          {activeModule === 'invitation' && <InvitationEditorModule wedding={wedding} setWedding={setWedding} />}
-          {activeModule === 'theme'      && <ThemeDesignModule wedding={wedding} setWedding={setWedding} />}
+          {activeModule === 'settings'  && <SettingsModule  wedding={wedding} setWedding={setWedding} onDirtyChange={setFormDirty} saveRef={saveFormRef} />}
+          {activeModule === 'theme'      && <ThemeDesignModule wedding={wedding} setWedding={setWedding} onDirtyChange={setFormDirty} saveRef={saveFormRef} />}
           {activeModule === 'gallery'    && <GalleryModule wedding={wedding} />}
-          {activeModule === 'music'      && <MusicModule wedding={wedding} setWedding={setWedding} />}
+          {activeModule === 'music'      && <MusicModule wedding={wedding} setWedding={setWedding} onDirtyChange={setFormDirty} saveRef={saveFormRef} />}
           {activeModule === 'agenda'     && <AgendaModule wedding={wedding} agenda={agenda} setAgenda={setAgenda} />}
           {activeModule === 'budget'     && <BudgetModule wedding={wedding} initialBudget={budget} setBudget={setBudget} />}
           {activeModule === 'checklist'  && <ChecklistModule wedding={wedding} checklist={checklist} setChecklist={setChecklist} />}
           {activeModule === 'guests'    && <GuestsModule    wedding={wedding} guests={guests} setGuests={setGuests} rsvps={rsvps} onNavigate={handleNavigate} />}
-          {activeModule === 'rsvps'     && <RsvpsModule     guests={guests} rsvps={rsvps} onNavigate={handleNavigate} />}
+          {activeModule === 'rsvps'     && <RsvpsModule     wedding={wedding} guests={guests} setGuests={setGuests} rsvps={rsvps} setRsvps={setRsvps} onNavigate={handleNavigate} />}
           {activeModule === 'analytics' && <CoupleAnalyticsModule weddingId={wedding?.id} />}
           {activeModule === 'tables'    && <TablesModule    wedding={wedding} guests={guests} rsvps={rsvps} />}
           {activeModule === 'vendors'   && <VendorsModule   wedding={wedding} setWedding={setWedding} />}
-          {activeModule === 'notifications' && <NotificationsModule wedding={wedding} guests={guests} rsvps={rsvps} checklist={checklist} budget={budget} setWedding={setWedding} onNavigate={handleNavigate} />}
+          {activeModule === 'notifications' && <NotificationsModule wedding={wedding} guests={guests} rsvps={rsvps} checklist={checklist} budget={budget} setWedding={setWedding} onNavigate={handleNavigate} onDirtyChange={setFormDirty} saveRef={saveFormRef} />}
           {activeModule === 'account'   && <AccountModule   wedding={wedding} onNavigate={handleNavigate} />}
         </div>
       </main>
@@ -496,22 +562,24 @@ function OverviewModule({ wedding, guests, rsvps, agenda, budget, checklist, onN
   const safeBudgetTotal = Math.max(1, budgetTotal);
   const agendaPreview = [...(agenda || [])].sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0)).slice(0, 4);
 
-  /* Recent activity from rsvps */
-  const recentActivity = rsvps.slice(-4).reverse().map((r: any) => {
-    const g = guests.find((g: any) => g.id === r.guestId);
-    return {
-      name: g?.name || 'Guest',
-      status: r.attending ? 'RSVP Confirmed' : 'RSVP Declined',
-      detail: r.attending ? `${r.memberCount || 1} member${(r.memberCount || 1) !== 1 ? 's' : ''}` : '',
-      type: r.attending ? 'confirmed' : 'declined',
-      time: '2 hours ago',
-    };
-  });
+  /* Recent activity from rsvps — sorted by actual submission time, most recent first */
+  const recentActivity = [...rsvps]
+    .sort((a: any, b: any) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+    .slice(0, 4)
+    .map((r: any) => {
+      const g = guests.find((g: any) => g.id === r.guestId);
+      return {
+        name: g?.name || 'Guest',
+        status: r.attending ? 'RSVP Confirmed' : 'RSVP Declined',
+        detail: r.attending ? `${r.memberCount || 1} member${(r.memberCount || 1) !== 1 ? 's' : ''}` : '',
+        type: r.attending ? 'confirmed' : 'declined',
+        time: formatRelativeTime(r.updatedAt),
+      };
+    });
 
   const quickActions = [
     { icon: UserPlus,     label: 'Add Guest',       action: 'guests' },
     { icon: Send,         label: 'Send Invitations', action: 'guests' },
-    { icon: Edit3,        label: 'Edit Invitation',  action: 'invitation' },
     { icon: Calendar,     label: 'Add Agenda',       action: 'agenda' },
     { icon: DollarSign,   label: 'Add Expense',      action: 'budget' },
     { icon: Home,         label: 'Create Table',     action: 'tables' },
@@ -1033,38 +1101,109 @@ function EmptyStatePanel({ icon, title, description, cta, onCta }: any) {
 /* ════════════════════════════════════════
    THEME & DESIGN MODULE
 ════════════════════════════════════════ */
-function ThemeDesignModule({ wedding, setWedding }: any) {
+const SECTION_TOGGLE_ORDER = [
+  ['loadingScreen', 'Loading Screen'],
+  ['envelope',      'Envelope'],
+  ['hero',          'Hero'],
+  ['message',       'Message'],
+  ['details',       'Details'],
+  ['countdown',     'Countdown'],
+  ['agenda',        'Agenda'],
+  ['gallery',       'Gallery'],
+  ['rsvp',          'RSVP'],
+  ['findTable',     'Find Your Table'],
+  ['specialMessage','Special Message'],
+] as const;
+
+function ThemeDesignModule({ wedding, setWedding, onDirtyChange, saveRef }: any) {
   const [theme, setTheme] = useState<InvitationTheme>(() => normalizeInvitationTheme(wedding.theme));
+  const [sections, setSections] = useState<Record<string, boolean>>(() => ({ ...DEFAULT_INVITATION_SECTIONS, ...(wedding.sections || {}) }));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [previewKey, setPreviewKey] = useState(0);
+  const sectionSaveTimer = useRef<number | null>(null);
+  const themeSaveTimer = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (sectionSaveTimer.current) window.clearTimeout(sectionSaveTimer.current);
+    if (themeSaveTimer.current) window.clearTimeout(themeSaveTimer.current);
+  }, []);
+
+  const saveTheme = async (next: InvitationTheme) => {
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/weddings/${wedding.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme: next }),
+      });
+      if (!res.ok) throw new Error('Failed to save theme');
+      const updated = await res.json();
+      setWedding(updated);
+      onDirtyChange?.(false);
+      setPreviewKey(k => k + 1); // reload the live preview iframe
+    } catch (err: any) {
+      setError(err?.message || 'Unable to save theme changes.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const scheduleThemeSave = (next: InvitationTheme) => {
+    onDirtyChange?.(true);
+    if (themeSaveTimer.current) window.clearTimeout(themeSaveTimer.current);
+    themeSaveTimer.current = window.setTimeout(() => { void saveTheme(next); }, 600);
+  };
 
   const selectPalette = (presetId: string) => {
     const preset = PALETTE_PRESETS.find(item => item.id === presetId);
     if (!preset) return;
-    setTheme(prev => ({
-      ...prev,
-      palettePreset: preset.id,
-      ...preset.colors,
-    }));
+    const next = { ...theme, palettePreset: preset.id, ...preset.colors };
+    setTheme(next);
     setSaved(false);
+    scheduleThemeSave(next);
   };
 
   const selectFont = (presetId: string) => {
     const preset = FONT_PRESETS.find(item => item.id === presetId);
     if (!preset) return;
-    setTheme(prev => ({
-      ...prev,
-      fontPreset: preset.id,
-      headingFont: preset.headingFont,
-      bodyFont: preset.bodyFont,
-    }));
+    const next = { ...theme, fontPreset: preset.id, headingFont: preset.headingFont, bodyFont: preset.bodyFont };
+    setTheme(next);
     setSaved(false);
+    scheduleThemeSave(next);
   };
 
-  const previewWedding = {
-    ...wedding,
-    theme,
+  const saveSections = async (next: Record<string, boolean>) => {
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/weddings/${wedding.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sections: next }),
+      });
+      if (!res.ok) throw new Error('Failed to save section visibility');
+      const updated = await res.json();
+      setWedding(updated);
+      onDirtyChange?.(false);
+      setPreviewKey(k => k + 1); // reload the live preview iframe
+    } catch (err: any) {
+      setError(err?.message || 'Unable to save section changes.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleSection = (key: string) => {
+    const next = { ...sections, [key]: !sections[key] };
+    setSections(next);
+    setSaved(false);
+    onDirtyChange?.(true);
+    // Debounce: rapid toggles batch into a single save + preview reload.
+    if (sectionSaveTimer.current) window.clearTimeout(sectionSaveTimer.current);
+    sectionSaveTimer.current = window.setTimeout(() => { void saveSections(next); }, 600);
   };
 
   const handleSave = async () => {
@@ -1074,19 +1213,25 @@ function ThemeDesignModule({ wedding, setWedding }: any) {
       const res = await fetch(`/api/weddings/${wedding.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme }),
+        body: JSON.stringify({ theme, sections }),
       });
       if (!res.ok) throw new Error('Failed to save theme');
       const updated = await res.json();
       setWedding(updated);
+      onDirtyChange?.(false);
       setSaved(true);
+      setPreviewKey(k => k + 1);
       window.setTimeout(() => setSaved(false), 2500);
+      return true;
     } catch (err: any) {
       setError(err?.message || 'Unable to save theme changes.');
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  useEffect(() => { if (saveRef) saveRef.current = handleSave; });
 
   const handleExport = () => {
     const spec = buildThemeSpecMarkdown(wedding, theme);
@@ -1174,13 +1319,62 @@ function ThemeDesignModule({ wedding, setWedding }: any) {
               ))}
             </div>
           </div>
+
+          <div className="card settings-card">
+            <div className="settings-section-header">
+              <Eye size={18} style={{ color: 'var(--adm-primary)' }} /><h3>Section Toggles</h3>
+            </div>
+            <p className="module-subtitle" style={{ marginBottom: 16 }}>
+              Show or hide each section. Changes save automatically and the preview refreshes.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+              {SECTION_TOGGLE_ORDER.map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`btn ${sections[key] ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={() => toggleSection(key)}
+                  style={{ justifyContent: 'space-between' }}
+                >
+                  <span>{label}</span>
+                  <span>{sections[key] ? 'On' : 'Off'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="card settings-card" style={{ background: theme.surfaceColor }}>
-          <div className="settings-section-header">
-            <Eye size={18} style={{ color: theme.primaryColor }} /><h3>Live Preview</h3>
+        <div className="card settings-card">
+          <div className="settings-section-header" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <Eye size={18} style={{ color: 'var(--adm-primary)' }} /><h3 style={{ margin: 0 }}>Live Preview</h3>
+            </span>
+            <span style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn btn-outline" style={{ padding: '6px 12px' }} onClick={() => setPreviewKey(k => k + 1)} title="Reload preview">
+                <RefreshCw size={14} /> Reload
+              </button>
+              <button type="button" className="btn btn-outline" style={{ padding: '6px 12px' }} onClick={() => wedding.slug && window.open(`/invitation/${wedding.slug}`, '_blank')} title="Open full page">
+                <ExternalLink size={14} /> Open
+              </button>
+            </span>
           </div>
-          <InvitationPreview wedding={previewWedding} />
+          {wedding.slug ? (
+            <>
+              <p className="module-subtitle" style={{ marginBottom: 12 }}>
+                The actual public invitation page. Click <strong>Save Theme</strong>, then <strong>Reload</strong> to see changes.
+              </p>
+              <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid var(--adm-border-light)', background: '#fff' }}>
+                <iframe
+                  key={previewKey}
+                  src={`/invitation/${wedding.slug}`}
+                  title="Invitation live preview"
+                  style={{ width: '100%', height: 760, border: 'none', display: 'block' }}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="module-subtitle">Set your wedding slug to preview the public invitation page.</p>
+          )}
         </div>
       </div>
     </section>
@@ -1254,15 +1448,15 @@ const AGENDA_TEMPLATES: { title: string; icon: string }[] = [
   { title: "Couple's Departure", icon: 'departure' },
 ];
 
-// Auto-assign the next time slot: starts after the last item ends (or wedding start time).
+// Auto-assign the next time slot: starts after the last item's start (or wedding start time).
 function nextAgendaSlot(events: AgendaEventRecord[], wedding: any) {
   let startTime = wedding.time || '16:00';
   if (events.length > 0) {
     const sorted = [...events].sort((a, b) => a.sortOrder - b.sortOrder);
     const last = sorted[sorted.length - 1];
-    if (last?.endTime) startTime = last.endTime;
+    if (last?.startTime) startTime = addMinutesToClock(last.startTime, 30);
   }
-  return { startTime, endTime: addMinutesToClock(startTime, 30) };
+  return { startTime };
 }
 
 function AgendaModule({ wedding, agenda, setAgenda }: any) {
@@ -1346,12 +1540,11 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
   };
 
   const addTemplate = (tpl: { title: string; icon: string }) => {
-    const { startTime, endTime } = nextAgendaSlot(events, wedding);
+    const { startTime } = nextAgendaSlot(events, wedding);
     void saveEvent({
       title: tpl.title,
       icon: tpl.icon,
       startTime,
-      endTime,
       timezone: wedding.timezone || 'UTC',
       location: wedding.venueName || '',
       description: '',
@@ -1522,7 +1715,6 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
                     <div className="agenda-drag-handle" title="Drag to reorder"><GripVertical size={18} /></div>
                     <div className="agenda-time-block">
                       <strong>{event.startTime}</strong>
-                      <span>{event.endTime}</span>
                     </div>
                     <div className="agenda-item-body">
                       {isEditing ? (
@@ -1545,7 +1737,7 @@ function AgendaModule({ wedding, agenda, setAgenda }: any) {
                             <span className="badge badge-slate">{formatAgendaDuration(event)}</span>
                           </div>
                           <div className="agenda-meta">
-                            <span><Clock size={14} /> {event.startTime}-{event.endTime}</span>
+                            <span><Clock size={14} /> {event.startTime}</span>
                           </div>
                           {event.description && <p className="agenda-description">{event.description}</p>}
                         </>
@@ -1617,7 +1809,7 @@ function AgendaEditor({ value, saving, submitLabel, error, onChange, onSubmit, o
   const update = (patch: Record<string, string>) => { setTouched(true); onChange({ ...value, ...patch }); };
   return (
     <form className="agenda-editor" onSubmit={event => { event.preventDefault(); setTouched(true); onSubmit(); }}>
-      <div className="form-grid-3">
+      <div className="form-grid-2">
         <div className="form-group">
           <label className="form-label">Title</label>
           <input className="form-input" value={value.title || ''} onChange={event => update({ title: event.target.value })} placeholder="Ceremony" required />
@@ -1625,10 +1817,6 @@ function AgendaEditor({ value, saving, submitLabel, error, onChange, onSubmit, o
         <div className="form-group">
           <label className="form-label">Start</label>
           <input className="form-input" type="time" value={value.startTime || ''} onChange={event => update({ startTime: event.target.value })} required />
-        </div>
-        <div className="form-group">
-          <label className="form-label">End</label>
-          <input className="form-input" type="time" value={value.endTime || ''} onChange={event => update({ endTime: event.target.value })} required />
         </div>
       </div>
       <div className="form-group">
@@ -1679,7 +1867,6 @@ function createAgendaDraft(wedding: any) {
   return {
     title: '',
     startTime,
-    endTime: addMinutesToClock(startTime, 30),
     timezone: wedding.timezone || 'UTC',
     location: wedding.venueName || '',
     description: '',
@@ -1689,26 +1876,16 @@ function createAgendaDraft(wedding: any) {
 
 function validateAgendaDraft(event: any) {
   const start = String(event.startTime || '');
-  const end = String(event.endTime || '');
   if (!String(event.title || '').trim()) return 'Title is required.';
-  if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return 'Start and end times are required.';
-  if (clockMinutes(end) <= clockMinutes(start)) return 'End time must be after start time.';
-  if (!isBrowserValidTimezone(String(event.timezone || ''))) return 'Use a valid IANA timezone such as Asia/Colombo.';
+  if (!/^\d{2}:\d{2}$/.test(start)) return 'Start time is required.';
   return '';
 }
 
-function validateAgendaEvents(events: AgendaEventRecord[], wedding: any) {
+function validateAgendaEvents(events: AgendaEventRecord[], _wedding: any) {
   const messages: string[] = [];
   events.forEach((event, index) => {
     const itemError = validateAgendaDraft(event);
     if (itemError) messages.push(`${event.title || `Item ${index + 1}`}: ${itemError}`);
-    if (wedding.timezone && event.timezone !== wedding.timezone) {
-      messages.push(`${event.title}: timezone ${event.timezone} differs from wedding timezone ${wedding.timezone}.`);
-    }
-    const prev = events[index - 1];
-    if (prev && clockMinutes(event.startTime) < clockMinutes(prev.endTime)) {
-      messages.push(`${event.title} starts before ${prev.title} ends.`);
-    }
   });
   return { isValid: messages.length === 0, messages };
 }
@@ -1751,7 +1928,7 @@ function buildAgendaMarkdown(wedding: any, events: AgendaEventRecord[]) {
     '',
     '| Time | Event | Location | Notes |',
     '| --- | --- | --- | --- |',
-    ...events.map(event => `| ${event.startTime}-${event.endTime} | ${event.title} | ${event.location || '-'} | ${(event.description || '-').replace(/\|/g, '/')} |`),
+    ...events.map(event => `| ${event.startTime} | ${event.title} | ${event.location || '-'} | ${(event.description || '-').replace(/\|/g, '/')} |`),
   ];
   return lines.join('\n');
 }
@@ -2319,6 +2496,25 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
     notes: '',
   });
 
+  const latestBudgetItemsRef = useRef<BudgetItemRecord[]>(items);
+  const noteTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  useEffect(() => { latestBudgetItemsRef.current = items; }, [items]);
+  useEffect(() => {
+    const timers = noteTimers.current;
+    return () => { timers.forEach(t => clearTimeout(t)); };
+  }, []);
+
+  const scheduleNotesSave = (itemId: string, notes: string) => {
+    const existing = noteTimers.current.get(itemId);
+    if (existing) clearTimeout(existing);
+    const t = setTimeout(() => {
+      noteTimers.current.delete(itemId);
+      const latestItem = latestBudgetItemsRef.current.find(item => item.id === itemId);
+      if (latestItem) void saveItem({ ...latestItem, notes });
+    }, 600);
+    noteTimers.current.set(itemId, t);
+  };
+
   const summary = useMemo(() => calculateClientBudget(items, categories), [items, categories]);
   const budgetResponse = useMemo<BudgetResponse>(() => ({
     weddingId: wedding.id,
@@ -2522,8 +2718,14 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
                 {categories.map(category => <option key={category} value={category}>{category}</option>)}
               </select>
               <input className="form-input" value={newItem.name} onChange={event => setNewItem(prev => ({ ...prev, name: event.target.value }))} placeholder="Item name" />
-              <input className="form-input" type="number" min="0" value={newItem.estimated} onChange={event => setNewItem(prev => ({ ...prev, estimated: Number(event.target.value || 0) }))} placeholder="Estimated" />
-              <input className="form-input" type="number" min="0" value={newItem.actual} onChange={event => setNewItem(prev => ({ ...prev, actual: Number(event.target.value || 0) }))} placeholder="Actual" />
+              <div className="budget-amount-field">
+                <span className="budget-amount-label">Estimated (LKR)</span>
+                <input className="form-input" type="number" min="0" value={newItem.estimated} onChange={event => setNewItem(prev => ({ ...prev, estimated: Number(event.target.value || 0) }))} placeholder="0" />
+              </div>
+              <div className="budget-amount-field">
+                <span className="budget-amount-label">Actual (LKR)</span>
+                <input className="form-input" type="number" min="0" value={newItem.actual} onChange={event => setNewItem(prev => ({ ...prev, actual: Number(event.target.value || 0) }))} placeholder="0" />
+              </div>
               <select className="form-input" value={newItem.status} onChange={event => setNewItem(prev => ({ ...prev, status: event.target.value as BudgetStatus }))}>
                 {BUDGET_STATUS_OPTIONS.map(status => <option key={status} value={status}>{status}</option>)}
               </select>
@@ -2541,8 +2743,8 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
                   <tr>
                     <th>Category</th>
                     <th>Item</th>
-                    <th>Estimated</th>
-                    <th>Actual</th>
+                    <th>Estimated (LKR)</th>
+                    <th>Actual (LKR)</th>
                     <th>Status</th>
                     <th>Notes</th>
                     <th>Actions</th>
@@ -2564,7 +2766,7 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
                           {BUDGET_STATUS_OPTIONS.map(status => <option key={status} value={status}>{status}</option>)}
                         </select>
                       </td>
-                      <td><textarea className="form-input budget-line-note" value={item.notes || ''} onChange={event => updateDraftItem(item.id, { notes: event.target.value })} /></td>
+                      <td><textarea className="form-input budget-line-note" value={item.notes || ''} onChange={event => { updateDraftItem(item.id, { notes: event.target.value }); scheduleNotesSave(item.id, event.target.value); }} /></td>
                       <td>
                         <div className="table-actions">
                           <button className="table-action-btn" title="Save budget item" aria-label="Save budget item" disabled={savingId === item.id} onClick={() => void saveItem(item)}>
@@ -2615,28 +2817,86 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
 /* ════════════════════════════════════════
    SETTINGS MODULE
 ════════════════════════════════════════ */
-function SettingsModule({ wedding, setWedding }: any) {
+function SettingsModule({ wedding, setWedding, onDirtyChange, saveRef }: any) {
   const [formData, setFormData] = useState(wedding);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [guestsDeciding, setGuestsDeciding] = useState(formData.estimatedGuests == null);
+  const [budgetDeciding, setBudgetDeciding] = useState(formData.estimatedBudget == null);
+  const [guestCount, setGuestCount] = useState<number>(formData.estimatedGuests ?? 125);
+  const [budgetAmount, setBudgetAmount] = useState<number>(formData.estimatedBudget ?? 2500000);
+  const [guestEditing, setGuestEditing] = useState(false);
+  const [guestInputVal, setGuestInputVal] = useState('');
+  const [budgetEditing, setBudgetEditing] = useState(false);
+  const [budgetInputVal, setBudgetInputVal] = useState('');
+  const markDirty = () => onDirtyChange?.(true);
 
-  const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const commitGuests = () => {
+    const raw = Number(guestInputVal);
+    if (!isNaN(raw) && guestInputVal.trim() !== '') {
+      const clamped = Math.round(Math.max(0, Math.min(500, raw)) / 25) * 25;
+      setGuestCount(clamped);
+      setFormData((f: any) => ({ ...f, estimatedGuests: clamped }));
+      markDirty();
+    }
+    setGuestEditing(false);
+  };
+
+  const commitBudget = () => {
+    const raw = Number(budgetInputVal);
+    if (!isNaN(raw) && budgetInputVal.trim() !== '') {
+      const clamped = Math.round(Math.max(0, Math.min(10000000, raw)) / 100000) * 100000;
+      setBudgetAmount(clamped);
+      setFormData((f: any) => ({ ...f, estimatedBudget: clamped }));
+      markDirty();
+    }
+    setBudgetEditing(false);
+  };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const maxDate = `${new Date().getFullYear() + 10}-12-31`;
+
+  const handleChange = (e: any) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    markDirty();
+  };
+
+  const validateSettings = (): string | null => {
+    const date = formData.date ? String(formData.date).slice(0, 10) : '';
+    const rsvp = formData.rsvpDeadline ? String(formData.rsvpDeadline).slice(0, 10) : '';
+    if (date) {
+      if (date < today) return 'Wedding date must be in the future.';
+      if (date > maxDate) return `Wedding date must be within the next 10 years (before ${maxDate}).`;
+    }
+    if (rsvp) {
+      if (rsvp > maxDate) return `RSVP deadline must be within the next 10 years (before ${maxDate}).`;
+      if (date && rsvp >= date) return 'RSVP deadline must be before the wedding date.';
+    }
+    return null;
+  };
 
   const handleSave = async () => {
+    const validationError = validateSettings();
+    if (validationError) { setSaveError(validationError); return false; }
     setSaving(true);
     setSaveError('');
     try {
       const updated = await patchWeddingRecord(wedding.id, formData);
       setWedding(updated);
+      onDirtyChange?.(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+      return true;
     } catch (err: any) {
       setSaveError(err?.message || 'Unable to save settings.');
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  useEffect(() => { if (saveRef) saveRef.current = handleSave; });
 
   return (
     <section className="module">
@@ -2689,7 +2949,7 @@ function SettingsModule({ wedding, setWedding }: any) {
         <div className="form-grid-3">
           <div className="form-group">
             <label className="form-label">Date</label>
-            <input type="date" className="form-input" name="date" value={formData.date || ''} onChange={handleChange} />
+            <input type="date" className="form-input" name="date" value={formData.date || ''} onChange={handleChange} min={today} max={maxDate} />
           </div>
           <div className="form-group">
             <label className="form-label">Time</label>
@@ -2697,7 +2957,7 @@ function SettingsModule({ wedding, setWedding }: any) {
           </div>
           <div className="form-group">
             <label className="form-label">RSVP Deadline</label>
-            <input type="date" className="form-input" name="rsvpDeadline" value={formData.rsvpDeadline || ''} onChange={handleChange} />
+            <input type="date" className="form-input" name="rsvpDeadline" value={formData.rsvpDeadline || ''} onChange={handleChange} min={today} max={maxDate} />
           </div>
           <div className="form-group">
             <label className="form-label">Venue Name</label>
@@ -2733,6 +2993,115 @@ function SettingsModule({ wedding, setWedding }: any) {
           </div>
         </div>
       </div>
+
+      <div className="card settings-card">
+        <div className="settings-section-header">
+          <TrendingUp size={18} style={{ color: 'var(--adm-primary)' }} /><h3>Planning Estimates</h3>
+        </div>
+        <div className="form-grid-2">
+          {/* Guests slider */}
+          <div className="form-group">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>Estimated Number of Guests</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--adm-text-muted)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={guestsDeciding} style={{ accentColor: 'var(--adm-primary)' }}
+                  onChange={e => {
+                    setGuestsDeciding(e.target.checked);
+                    setFormData((f: any) => ({ ...f, estimatedGuests: e.target.checked ? null : guestCount }));
+                    markDirty();
+                  }} />
+                Still deciding
+              </label>
+            </div>
+            <div className={`settings-slider-container${guestsDeciding ? ' disabled' : ''}`}>
+              <div className="settings-slider-header">
+                <span>Number of guests</span>
+                {guestEditing ? (
+                  <input
+                    type="number" autoFocus min="0" max="500"
+                    value={guestInputVal}
+                    onChange={e => setGuestInputVal(e.target.value)}
+                    onBlur={commitGuests}
+                    onKeyDown={e => { if (e.key === 'Enter') commitGuests(); if (e.key === 'Escape') setGuestEditing(false); }}
+                    style={{ width: 90, fontSize: 14, fontWeight: 700, color: 'var(--adm-primary)', border: '1px solid var(--adm-primary)', borderRadius: 6, padding: '2px 6px', textAlign: 'right' }}
+                  />
+                ) : (
+                  <span className="settings-slider-value" title="Click to type a value" onClick={() => { setGuestInputVal(String(guestCount)); setGuestEditing(true); }} style={{ cursor: 'text', borderBottom: '1px dashed var(--adm-primary)' }}>
+                    {guestCount} guests
+                  </span>
+                )}
+              </div>
+              <div className="settings-slider-controls">
+                <button type="button" className="settings-slider-btn" disabled={guestsDeciding}
+                  onClick={() => { const v = Math.max(0, guestCount - 25); setGuestCount(v); setFormData((f: any) => ({ ...f, estimatedGuests: v })); markDirty(); }}>−</button>
+                <div className="settings-slider-track">
+                  <div className="settings-slider-fill" style={{ width: `${(guestCount / 500) * 100}%` }} />
+                  <input type="range" min="0" max="500" step="25" value={guestCount} disabled={guestsDeciding}
+                    style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer', margin: 0, top: 0, left: 0 }}
+                    onChange={e => { const v = Number(e.target.value); setGuestCount(v); setFormData((f: any) => ({ ...f, estimatedGuests: v })); markDirty(); }} />
+                  <div className="settings-slider-thumb" style={{ left: `${(guestCount / 500) * 100}%` }} />
+                </div>
+                <button type="button" className="settings-slider-btn" disabled={guestsDeciding}
+                  onClick={() => { const v = Math.min(500, guestCount + 25); setGuestCount(v); setFormData((f: any) => ({ ...f, estimatedGuests: v })); markDirty(); }}>+</button>
+              </div>
+              <div className="settings-slider-labels">
+                <span>0</span><span>125</span><span>250</span><span>375</span><span>500</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Budget slider */}
+          <div className="form-group">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>Estimated Budget (LKR)</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--adm-text-muted)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={budgetDeciding} style={{ accentColor: 'var(--adm-primary)' }}
+                  onChange={e => {
+                    setBudgetDeciding(e.target.checked);
+                    setFormData((f: any) => ({ ...f, estimatedBudget: e.target.checked ? null : budgetAmount }));
+                    markDirty();
+                  }} />
+                Still deciding
+              </label>
+            </div>
+            <div className={`settings-slider-container${budgetDeciding ? ' disabled' : ''}`}>
+              <div className="settings-slider-header">
+                <span>Budget range</span>
+                {budgetEditing ? (
+                  <input
+                    type="number" autoFocus min="0" max="10000000"
+                    value={budgetInputVal}
+                    onChange={e => setBudgetInputVal(e.target.value)}
+                    onBlur={commitBudget}
+                    onKeyDown={e => { if (e.key === 'Enter') commitBudget(); if (e.key === 'Escape') setBudgetEditing(false); }}
+                    style={{ width: 120, fontSize: 14, fontWeight: 700, color: 'var(--adm-primary)', border: '1px solid var(--adm-primary)', borderRadius: 6, padding: '2px 6px', textAlign: 'right' }}
+                  />
+                ) : (
+                  <span className="settings-slider-value" title="Click to type a value" onClick={() => { setBudgetInputVal(String(budgetAmount)); setBudgetEditing(true); }} style={{ cursor: 'text', borderBottom: '1px dashed var(--adm-primary)' }}>
+                    {(budgetAmount / 1000000).toFixed(1)}M LKR
+                  </span>
+                )}
+              </div>
+              <div className="settings-slider-controls">
+                <button type="button" className="settings-slider-btn" disabled={budgetDeciding}
+                  onClick={() => { const v = Math.max(0, budgetAmount - 500000); setBudgetAmount(v); setFormData((f: any) => ({ ...f, estimatedBudget: v })); markDirty(); }}>−</button>
+                <div className="settings-slider-track">
+                  <div className="settings-slider-fill" style={{ width: `${(budgetAmount / 10000000) * 100}%` }} />
+                  <input type="range" min="0" max="10000000" step="100000" value={budgetAmount} disabled={budgetDeciding}
+                    style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer', margin: 0, top: 0, left: 0 }}
+                    onChange={e => { const v = Number(e.target.value); setBudgetAmount(v); setFormData((f: any) => ({ ...f, estimatedBudget: v })); markDirty(); }} />
+                  <div className="settings-slider-thumb" style={{ left: `${(budgetAmount / 10000000) * 100}%` }} />
+                </div>
+                <button type="button" className="settings-slider-btn" disabled={budgetDeciding}
+                  onClick={() => { const v = Math.min(10000000, budgetAmount + 500000); setBudgetAmount(v); setFormData((f: any) => ({ ...f, estimatedBudget: v })); markDirty(); }}>+</button>
+              </div>
+              <div className="settings-slider-labels">
+                <span>0</span><span>2.5M</span><span>5M</span><span>7.5M</span><span>10M LKR</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -2750,6 +3119,7 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
   const [formData, setFormData] = useState({ name: '', side: 'Groom', whatsapp: '', type: 'Individual', maxMembers: 1, notes: '' });
   const [errorMsg, setErrorMsg] = useState('');
   const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
+  const [deletingGuestId, setDeletingGuestId] = useState<string | null>(null);
   const importFileRef = React.useRef<HTMLInputElement>(null);
 
   function copyInviteLink(guestToken: string, guestId: string) {
@@ -2757,16 +3127,14 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
     navigator.clipboard.writeText(link).then(() => {
       setCopiedGuestId(guestId);
       setTimeout(() => setCopiedGuestId(null), 2000);
-      // Mark the invite as sent so status column reflects it
+      const sentAt = new Date().toISOString();
+      // Update local state immediately so badge flips to "Sent" right away
+      setGuests((prev: any[]) => prev.map((g: any) => g.id === guestId ? { ...g, inviteSentAt: sentAt } : g));
+      // Persist to DB (best-effort)
       fetch(`/api/guests/${guestId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteSentAt: new Date().toISOString() }),
-      }).then(async res => {
-        if (res.ok) {
-          const updated = await res.json();
-          setGuests((prev: any[]) => prev.map((g: any) => g.id === guestId ? { ...g, ...updated } : g));
-        }
+        body: JSON.stringify({ inviteSentAt: sentAt }),
       }).catch(() => {/* non-blocking */});
     });
   }
@@ -2816,7 +3184,10 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData)
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error || 'Failed to save guest.');
+        }
         const updated = await res.json();
         setGuests(guests.map((g: any) => g.id === updated.id ? updated : g));
       } else {
@@ -2825,7 +3196,10 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...formData, weddingId: wedding.id })
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(data?.error || 'Failed to save guest.');
+        }
         const created = await res.json();
         setGuests([...guests, created]);
       }
@@ -2837,14 +3211,17 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this guest?')) return;
+  const handleDelete = async (guest: any) => {
+    if (!confirm(`Delete ${guest.name || 'this guest'}? This will also remove their RSVP data.`)) return;
+    setDeletingGuestId(guest.id);
     try {
-      const res = await fetch(`/api/guests/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/guests/${guest.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete');
-      setGuests(guests.filter((g: any) => g.id !== id));
+      setGuests((prev: any[]) => prev.filter((g: any) => g.id !== guest.id));
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setDeletingGuestId(null);
     }
   };
 
@@ -3018,7 +3395,13 @@ function GuestsModule({ wedding, guests, setGuests, rsvps }: any) {
                           <button className="table-action-btn" title="Edit guest" onClick={() => openModal(g)}>
                             <Edit3 size={14} />
                           </button>
-                          <button className="table-action-btn" title="Delete guest" onClick={() => handleDelete(g.id)}>
+                          <button
+                            className="table-action-btn table-action-danger"
+                            title="Delete guest"
+                            aria-label={`Delete ${g.name}`}
+                            disabled={deletingGuestId === g.id}
+                            onClick={() => handleDelete(g)}
+                          >
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -3225,6 +3608,12 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
     return checklist.filter(task => filter === 'all' || getChecklistState(task) === filter);
   }, [checklist, filter]);
 
+  // Templates that currently have at least one task in the checklist (i.e. already added).
+  const appliedTemplateIds = useMemo(
+    () => new Set(checklist.map(item => item.templateId).filter(Boolean)),
+    [checklist],
+  );
+
   useEffect(() => {
     let mounted = true;
     async function loadTemplates() {
@@ -3340,6 +3729,26 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
     }
   };
 
+  const handleDeleteGroup = async (group: string, tasks: ChecklistItemRecord[]) => {
+    if (tasks.length === 0) return;
+    if (!confirm(`Delete all ${tasks.length} task${tasks.length === 1 ? '' : 's'} in "${group}"?`)) return;
+    try {
+      const results = await Promise.allSettled(tasks.map(async task => {
+        const res = await fetch(`/api/checklist/${task.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        return task.id;
+      }));
+      const deleted = new Set(
+        results.filter(r => r.status === 'fulfilled').map(r => (r as PromiseFulfilledResult<string>).value),
+      );
+      setChecklist(checklist.filter(item => !deleted.has(item.id)));
+      const failed = tasks.length - deleted.size;
+      showMessage(failed ? `Deleted ${deleted.size}; ${failed} could not be removed.` : `Deleted all tasks in "${group}".`);
+    } catch (err: any) {
+      setError(err?.message || 'Unable to delete group.');
+    }
+  };
+
   const applyTemplate = async (templateId: string) => {
     setSaving(true);
     setError('');
@@ -3388,7 +3797,13 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
           <div className="checklist-ring-wrap"><RingProgress pct={stats.pct} /></div>
           <div className="checklist-summary-copy">
             <strong>{stats.pct}% complete</strong>
-            <span>{stats.completed} done, {stats.pending} pending, {stats.dueSoon} due soon, {stats.overdue} overdue</span>
+            <span>{stats.completed} of {stats.total} tasks done</span>
+            <div className="checklist-stat-legend">
+              <span className="cl-stat"><i className="cl-dot cl-dot-done" /> Done <b>{stats.completed}</b></span>
+              <span className="cl-stat"><i className="cl-dot cl-dot-pending" /> Pending <b>{stats.pending}</b></span>
+              <span className="cl-stat"><i className="cl-dot cl-dot-due" /> Due soon <b>{stats.dueSoon}</b></span>
+              <span className="cl-stat"><i className="cl-dot cl-dot-overdue" /> Overdue <b>{stats.overdue}</b></span>
+            </div>
           </div>
         </div>
         <div className="card checklist-template-panel">
@@ -3396,16 +3811,25 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
             <h3>Starter Templates</h3>
           </div>
           <div className="checklist-template-grid">
-            {templates.map(template => (
-              <button key={template.id} className="template-btn" onClick={() => applyTemplate(template.id)} disabled={saving}>
-                <FileText size={16} />
-                <span>
-                  <strong>{template.name}</strong>
-                  <small>{template.description}</small>
-                </span>
-                <span className="badge badge-slate">{template.taskCount}</span>
-              </button>
-            ))}
+            {templates.map(template => {
+              const applied = appliedTemplateIds.has(template.id);
+              return (
+                <button
+                  key={template.id}
+                  className={`template-btn ${applied ? 'is-applied' : ''}`}
+                  onClick={() => applyTemplate(template.id)}
+                  disabled={saving}
+                  title={applied ? 'Already added — click to re-add any removed tasks' : 'Add these tasks to your checklist'}
+                >
+                  {applied ? <CheckCircle size={16} /> : <FileText size={16} />}
+                  <span>
+                    <strong>{template.name}</strong>
+                    <small>{template.description}</small>
+                  </span>
+                  <span className={`badge ${applied ? 'badge-green' : 'badge-slate'}`}>{applied ? 'Added' : template.taskCount}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -3444,7 +3868,16 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
             <div className="card checklist-group-card" key={section.group}>
               <div className="checklist-group-heading">
                 <span><CalendarDays size={16} /> {section.group}</span>
-                <span className="badge badge-slate">{section.tasks.filter(task => task.isCompleted).length}/{section.tasks.length}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <span className="badge badge-slate">{section.tasks.filter(task => task.isCompleted).length}/{section.tasks.length}</span>
+                  <button
+                    className="table-action-btn"
+                    title={`Delete all tasks in ${section.group}`}
+                    onClick={() => void handleDeleteGroup(section.group, section.tasks)}
+                  >
+                    <Trash2 size={14} /> Delete all
+                  </button>
+                </span>
               </div>
               <div className="checklist-task-list">
                 {section.tasks.map(task => {
@@ -3729,41 +4162,85 @@ function VendorsModule({ wedding, setWedding }: any) {
 /* ════════════════════════════════════════
    MUSIC MODULE
 ════════════════════════════════════════ */
-function MusicModule({ wedding, setWedding }: any) {
+const DEFAULT_MUSIC_URL = '/audio/default.mp3';
+
+function MusicModule({ wedding, setWedding, onDirtyChange, saveRef }: any) {
   const [form, setForm] = useState({
     enabled: wedding.music?.enabled !== false && wedding.sections?.music !== false,
-    track: wedding.music?.track || '',
     sourceUrl: wedding.music?.sourceUrl || '',
     muteDefault: wedding.music?.muteDefault !== false,
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  async function saveMusic(e: React.FormEvent) {
-    e.preventDefault();
+  const usingDefault = !form.sourceUrl;
+  const activeUrl = form.sourceUrl || DEFAULT_MUSIC_URL;
+
+  const markDirty = () => onDirtyChange?.(true);
+
+  async function saveMusic(e?: React.FormEvent) {
+    e?.preventDefault();
     setSaving(true);
     setError('');
     try {
       const music = { ...form };
       const updated = await patchWeddingRecord(wedding.id, { music, sections: { ...(wedding.sections || {}), music: form.enabled } });
       setWedding(updated);
+      onDirtyChange?.(false);
       setMessage('Music settings saved.');
+      return true;
     } catch (err: any) {
       setError(err.message || 'Unable to save music settings.');
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
-  function previewTrack() {
-    if (!form.sourceUrl) {
-      setMessage('Add an MP3 URL to preview. The invitation will still show the selected track name.');
-      return;
+  useEffect(() => { if (saveRef) saveRef.current = () => saveMusic(); });
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isMp3 = /audio\/(mpeg|mp3)/.test(file.type) || file.name.toLowerCase().endsWith('.mp3');
+    if (!isMp3) { setError('Please choose an MP3 file.'); return; }
+    if (file.size > 10 * 1024 * 1024) { setError('Audio must be under 10 MB.'); return; }
+
+    setUploading(true);
+    setError('');
+    setMessage('');
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error('Could not read the file.'));
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch(`/api/weddings/${wedding.id}/music`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ audioBase64: dataUrl, fileName: file.name }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Upload failed.');
+      setForm(f => ({ ...f, sourceUrl: data.url }));
+      markDirty();
+      setMessage('MP3 uploaded — click “Save Music” to apply it.');
+    } catch (err: any) {
+      setError(err?.message || 'Upload failed.');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
     }
-    const audio = new Audio(form.sourceUrl);
-    audio.volume = 0.45;
-    audio.play().catch(() => setError('Browser blocked playback. Click preview again or check the audio URL.'));
+  }
+
+  function removeCustomTrack() {
+    setForm(f => ({ ...f, sourceUrl: '' }));
+    markDirty();
+    setMessage('Reverted to the default track — click “Save Music” to apply.');
   }
 
   return (
@@ -3779,23 +4256,42 @@ function MusicModule({ wedding, setWedding }: any) {
       <form className="card music-settings-card" onSubmit={saveMusic}>
         <label className="toggle-row">
           <span><strong>Enable music section</strong><small>Show the floating music control on the invitation.</small></span>
-          <input type="checkbox" checked={form.enabled} onChange={e => setForm(f => ({ ...f, enabled: e.target.checked }))} />
+          <input type="checkbox" checked={form.enabled} onChange={e => { setForm(f => ({ ...f, enabled: e.target.checked })); markDirty(); }} />
         </label>
-        <label className="form-field">
-          <span>Track title</span>
-          <input className="form-input" value={form.track} onChange={e => setForm(f => ({ ...f, track: e.target.value }))} placeholder="A Thousand Years" />
-        </label>
-        <label className="form-field">
-          <span>MP3 URL</span>
-          <input className="form-input" value={form.sourceUrl} onChange={e => setForm(f => ({ ...f, sourceUrl: e.target.value }))} placeholder="https://cdn.example.com/song.mp3" />
-        </label>
+
+        <div className="form-field">
+          <span>Music file</span>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <button type="button" className="btn btn-outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
+              <Upload size={15} /> {uploading ? 'Uploading…' : 'Upload MP3'}
+            </button>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontSize: 13, fontWeight: 600,
+              color: usingDefault ? 'var(--adm-text-secondary)' : '#16a34a',
+            }}>
+              {usingDefault ? '♪ Using default track' : '✓ Custom track uploaded'}
+            </span>
+            {!usingDefault && (
+              <button type="button" className="table-action-btn" onClick={removeCustomTrack}>
+                <Trash2 size={14} /> Remove
+              </button>
+            )}
+            <input ref={fileRef} type="file" accept="audio/mpeg,.mp3" hidden onChange={handleUpload} />
+          </div>
+          <audio controls src={activeUrl} style={{ width: '100%', marginTop: 12 }} />
+          <small style={{ color: 'var(--adm-text-secondary)', fontSize: 12 }}>
+            MP3 only, up to 10 MB. Leave it on the default track to use the built-in music.
+          </small>
+        </div>
+
         <label className="toggle-row">
           <span><strong>Mute by default</strong><small>Recommended so guests choose when audio starts.</small></span>
-          <input type="checkbox" checked={form.muteDefault} onChange={e => setForm(f => ({ ...f, muteDefault: e.target.checked }))} />
+          <input type="checkbox" checked={form.muteDefault} onChange={e => { setForm(f => ({ ...f, muteDefault: e.target.checked })); markDirty(); }} />
         </label>
+
         <div className="module-actions">
-          <button className="btn btn-outline" type="button" onClick={previewTrack}><Music size={15} /> Preview</button>
-          <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Music'}</button>
+          <button className="btn btn-primary" type="submit" disabled={saving || uploading}>{saving ? 'Saving...' : 'Save Music'}</button>
         </div>
       </form>
     </section>
@@ -3805,7 +4301,7 @@ function MusicModule({ wedding, setWedding }: any) {
 /* ════════════════════════════════════════
    NOTIFICATIONS MODULE
 ════════════════════════════════════════ */
-function NotificationsModule({ wedding, guests, rsvps, checklist, budget, setWedding, onNavigate }: any) {
+function NotificationsModule({ wedding, guests, rsvps, checklist, budget, setWedding, onNavigate, onDirtyChange, saveRef }: any) {
   const pending = Math.max(0, guests.length - rsvps.length);
   const dueSoon = getChecklistStats(checklist || []).dueSoon;
   const overBudget = (budget?.totals?.remaining || 0) < 0;
@@ -3818,7 +4314,7 @@ function NotificationsModule({ wedding, guests, rsvps, checklist, budget, setWed
     pending > 0 && { id: 'pending-rsvps', icon: Clock, title: `${pending} RSVP${pending === 1 ? '' : 's'} pending`, detail: 'Send reminders from the Guests module.', action: 'guests' },
     dueSoon > 0 && { id: 'due-soon', icon: AlertCircle, title: `${dueSoon} checklist item${dueSoon === 1 ? '' : 's'} due soon`, detail: 'Review upcoming planning tasks.', action: 'checklist' },
     overBudget && { id: 'budget', icon: Wallet, title: 'Budget needs attention', detail: 'Actuals are above the estimated total.', action: 'budget' },
-    !(wedding.sections?.music) && { id: 'music-off', icon: Music, title: 'Invitation music is disabled', detail: 'Turn it on from Music Settings if needed.', action: 'music' },
+    (wedding.music?.enabled === false) && { id: 'music-off', icon: Music, title: 'Invitation music is disabled', detail: 'Turn it on from Music Settings if needed.', action: 'music' },
   ].filter(Boolean) as any[];
 
   async function savePrefs() {
@@ -3827,13 +4323,18 @@ function NotificationsModule({ wedding, guests, rsvps, checklist, budget, setWed
     try {
       const updated = await patchWeddingRecord(wedding.id, { notificationPreferences: prefs });
       setWedding(updated);
+      onDirtyChange?.(false);
       setMessage('Notification preferences saved.');
+      return true;
     } catch (err: any) {
       setError(err.message || 'Unable to save notification preferences.');
+      return false;
     } finally {
       setSaving(false);
     }
   }
+
+  useEffect(() => { if (saveRef) saveRef.current = () => savePrefs(); });
 
   return (
     <section className="module">
@@ -3871,7 +4372,7 @@ function NotificationsModule({ wedding, guests, rsvps, checklist, budget, setWed
           ].map(([key, title, copy]) => (
             <label className="toggle-row" key={key}>
               <span><strong>{title}</strong><small>{copy}</small></span>
-              <input type="checkbox" checked={!!prefs[key]} onChange={e => setPrefs((p: any) => ({ ...p, [key]: e.target.checked }))} />
+              <input type="checkbox" checked={!!prefs[key]} onChange={e => { setPrefs((p: any) => ({ ...p, [key]: e.target.checked })); onDirtyChange?.(true); }} />
             </label>
           ))}
           <button className="btn btn-primary" onClick={savePrefs} disabled={saving}>{saving ? 'Saving...' : 'Save Preferences'}</button>
@@ -3958,12 +4459,83 @@ function AccountModule({ wedding, onNavigate }: any) {
 /* ════════════════════════════════════════
    RSVPs MODULE
 ════════════════════════════════════════ */
-function RsvpsModule({ guests, rsvps, onNavigate }: any) {
+function RsvpsModule({ wedding, guests, setGuests, rsvps, setRsvps, onNavigate }: any) {
+  const [contactingGuestId, setContactingGuestId] = useState<string | null>(null);
+  const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
+  const [sentGuestId, setSentGuestId] = useState<string | null>(null);
+  const [loadingRsvps, setLoadingRsvps] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const confirmed = rsvps.filter((r: any) => r.attending === true).length;
   const declined  = rsvps.filter((r: any) => r.attending === false).length;
   const pending   = guests.length - rsvps.length;
   const attending = rsvps.filter((r: any) => r.attending).reduce((acc: number, r: any) => acc + (r.memberCount || 1), 0);
   const withLiquor = rsvps.filter((r: any) => r.liquorPreference === 'Yes').length;
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadLatestRsvps() {
+      if (!wedding?.id) return;
+      setLoadingRsvps(true);
+      setLoadError('');
+      try {
+        const res = await fetch(`/api/rsvps?weddingId=${encodeURIComponent(wedding.id)}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Unable to load RSVP responses.');
+        if (mounted) setRsvps(Array.isArray(data) ? data : []);
+      } catch (err: any) {
+        if (mounted) setLoadError(err?.message || 'Unable to load RSVP responses.');
+      } finally {
+        if (mounted) setLoadingRsvps(false);
+      }
+    }
+    void loadLatestRsvps();
+    return () => { mounted = false; };
+  }, [wedding?.id, setRsvps]);
+
+  async function markInviteSent(guestId: string) {
+    const res = await fetch(`/api/guests/${guestId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inviteSentAt: new Date().toISOString() }),
+    });
+    if (!res.ok) throw new Error('Unable to update invite status.');
+    const updated = await res.json();
+    setGuests((prev: any[]) => prev.map((guest: any) => guest.id === guestId ? { ...guest, ...updated } : guest));
+  }
+
+  async function contactGuest(guest: any) {
+    const inviteUrl = `${window.location.origin}/invitation/${wedding?.slug}${guest.token ? `?token=${guest.token}` : ''}`;
+    const title = wedding?.weddingTitle || `${wedding?.brideName || ''} & ${wedding?.groomName || ''}`.trim() || 'our wedding';
+    const message = `Hi ${guest.name}, please RSVP for ${title} here: ${inviteUrl}`;
+
+    setContactingGuestId(guest.id);
+    try {
+      if (guest.whatsapp) {
+        window.open(`https://wa.me/${String(guest.whatsapp).replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+      } else {
+        await navigator.clipboard.writeText(inviteUrl);
+      }
+      await markInviteSent(guest.id);
+      setSentGuestId(guest.id);
+      window.setTimeout(() => setSentGuestId(null), 2000);
+    } catch (err: any) {
+      alert(err?.message || 'Unable to send RSVP link.');
+    } finally {
+      setContactingGuestId(null);
+    }
+  }
+
+  async function copyInviteLink(guest: any) {
+    const inviteUrl = `${window.location.origin}/invitation/${wedding?.slug}${guest.token ? `?token=${guest.token}` : ''}`;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      await markInviteSent(guest.id);
+      setCopiedGuestId(guest.id);
+      window.setTimeout(() => setCopiedGuestId(null), 2000);
+    } catch (err: any) {
+      alert(err?.message || 'Unable to copy RSVP link.');
+    }
+  }
 
   return (
     <section className="module">
@@ -3973,7 +4545,27 @@ function RsvpsModule({ guests, rsvps, onNavigate }: any) {
           <h1 className="module-title">RSVP Management</h1>
           <p className="module-subtitle">Track and manage guest responses and preferences.</p>
         </div>
+        <button
+          className="btn btn-outline"
+          onClick={() => {
+            if (!wedding?.id) return;
+            setLoadingRsvps(true);
+            setLoadError('');
+            fetch(`/api/rsvps?weddingId=${encodeURIComponent(wedding.id)}`, { cache: 'no-store' })
+              .then(async res => {
+                const data = await res.json();
+                if (!res.ok) throw new Error(data?.error || 'Unable to refresh RSVP responses.');
+                setRsvps(Array.isArray(data) ? data : []);
+              })
+              .catch((err: any) => setLoadError(err?.message || 'Unable to refresh RSVP responses.'))
+              .finally(() => setLoadingRsvps(false));
+          }}
+          disabled={loadingRsvps}
+        >
+          <RefreshCw size={16} /> {loadingRsvps ? 'Refreshing...' : 'Refresh'}
+        </button>
       </div>
+      {loadError && <p style={{ margin: '0 0 1rem', color: 'var(--adm-danger)', fontWeight: 600 }}>{loadError}</p>}
 
       {/* Summary chips */}
       <div className="rsvp-summary-bar">
@@ -4043,8 +4635,24 @@ function RsvpsModule({ guests, rsvps, onNavigate }: any) {
                       <td>{rsvp?.notes || '—'}</td>
                       <td>
                         <div className="table-actions">
-                          <button className="table-action-btn" title="Contact guest">
-                            <Send size={14} />
+                          <button
+                            className="table-action-btn"
+                            title={copiedGuestId === g.id ? 'Copied!' : 'Copy invite link'}
+                            aria-label={`Copy invite link for ${g.name}`}
+                            onClick={() => void copyInviteLink(g)}
+                            style={copiedGuestId === g.id ? { color: '#16a34a', borderColor: '#86efac', background: '#f0fdf4' } : undefined}
+                          >
+                            {copiedGuestId === g.id ? <Check size={14} /> : <Copy size={14} />}
+                          </button>
+                          <button
+                            className="table-action-btn"
+                            title={g.whatsapp ? 'Send RSVP link via WhatsApp' : 'Copy RSVP link'}
+                            aria-label={`${g.whatsapp ? 'Send RSVP link to' : 'Copy RSVP link for'} ${g.name}`}
+                            disabled={contactingGuestId === g.id}
+                            onClick={() => void contactGuest(g)}
+                            style={sentGuestId === g.id ? { color: '#16a34a', borderColor: '#86efac', background: '#f0fdf4' } : undefined}
+                          >
+                            {sentGuestId === g.id ? <Check size={14} /> : <Send size={14} />}
                           </button>
                         </div>
                       </td>

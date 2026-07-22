@@ -3,31 +3,19 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { dbSelect } from '@/lib/supabase-db';
 import { notFound } from 'next/navigation';
-import { getInvitationContent, renderMarkdownBlocks } from '@/lib/invitation-content';
+import { getInvitationContent, renderMarkdownBlocks, normalizeInvitationTheme } from '@/lib/invitation-content';
 import CountdownTimer from './CountdownTimer';
 import FindTableInline from './FindTableInline';
+import FloatingMusicPlayer from './FloatingMusicPlayer';
 import { AgendaIcon } from '@/components/agenda-icons';
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 const DEFAULT_HERO = '/images/default-hero.jpg';
 const DEFAULT_COUPLE_PHOTO = '/images/default-couple.jpg';
+const DEFAULT_SPECIAL_NOTE =
+  'With hearts full of love and gratitude, we are so happy to celebrate this beautiful chapter of our lives with you. Your presence means more to us than words can truly express, and having you by our side makes this day even more meaningful.\n\nThank you for your love, your blessings, and for being part of our journey. We cannot wait to share laughter, joy, and unforgettable memories with the people who mean so much to us.';
 
-const DEFAULT_GALLERY_IMAGES = [
-  { id: 'dg-1',  imageUrl: '/images/gallery-1.jpg' },
-  { id: 'dg-2',  imageUrl: '/images/gallery-2.jpg' },
-  { id: 'dg-3',  imageUrl: '/images/gallery-3.jpg' },
-  { id: 'dg-4',  imageUrl: '/images/gallery-4.jpg' },
-  { id: 'dg-5',  imageUrl: '/images/gallery-5.jpg' },
-  { id: 'dg-6',  imageUrl: '/images/gallery-6.jpg' },
-  { id: 'dg-7',  imageUrl: '/images/gallery-7.jpg' },
-  { id: 'dg-8',  imageUrl: '/images/gallery-8.jpg' },
-  { id: 'dg-9',  imageUrl: '/images/gallery-9.jpg' },
-  { id: 'dg-10', imageUrl: '/images/gallery-10.jpg' },
-  { id: 'dg-11', imageUrl: '/images/gallery-11.jpg' },
-  { id: 'dg-12', imageUrl: '/images/gallery-12.jpg' },
-  { id: 'dg-13', imageUrl: '/images/gallery-13.jpg' },
-];
 
 interface WeddingRow {
   id: string;
@@ -41,9 +29,12 @@ interface WeddingRow {
   venueMapLink: string | null;
   rsvpDeadline: string | null;
   specialNoteText: string | null;
+  contactEmail: string | null;
+  contactWhatsApp: string | null;
 }
 interface GalleryRow { id: string; imageType: string; imageUrl: string; sortOrder: number }
 interface AgendaRow { id: string; title: string; eventTime: string | null; durationMinutes: number | null; description: string | null; iconKey: string | null; sortOrder: number }
+interface SiteSettingsRow { id: string; weddingId: string; musicSettings: string | null; sectionToggles: string | null; colors: string | null }
 
 function timeFromTimestamp(ts?: string | null): string {
   if (!ts) return '';
@@ -147,21 +138,22 @@ export default async function InvitationPage({ params, searchParams }: Props) {
   const venueMapLink = wedding.venueMapLink || '';
   const rsvpDeadline = wedding.rsvpDeadline ? wedding.rsvpDeadline.slice(0, 10) : '';
   const specialNoteText = wedding.specialNoteText || '';
+  const contactWhatsApp = wedding.contactWhatsApp || '';
+  const contactEmail = wedding.contactEmail || '';
+  const footerContacts = [contactWhatsApp, contactEmail].filter(Boolean);
   const title = `${brideName} & ${groomName}`;
   const description = `Join ${brideName} and ${groomName} on ${formatDate(date)} at ${venueName || 'our celebration'}`;
   // Show only the Wedding Details card on the invitation page. Flip to false to restore all sections.
   const ONLY_DETAILS: boolean = false;
 
-  const allImages = await dbSelect<GalleryRow>(
-    'GalleryImage',
-    { weddingId: `eq.${wedding.id}`, order: 'sortOrder.asc' },
-    '*',
-    500,
-  );
+  const [allImages, siteSettingsRows] = await Promise.all([
+    dbSelect<GalleryRow>('GalleryImage', { weddingId: `eq.${wedding.id}`, order: 'sortOrder.asc' }, '*', 500),
+    dbSelect<SiteSettingsRow>('SiteSettings', { weddingId: `eq.${wedding.id}` }, 'id,weddingId,musicSettings,sectionToggles,colors', 1),
+  ]);
   const heroRow = allImages.find((img) => img.imageType === 'hero');
   const couplePhotoRow = allImages.find((img) => img.imageType === 'couple');
   const galleryImages = allImages.filter((img) => (img.imageType || 'gallery') === 'gallery');
-  const displayGalleryImages = galleryImages.length > 0 ? galleryImages : DEFAULT_GALLERY_IMAGES;
+  const displayGalleryImages = galleryImages;
   const heroImage = heroRow?.imageUrl || DEFAULT_HERO;
 
   const agenda = await dbSelect<AgendaRow>(
@@ -174,9 +166,51 @@ export default async function InvitationPage({ params, searchParams }: Props) {
   const content = getInvitationContent({ date, venueName });
   const messageBlocks = renderMarkdownBlocks(content.messageMarkdown);
 
-  const primary = '#C45A74';
-  const gold = '#C9A574';
-  const sage = '#8FA98F';
+  const rawMusicSettings = siteSettingsRows[0]?.musicSettings;
+  let musicEnabled = false;
+  let musicSrc = '/audio/default.mp3';
+  if (rawMusicSettings) {
+    try {
+      const ms = JSON.parse(rawMusicSettings) as { enabled?: boolean; sourceUrl?: string };
+      musicEnabled = ms.enabled !== false;
+      if (ms.sourceUrl) musicSrc = ms.sourceUrl;
+    } catch { /* ignore */ }
+  }
+
+  // Section visibility toggles (default: every section visible unless explicitly turned off).
+  let sectionToggles: Record<string, boolean> = {};
+  if (siteSettingsRows[0]?.sectionToggles) {
+    try { sectionToggles = JSON.parse(siteSettingsRows[0].sectionToggles) as Record<string, boolean>; } catch { /* ignore */ }
+  }
+  const show = (key: string) => sectionToggles[key] !== false;
+
+  // Theme (palette + fonts) chosen in the couple's Theme & Design page.
+  let rawTheme: Record<string, unknown> | undefined;
+  if (siteSettingsRows[0]?.colors) {
+    try { rawTheme = JSON.parse(siteSettingsRows[0].colors) as Record<string, unknown>; } catch { /* ignore */ }
+  }
+  const theme = normalizeInvitationTheme(rawTheme);
+  const primary = theme.primaryColor;
+  const gold = theme.secondaryColor;
+  const sage = theme.accentColor;
+  const bg = theme.surfaceColor;
+  const textColor = theme.textColor;
+  const mutedColor = theme.mutedTextColor;
+
+  // Map the chosen font preset to font stacks that render on the public page.
+  const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const headingFontMap: Record<string, string> = {
+    'elegant-serif': "var(--inv-heading)",
+    'modern-editorial': SANS,
+    'soft-classic': 'Georgia,serif',
+  };
+  const bodyFontMap: Record<string, string> = {
+    'elegant-serif': SANS,
+    'modern-editorial': SANS,
+    'soft-classic': 'Georgia,serif',
+  };
+  const headingFont = headingFontMap[theme.fontPreset] || headingFontMap['elegant-serif'];
+  const bodyFont = bodyFontMap[theme.fontPreset] || bodyFontMap['elegant-serif'];
 
   return (
     <>
@@ -187,16 +221,18 @@ export default async function InvitationPage({ params, searchParams }: Props) {
           --inv-primary: ${primary};
           --inv-gold: ${gold};
           --inv-sage: ${sage};
-          --inv-bg: #FCF8F6;
+          --inv-bg: ${bg};
           --inv-surface: rgba(255,255,255,0.85);
-          --inv-text: #2A1A1F;
-          --inv-muted: #6b4a56;
-          --inv-border: rgba(196,90,116,0.15);
+          --inv-text: ${textColor};
+          --inv-muted: ${mutedColor};
+          --inv-border: color-mix(in srgb, ${primary} 15%, transparent);
           --inv-radius: 20px;
           --inv-shadow: 0 8px 32px rgba(100,50,70,0.10);
+          --inv-heading: ${headingFont};
+          --inv-body: ${bodyFont};
         }
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        .inv-root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--inv-bg);color:var(--inv-text);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+        .inv-root{font-family:var(--inv-body);background:var(--inv-bg);color:var(--inv-text);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 
         /* ── Hero ── */
         .inv-hero{
@@ -211,12 +247,12 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         }
         .inv-hero > *{position:relative;z-index:2}
         .inv-hero-eyebrow{letter-spacing:.32em;text-transform:uppercase;font-size:.74rem;color:rgba(255,255,255,0.88);margin-bottom:18px;font-weight:500;text-shadow:0 1px 12px rgba(0,0,0,0.45)}
-        .inv-hero-names{font-family:'Playfair Display',Georgia,serif;font-size:clamp(3.2rem,13vw,8.5rem);font-weight:500;line-height:.98;color:#fff;letter-spacing:-.01em;margin-bottom:18px;font-style:italic;text-shadow:0 2px 28px rgba(0,0,0,0.45)}
+        .inv-hero-names{font-family:var(--inv-heading);font-size:clamp(3.2rem,13vw,8.5rem);font-weight:500;line-height:.98;color:#fff;letter-spacing:-.01em;margin-bottom:18px;font-style:italic;text-shadow:0 2px 28px rgba(0,0,0,0.45)}
         .inv-hero-names .amp{display:inline-block;font-size:.7em;font-style:italic;color:var(--inv-gold);margin:0 .12em}
-        .inv-hero-sub{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:clamp(1.1rem,3vw,1.6rem);color:rgba(255,255,255,0.92);margin-bottom:30px;text-shadow:0 1px 14px rgba(0,0,0,0.45)}
+        .inv-hero-sub{font-family:var(--inv-heading);font-style:italic;font-size:clamp(1.1rem,3vw,1.6rem);color:rgba(255,255,255,0.92);margin-bottom:30px;text-shadow:0 1px 14px rgba(0,0,0,0.45)}
         .inv-hero-meta{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:34px}
         .inv-hero-meta-label{letter-spacing:.3em;text-transform:uppercase;font-size:.68rem;color:rgba(255,255,255,0.72);font-weight:500}
-        .inv-hero-date{font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.4rem,4vw,2rem);color:#fff;font-weight:500;letter-spacing:.02em;text-shadow:0 2px 18px rgba(0,0,0,0.5)}
+        .inv-hero-date{font-family:var(--inv-heading);font-size:clamp(1.4rem,4vw,2rem);color:#fff;font-weight:500;letter-spacing:.02em;text-shadow:0 2px 18px rgba(0,0,0,0.5)}
         .inv-hero-rule{width:60px;height:1px;background:rgba(255,255,255,0.5);margin:6px 0}
         .inv-hero-venue{font-size:clamp(.92rem,2.2vw,1.1rem);color:rgba(255,255,255,0.86);letter-spacing:.04em;text-shadow:0 1px 12px rgba(0,0,0,0.45)}
         .inv-hero-ctas{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
@@ -238,13 +274,13 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         /* ── Cards ── */
         .inv-card{background:var(--inv-surface);backdrop-filter:blur(8px);border:1px solid var(--inv-border);border-radius:var(--inv-radius);box-shadow:var(--inv-shadow);padding:28px 24px}
         .inv-section-label{letter-spacing:.3em;text-transform:uppercase;font-size:.68rem;color:var(--inv-primary);font-weight:600;margin-bottom:14px}
-        .inv-section-title{font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.8rem,5vw,2.6rem);font-weight:500;color:var(--inv-text);line-height:1.15;margin-bottom:12px}
+        .inv-section-title{font-family:var(--inv-heading);font-size:clamp(1.8rem,5vw,2.6rem);font-weight:500;color:var(--inv-text);line-height:1.15;margin-bottom:12px}
         .inv-section-body{color:var(--inv-muted);line-height:1.75;font-size:.97rem}
 
         /* ── Elegant Wedding Details Card ── */
         .inv-details-elegant{text-align:center;padding:40px 28px 32px}
         .inv-ede-eyebrow{letter-spacing:.35em;text-transform:uppercase;font-size:.68rem;color:var(--inv-primary);font-weight:700;margin-bottom:10px}
-        .inv-ede-heading{font-family:'Dancing Script',cursive,'Playfair Display',Georgia,serif;font-size:clamp(2.4rem,8vw,3.6rem);color:var(--inv-text);font-weight:600;margin-bottom:24px;line-height:1.1}
+        .inv-ede-heading{font-family:'Dancing Script',cursive,var(--inv-heading);font-size:clamp(2.4rem,8vw,3.6rem);color:var(--inv-text);font-weight:600;margin-bottom:24px;line-height:1.1}
         .inv-ede-sep{display:flex;align-items:center;justify-content:center;gap:12px;margin:22px auto;max-width:230px;color:var(--inv-gold)}
         .inv-ede-sep::before,.inv-ede-sep::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--inv-gold))}
         .inv-ede-sep::after{background:linear-gradient(270deg,transparent,var(--inv-gold))}
@@ -254,7 +290,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         .inv-ede-iconrow::before,.inv-ede-iconrow::after{content:'';width:24px;height:1px;background:var(--inv-gold);opacity:.55}
         .inv-ede-icon{width:56px;height:56px;border-radius:50%;border:1.5px solid var(--inv-gold);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--inv-primary);flex-shrink:0;box-shadow:0 4px 16px rgba(201,165,116,0.18)}
         .inv-ede-item-label{letter-spacing:.32em;text-transform:uppercase;font-size:.72rem;color:var(--inv-muted);font-weight:600;margin-bottom:8px}
-        .inv-ede-item-value{font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.4rem,5vw,2rem);color:var(--inv-text);font-weight:600;line-height:1.2}
+        .inv-ede-item-value{font-family:var(--inv-heading);font-size:clamp(1.4rem,5vw,2rem);color:var(--inv-text);font-weight:600;line-height:1.2}
         .inv-ede-accent{color:var(--inv-primary)}
         .inv-ede-item-addr{font-size:.9rem;color:var(--inv-muted);line-height:1.55;margin-top:6px}
         .inv-ede-rsvp-by{margin-top:16px;font-size:.82rem;color:var(--inv-muted);letter-spacing:.05em}
@@ -263,7 +299,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         /* ── With Love Card ── */
         .inv-love-card{text-align:center;padding:38px 32px}
         .inv-love-tag{display:inline-block;letter-spacing:.28em;text-transform:uppercase;font-size:.68rem;color:#fff;background:var(--inv-primary);padding:5px 18px;border-radius:999px;margin-bottom:22px;font-weight:700}
-        .inv-love-text{font-family:'Playfair Display',Georgia,serif;font-style:italic;color:var(--inv-muted);line-height:1.9;font-size:1.02rem}
+        .inv-love-text{font-family:var(--inv-heading);font-style:italic;color:var(--inv-muted);line-height:1.9;font-size:1.02rem}
         .inv-love-names{display:block;color:var(--inv-text);font-weight:600;font-style:normal;font-size:1.15rem;margin:6px 0}
 
         /* ── Countdown ── */
@@ -272,23 +308,29 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         /* ── Story ── */
         .inv-story-card{padding:32px 28px;line-height:1.85}
         .inv-story-card p{color:var(--inv-muted);font-size:1rem;margin-bottom:1em}
-        .inv-story-card h3{font-family:'Playfair Display',Georgia,serif;font-size:1.4rem;font-weight:500;color:var(--inv-text);margin-bottom:.6em}
+        .inv-story-card h3{font-family:var(--inv-heading);font-size:1.4rem;font-weight:500;color:var(--inv-text);margin-bottom:.6em}
 
         /* ── Agenda ── */
-        .inv-agenda-track{display:grid;gap:0;position:relative;padding-left:40px}
-        .inv-agenda-track::before{content:'';position:absolute;left:19px;top:24px;bottom:24px;width:2px;background:linear-gradient(to bottom,transparent,var(--inv-gold) 10%,var(--inv-gold) 90%,transparent);opacity:.4}
-        .inv-agenda-entry{display:grid;grid-template-columns:auto 1fr;gap:0 16px;padding-bottom:28px;position:relative}
+        .inv-agenda-track{position:relative;display:flex;flex-direction:column;padding:8px 0}
+        .inv-agenda-track::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:1.5px;transform:translateX(-50%);background:linear-gradient(to bottom,transparent,var(--inv-gold) 6%,var(--inv-gold) 94%,transparent);opacity:.38}
+        .inv-agenda-entry{display:grid;grid-template-columns:1fr 56px 1fr;align-items:center;gap:0 16px;padding-bottom:36px;position:relative}
         .inv-agenda-entry:last-child{padding-bottom:0}
-        .inv-agenda-dot{width:40px;height:40px;border-radius:50%;background:#fff;border:2px solid var(--inv-gold);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;box-shadow:0 4px 14px rgba(201,165,116,0.25);position:relative;z-index:1}
-        .inv-agenda-content{padding-top:8px;min-width:0}
-        .inv-agenda-time{font-size:.8rem;color:var(--inv-primary);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
-        .inv-agenda-title{font-size:1.05rem;font-weight:600;color:var(--inv-text);margin-bottom:4px}
-        .inv-agenda-desc{font-size:.87rem;color:var(--inv-muted);line-height:1.6}
+        .inv-agenda-dot{width:48px;height:48px;border-radius:50%;background:#fff;border:2px solid var(--inv-gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 18px rgba(201,165,116,0.28);position:relative;z-index:1;justify-self:center}
+        .inv-agenda-col-l{text-align:right;min-width:0}
+        .inv-agenda-col-r{text-align:left;min-width:0}
+        .inv-agenda-time{display:block;font-size:.76rem;color:var(--inv-primary);font-weight:700;letter-spacing:.08em;text-transform:uppercase;line-height:1.5}
+        .inv-agenda-title{font-size:1rem;font-weight:600;color:var(--inv-text);margin-bottom:3px;line-height:1.3}
+        .inv-agenda-desc{font-size:.84rem;color:var(--inv-muted);line-height:1.6;margin-top:2px}
+        @media(max-width:480px){
+          .inv-agenda-entry{grid-template-columns:1fr 44px 1fr;gap:0 10px}
+          .inv-agenda-title{font-size:.9rem}
+          .inv-agenda-time{font-size:.7rem}
+        }
 
         /* ── Masonry Gallery ── */
         .inv-masonry-card{padding:0;overflow:hidden;width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);border-radius:0;border-left:0;border-right:0}
         .inv-masonry-header{text-align:center;padding:36px 24px 24px}
-        .inv-masonry-script{font-family:'Dancing Script',cursive,'Playfair Display',Georgia,serif;font-size:clamp(2rem,6vw,3rem);color:var(--inv-text);font-weight:600;margin-bottom:8px;line-height:1.1}
+        .inv-masonry-script{font-family:'Dancing Script',cursive,var(--inv-heading);font-size:clamp(2rem,6vw,3rem);color:var(--inv-text);font-weight:600;margin-bottom:8px;line-height:1.1}
         .inv-masonry-sub{color:var(--inv-muted);font-size:.9rem;font-style:italic}
         .inv-masonry-grid{columns:2;column-gap:10px;padding:0 16px 28px}
         @media(min-width:520px){.inv-masonry-grid{columns:3;column-gap:12px}}
@@ -307,10 +349,10 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         .inv-sn-photo img{width:100%;height:100%;object-fit:cover;display:block;min-height:280px}
         .inv-sn-card{background:#fff;border:1px solid var(--inv-border);border-radius:18px;padding:36px 32px;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--inv-shadow)}
         .inv-sn-eyebrow{letter-spacing:.3em;text-transform:uppercase;font-size:.68rem;color:var(--inv-muted);font-weight:700;margin-bottom:12px}
-        .inv-sn-heading{font-family:'Dancing Script',cursive,'Playfair Display',Georgia,serif;font-size:clamp(1.8rem,5vw,2.4rem);color:var(--inv-text);font-weight:600;margin-bottom:16px;line-height:1.15}
+        .inv-sn-heading{font-family:'Dancing Script',cursive,var(--inv-heading);font-size:clamp(1.8rem,5vw,2.4rem);color:var(--inv-text);font-weight:600;margin-bottom:16px;line-height:1.15}
         .inv-sn-text{color:var(--inv-muted);line-height:1.85;font-size:.97rem;margin-bottom:22px;white-space:pre-line}
         .inv-sn-sign{color:var(--inv-muted);font-size:.88rem;margin-bottom:2px}
-        .inv-sn-names{font-family:'Dancing Script',cursive,'Playfair Display',Georgia,serif;color:var(--inv-primary);font-size:1.6rem;font-weight:600}
+        .inv-sn-names{font-family:'Dancing Script',cursive,var(--inv-heading);color:var(--inv-primary);font-size:1.6rem;font-weight:600}
 
         /* ── CTA banners ── */
         .inv-cta-banner{border-radius:var(--inv-radius);padding:36px 28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px}
@@ -325,7 +367,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         /* ── Footer ── */
         .inv-footer{text-align:center;padding:32px 16px 48px;border-top:1px solid var(--inv-border);color:var(--inv-muted);font-size:.82rem;line-height:1.7}
         .inv-footer a{color:var(--inv-primary);text-decoration:none}
-        .inv-footer-brand{font-family:'Playfair Display',Georgia,serif;font-size:1.5rem;color:var(--inv-text);margin-bottom:8px;font-weight:500;font-style:italic}
+        .inv-footer-brand{font-family:var(--inv-heading);font-size:1.5rem;color:var(--inv-text);margin-bottom:8px;font-weight:500;font-style:italic}
 
         @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
       `}</style>
@@ -333,7 +375,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
       <div className="inv-root">
 
         {/* ─── HERO ─── */}
-        {!ONLY_DETAILS && (
+        {!ONLY_DETAILS && show('hero') && (
         <header className="inv-hero">
           <Image src={heroImage} alt={title} fill className="inv-hero-img" priority sizes="100vw" />
           <div className="inv-hero-overlay" aria-hidden="true" />
@@ -349,7 +391,6 @@ export default async function InvitationPage({ params, searchParams }: Props) {
             {venueName && <span className="inv-hero-venue">{venueName}</span>}
           </div>
           <div className="inv-hero-ctas">
-            <a href="#rsvp" className="inv-btn-primary">✉ RSVP</a>
             <a href="#find-table" className="inv-btn-secondary">🪑 Find My Seat</a>
           </div>
           <div className="inv-scroll-hint" aria-hidden="true">Scroll</div>
@@ -360,7 +401,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
         <div className="inv-body">
 
           {/* ── With Love Invitation Card ── */}
-          {!ONLY_DETAILS && (
+          {!ONLY_DETAILS && show('message') && (
           <section className="inv-card inv-love-card">
             <p className="inv-love-tag">With Love</p>
             <p className="inv-love-text">
@@ -373,7 +414,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
           )}
 
           {/* ── Elegant Wedding Details Card ── */}
-          {(date || venueName || eventTime) && (
+          {show('details') && (date || venueName || eventTime) && (
             <section className="inv-card inv-details-elegant" data-testid="public-event-details">
               <p className="inv-ede-eyebrow">Reception</p>
               <div className="inv-ede-sep"><span>&#10086;</span></div>
@@ -438,7 +479,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
 
           {!ONLY_DETAILS && (<>
           {/* ── Countdown ── */}
-          {date && (
+          {show('countdown') && date && (
             <section className="inv-card inv-countdown-card">
               <p className="inv-section-label" style={{marginBottom:6}}>Counting down to</p>
               <CountdownTimer date={date} timezone={'UTC'} />
@@ -446,26 +487,38 @@ export default async function InvitationPage({ params, searchParams }: Props) {
           )}
 
 {/* ── Agenda ── */}
-          {agenda.length > 0 && (
-            <section className="inv-card" data-testid="public-agenda">
+          {show('agenda') && agenda.length > 0 && (
+            <section className="inv-card" data-testid="public-agenda" style={{textAlign:'center'}}>
               <p className="inv-section-label">The day</p>
               <h2 className="inv-section-title">Day&apos;s Schedule</h2>
-              <p className="inv-section-body" style={{marginBottom:28}}>
+              <p className="inv-section-body" style={{maxWidth:460,margin:'0 auto 32px'}}>
                 The celebration timeline — we can&apos;t wait to share these moments with you.
               </p>
               <div className="inv-agenda-track" data-testid="public-agenda-list" role="list">
-                {agenda.map((item) => {
+                {agenda.map((item, idx) => {
                   const start = timeFromTimestamp(item.eventTime);
-                  const end = addMinutes(item.eventTime, item.durationMinutes);
+                  const contentLeft = idx % 2 === 0;
+                  const timeEl = (
+                    <time className="inv-agenda-time" data-testid="public-agenda-time">
+                      {formatTime(start)}
+                    </time>
+                  );
+                  const contentEl = (
+                    <>
+                      <h3 className="inv-agenda-title" data-testid="public-agenda-title">{item.title}</h3>
+                      {item.description && <p className="inv-agenda-desc" data-testid="public-agenda-description">{item.description}</p>}
+                    </>
+                  );
                   return (
                     <article key={item.id} className="inv-agenda-entry" data-testid="public-agenda-item" role="listitem">
-                      <div className="inv-agenda-dot" data-testid="public-agenda-icon" style={{ color: 'var(--inv-primary)' }}><AgendaIcon icon={item.iconKey} size={22} /></div>
-                      <div className="inv-agenda-content">
-                        <time className="inv-agenda-time" data-testid="public-agenda-time">
-                          {formatTime(start)}{end ? ` – ${formatTime(end)}` : ''}
-                        </time>
-                        <h3 className="inv-agenda-title" data-testid="public-agenda-title">{item.title}</h3>
-                        {item.description && <p className="inv-agenda-desc" data-testid="public-agenda-description">{item.description}</p>}
+                      <div className="inv-agenda-col-l">
+                        {contentLeft ? contentEl : timeEl}
+                      </div>
+                      <div className="inv-agenda-dot" data-testid="public-agenda-icon" style={{color:'var(--inv-primary)'}}>
+                        <AgendaIcon icon={item.iconKey} size={22} />
+                      </div>
+                      <div className="inv-agenda-col-r">
+                        {contentLeft ? timeEl : contentEl}
                       </div>
                     </article>
                   );
@@ -475,24 +528,33 @@ export default async function InvitationPage({ params, searchParams }: Props) {
           )}
 
           {/* ── Moments of Love Gallery (masonry) ── */}
+          {show('gallery') && (
           <section className="inv-card inv-masonry-card" data-testid="public-gallery">
             <div className="inv-masonry-header">
               <p className="inv-section-label">Gallery</p>
               <h2 className="inv-masonry-script">Moments of Love</h2>
               <p className="inv-masonry-sub">A few precious memories shared ahead of our celebration.</p>
             </div>
-            <div className="inv-masonry-grid" data-testid="public-gallery-grid">
-              {displayGalleryImages.map((img) => (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <div key={img.id} className="inv-masonry-item">
-                  <img src={img.imageUrl} alt="Wedding memory" loading="lazy" />
-                </div>
-              ))}
-            </div>
+            {displayGalleryImages.length > 0 ? (
+              <div className="inv-masonry-grid" data-testid="public-gallery-grid">
+                {displayGalleryImages.map((img) => (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <div key={img.id} className="inv-masonry-item">
+                    <img src={img.imageUrl} alt="Wedding memory" loading="lazy" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="inv-gallery-empty">
+                <div className="inv-gallery-empty-icon">📷</div>
+                <div className="inv-gallery-empty-text">Photos coming soon — check back closer to the big day!</div>
+              </div>
+            )}
           </section>
+          )}
 
           {/* ── RSVP CTA ── */}
-          {guestToken ? (
+          {show('rsvp') && (guestToken ? (
             <section className="inv-card" data-testid="public-rsvp-cta" id="rsvp">
               <p className="inv-section-label" style={{ textAlign: 'center' }}>Kindly Reply</p>
               <h2 className="inv-section-title" style={{ textAlign: 'center' }}>We&apos;d love to know you&apos;re coming.</h2>
@@ -510,16 +572,16 @@ export default async function InvitationPage({ params, searchParams }: Props) {
                 Your invite link contains your personal RSVP access.
               </p>
             </div>
-          )}
+          ))}
 
           {/* ── Find Your Table (inline search) ── */}
-          <FindTableInline slug={slug} guestToken={guestToken} />
+          {show('findTable') && <FindTableInline slug={slug} />}
           </>)}
 
         </div>
 
         {/* ── Special Note ── */}
-        {!ONLY_DETAILS && specialNoteText && (
+        {!ONLY_DETAILS && show('specialMessage') && (
           <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 16px 32px' }}>
             <div className="inv-sn-wrap">
               <div className="inv-sn-photo">
@@ -529,7 +591,7 @@ export default async function InvitationPage({ params, searchParams }: Props) {
               <div className="inv-sn-card">
                 <p className="inv-sn-eyebrow">A Special Note</p>
                 <h2 className="inv-sn-heading">To Our Lovely Guests</h2>
-                <p className="inv-sn-text">{specialNoteText}</p>
+                <p className="inv-sn-text">{specialNoteText || DEFAULT_SPECIAL_NOTE}</p>
                 <p className="inv-sn-sign">With all our love,</p>
                 <p className="inv-sn-names">{brideName} &amp; {groomName}</p>
               </div>
@@ -546,6 +608,14 @@ export default async function InvitationPage({ params, searchParams }: Props) {
             {date && venueName && <span> · </span>}
             {venueName && <span>{venueName}</span>}
           </p>
+          {footerContacts.length > 0 && (
+            <p>{footerContacts.map((item, index) => (
+              <React.Fragment key={item}>
+                {index > 0 && <span> · </span>}
+                <span>{item}</span>
+              </React.Fragment>
+            ))}</p>
+          )}
           <p style={{marginTop:16}}>Created with <Link href="/">WedPlan</Link></p>
         </footer>
         )}
@@ -565,6 +635,9 @@ export default async function InvitationPage({ params, searchParams }: Props) {
           }}
         />
       </div>
+
+      {/* Floating music player */}
+      {musicEnabled && <FloatingMusicPlayer src={musicSrc} />}
     </>
   );
 }
