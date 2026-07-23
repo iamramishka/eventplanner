@@ -40,7 +40,7 @@ export default function FindEventClient() {
     e.preventDefault();
     const searchTerm = getSearchTerm(query);
     if (searchTerm.length < 2) return;
-    
+
     setLoading(true);
     setHasSearched(true);
     setResults([]);
