@@ -40,7 +40,7 @@ export default function FindEventClient() {
     e.preventDefault();
     const searchTerm = getSearchTerm(query);
     if (searchTerm.length < 2) return;
-    
+
     setLoading(true);
     setHasSearched(true);
     setResults([]);
@@ -144,7 +144,7 @@ export default function FindEventClient() {
                         )}
                       </div>
                     </div>
-                    <Link href={`/${ev.slug}`} className={styles.viewBtn}>
+                    <Link href={`/invitation/${ev.slug}`} className={styles.viewBtn}>
                       View Invitation
                     </Link>
                   </div>
