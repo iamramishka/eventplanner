@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { dbUpdate } from '@/lib/supabase-db'
 import jwt, { type JwtPayload } from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   if (!userId) return NextResponse.json({ ok: false, error: 'invalid token payload' }, { status: 400 })
 
   const hashed = await bcrypt.hash(String(password), 10)
-  await prisma.user.update({ where: { id: userId }, data: { password: hashed } })
+  await dbUpdate('User', { id: `eq.${userId}` }, { password: hashed, updatedAt: new Date().toISOString() })
 
   return NextResponse.json({ ok: true })
 }

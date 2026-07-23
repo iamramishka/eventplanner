@@ -1,89 +1,45 @@
-# GitHub Activities & Workflow
+# GitHub Activities & Workflow (maintenance phase)
+
+The build is complete and merged. Work is now small, single-track fixes and changes off
+`main`. The old `dev` integration branch and the `codex/*` worktree lanes are retired (see
+`claude/archive/` for that historical setup).
 
 ## Branch Strategy
 
 ```
-main          ← stable, production-ready, PR-only
-  └── dev     ← integration branch, all features merge here first
-        └── codex/*  ← worktree feature branches
+main          ← live, production, PR-only, never force-push
+  └── fix/*   ← one bug fix per branch
+  └── feat/*  ← one small feature per branch
 ```
 
-### Active Feature Branches (codex/)
-| Branch | Status | Purpose |
-|---|---|---|
-| `codex/stabilize-build-lint` | **MISSING — create first** | Build fixes, import errors |
-| `codex/data-auth-rbac` | Active | Prisma auth, RBAC |
-| `codex/design-system-branding` | Active | Brand tokens, logo |
-| `codex/super-admin-full-control` | Active | Admin controls |
-| `codex/public-site-design-align` | Active | Public website UI |
-| `codex/couple-dashboard-align` | Active | Couple dashboard modules |
-| `codex/vendor-portal-complete` | Active | Vendor portal flows |
-| `codex/invitation-flow-align` | Active | Invitation + RSVP + table finder |
-| `codex/billing-pricing-entitlements` | Active | Stripe + plans |
-| `codex/qa-smoke-browser` | Active | QA harness |
-| `codex/security-privacy-audit` | Active | Security review |
-| `codex/docs-release-checklist` | Active | Release docs |
+- Branch directly from `main`.
+- Keep each branch to a single bug or feature so review and rollback stay easy.
+- Conventional commits: `fix(scope): …`, `feat(scope): …`, `docs:`, `chore:`, etc.
 
-### Stale Branches (review and close)
-- `agents/commit-to-dev-branch`
-- `agents/greeting-response-handler`
-- `backup-before-undo`
-- `codex/fix-pr-7-sentry-env`
-- `pre-remove-zip`
-- `subagent-Couple-Dashboard-Builder-portal-builder-828c0d39`
-- `subagent-Invitation-Website-Builder-portal-builder-cfdc92cc`
+## Pull Request flow
 
----
+1. Branch from `main`, make the change.
+2. Run `/ship-check` (build + lint + typecheck + relevant smoke test).
+3. Open a PR into `main` using the template below.
+4. Merge after the build gate passes.
 
-## Merge Order
-
-Must be followed strictly — later lanes depend on earlier ones:
-
-1. `codex/stabilize-build-lint` — build must be green before anything else
-2. `codex/design-system-branding` — tokens/brand needed by all UI lanes
-3. `codex/data-auth-rbac` — auth needed by all feature lanes
-4. Feature lanes (can be parallelized after step 3):
-   - `codex/super-admin-full-control`
-   - `codex/public-site-design-align`
-   - `codex/couple-dashboard-align`
-   - `codex/vendor-portal-complete`
-   - `codex/invitation-flow-align`
-   - `codex/billing-pricing-entitlements`
-5. `codex/qa-smoke-browser` — after features are stable
-6. `codex/security-privacy-audit` — after QA exposes final flows
-7. `codex/docs-release-checklist` — last, after everything is verified
-
----
-
-## PR Template
-
-When creating a PR into `dev`, include:
-
+### PR Template
 ```markdown
 ## What
 [1-3 bullets: what changed]
 
 ## Why
-[reason / linked sprint task from plan.md]
+[the bug being fixed or the feature being added]
 
 ## Evidence
 - [ ] `npm run build` passes
-- [ ] `npm run lint` passes (or debt documented)
+- [ ] `npm run lint` passes
+- [ ] `npm run typecheck` passes
 - [ ] Smoke test: `npm run test:*` result
-- [ ] Browser screenshot: desktop 1440px
-- [ ] Browser screenshot: mobile 375px
-
-## Worktree
-Branch: codex/xxx
-Worktree: wed-plan-wt-XX-xxx
-Agent: [agent name]
+- [ ] Manual check: desktop 1440px / mobile 375px (if UI)
 ```
 
----
-
-## GitHub Actions (Planned)
-
-### CI on PR to `dev`
+## CI on PR to `main`
 ```yaml
 name: CI
 on: [pull_request]
@@ -99,29 +55,12 @@ jobs:
       - run: cd web-app && npm run lint
 ```
 
-### Smoke Tests on PR
-```yaml
-  smoke:
-    runs-on: ubuntu-latest
-    steps:
-      - run: cd web-app && npm run dev &
-      - run: sleep 10 && npm run test:invitation-smoke
-      - run: npm run test:rsvp-token
-      - run: npm run test:sprint5-qa
-```
+## Release / deploy
 
----
+Production is on Vercel (https://invitemyguestplanner.vercel.app/), deploying from `main`
+against Supabase Postgres. Before merging to `main`:
 
-## Release Checklist
-
-Before merging `dev` → `main`:
-
-- [ ] All `codex/*` lanes merged to `dev`
-- [ ] `npm run build` passes from clean checkout
-- [ ] All smoke test suites pass (`test:*`)
-- [ ] Browser QA screenshots captured for all surfaces
-- [ ] Security audit findings resolved or logged
-- [ ] Postgres migration verified (not just SQLite)
-- [ ] Release notes written in `claude/todo.md` (completed section)
-- [ ] Stale branches cleaned up
-- [ ] `superadmin.md` and `vendorportal.md` spec docs created
+- [ ] `npm run build` passes from a clean checkout
+- [ ] Relevant smoke test(s) pass; `npm run test:e2e` for broad changes
+- [ ] If a schema change was unavoidable, the Postgres migration is verified (not just SQLite)
+- [ ] Known issues / notes updated in `claude/todo.md`

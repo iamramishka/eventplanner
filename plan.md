@@ -46,7 +46,7 @@ A comprehensive SaaS platform consisting of four main domains:
 				- `npx prisma generate`
 				- `npx prisma migrate deploy` (or `npx prisma migrate dev --name init` for dev)
 				- `npm run prisma:seed`
-- **Task 1.4**: Implement authentication and RBAC. Considerations: session strategy, role permissions, secure routes, account recovery, and auth flow docs. Acceptance: users can sign in, roles restrict protected routes, and unauthenticated access is blocked.
+- **Task 1.4 ✅**: Implement authentication and RBAC. Considerations: session strategy, role permissions, secure routes, account recovery, and auth flow docs. Acceptance: users can sign in, roles restrict protected routes, and unauthenticated access is blocked.
 	- Configure sign-in and session handling.
 	- Add role checks for protected routes.
 	- Document account recovery and auth behavior.
@@ -72,7 +72,7 @@ A comprehensive SaaS platform consisting of four main domains:
 			3. Visit `/login`, sign in with credentials, and verify access to `/couple`, `/vendor`, or `/super` based on role.
 		- Acceptance: server-side middleware redirects unauthenticated users to `/login` and prevents role-mismatched access.
 		- Emoji: ✅
-- **Task 1.5**: Sprint 1 QA and setup verification. Considerations: install/run checks, env validation, basic smoke tests, and confirm the base app boots correctly. Acceptance: local setup passes smoke checks and core pages load without runtime errors.
+- **Task 1.5 ✅**: Sprint 1 QA and setup verification. Considerations: install/run checks, env validation, basic smoke tests, and confirm the base app boots correctly. Acceptance: local setup passes smoke checks and core pages load without runtime errors.
 	- Run install and startup checks.
 	- Verify environment variables and base routes.
 	- Record smoke test results and fix blocking issues.
@@ -285,17 +285,17 @@ A comprehensive SaaS platform consisting of four main domains:
 	- Add numbering and visual assignment states.
 	- Prepare printable table layouts.
 	- Test: create tables and confirm capacity enforcement.
-- **Task 7.2**: Build guest-to-table assignment flows. Considerations: conflict checks, undo/reassign flow, accessibility, and bulk assignment actions. Acceptance: guests can be assigned and reassigned with conflicts prevented.
+- **Task 7.2 ✅**: Build guest-to-table assignment flows. Considerations: conflict checks, undo/reassign flow, accessibility, and bulk assignment actions. Acceptance: guests can be assigned and reassigned with conflicts prevented.
 	- Support guest assignment from the list and table view.
 	- Add conflict detection and undo actions.
 	- Ensure keyboard and accessibility support.
 	- Test: assign and reassign guests while checking conflicts.
-- **Task 7.3**: Build the guest "Find My Table" experience. Considerations: privacy gating, lookup verification, search UX, and concise guest-facing copy. Acceptance: guests can locate their table only after passing verification.
+- **Task 7.3 ✅**: Build the guest "Find My Table" experience. Considerations: privacy gating, lookup verification, search UX, and concise guest-facing copy. Acceptance: guests can locate their table only after passing verification.
 	- Build the guest lookup form and verification step.
 	- Add table result display and privacy checks.
 	- Keep the guest copy short and clear.
 	- Test: verify lookup works only after guest validation.
-- **Task 7.4**: Sprint 7 QA and seating-chart verification. Considerations: assignment smoke tests, capacity enforcement, privacy checks, and print/export validation. Acceptance: seating assignments and guest lookup flows pass verification.
+- **Task 7.4 ✅**: Sprint 7 QA and seating-chart verification. Considerations: assignment smoke tests, capacity enforcement, privacy checks, and print/export validation. Acceptance: seating assignments and guest lookup flows pass verification.
 	- Test table capacity and assignment conflicts.
 	- Verify guest lookup privacy rules.
 	- Validate print/export seating charts.
@@ -320,7 +320,7 @@ A comprehensive SaaS platform consisting of four main domains:
 	- Add approve/reject actions with notes.
 	- Record audit history for decisions.
 	- Test: approve and reject vendors and verify audit output.
-- **Task 8.3**: Build vendor profile and service listing management. Considerations: service categories, pricing fields, gallery images, SEO copy, and editable Markdown content. Acceptance: vendors can update profiles and service listings successfully.
+- **Task 8.3 ✅**: Build vendor profile and service listing management. Considerations: service categories, pricing fields, gallery images, SEO copy, and editable Markdown content. Acceptance: vendors can update profiles and service listings successfully.
 	- Add profile editing and service listing forms.
 	- Support gallery images and pricing fields.
 	- Include SEO and editable content fields.
@@ -342,17 +342,17 @@ A comprehensive SaaS platform consisting of four main domains:
 	- Handle webhook events and plan updates.
 	- Document billing and plan behavior.
 	- Test: complete a test-mode checkout and confirm webhook updates.
-- **Task 9.2**: Build Super Admin plan and subscription management. Considerations: feature gating matrix, entitlements, billing state, and support/admin notes. Acceptance: admins can view and manage plan state with proper gating.
+- **Task 9.2 ✅**: Build Super Admin plan and subscription management. Considerations: feature gating matrix, entitlements, billing state, and support/admin notes. Acceptance: admins can view and manage plan state with proper gating.
 	- Show plan and subscription status to admins.
 	- Add entitlements and feature gating rules.
 	- Capture support notes or admin actions.
 	- Test: toggle plan states and verify feature gating.
-- **Task 9.3**: Implement email notifications and WhatsApp invite integration. Considerations: message templates, delivery retries, opt-in rules, and asset placeholders for invite images. Acceptance: notifications can be generated and sent from the relevant trigger points.
+- **Task 9.3 ✅**: Implement email notifications and WhatsApp invite integration. Considerations: message templates, delivery retries, opt-in rules, and asset placeholders for invite images. Acceptance: notifications can be generated and sent from the relevant trigger points.
 	- Define email and WhatsApp template content.
 	- Add sending hooks and retry handling.
 	- Include opt-in and asset placeholders.
 	- Test: trigger notifications and verify delivery events.
-- **Task 9.4**: Run end-to-end testing, bug squashing, and UI polish. Considerations: test coverage for critical journeys, visual regression checks, bug log, and release checklist Markdown. Acceptance: critical user journeys pass end-to-end tests and UI issues are resolved.
+- **Task 9.4 ✅**: Run end-to-end testing, bug squashing, and UI polish. Considerations: test coverage for critical journeys, visual regression checks, bug log, and release checklist Markdown. Acceptance: critical user journeys pass end-to-end tests and UI issues are resolved.
 	- Run end-to-end test coverage for core journeys.
 	- Fix blocking bugs and polish key layouts.
 	- Finalize the release checklist and bug log.
@@ -360,7 +360,7 @@ A comprehensive SaaS platform consisting of four main domains:
 
 ### Epic 6: Public Website Experience
 **Sprint 10: Public Website, Auth & Event Discovery Designs**
-- **Task 10.1**: Build the Public Website landing page design from `Public Website/Public Website.png`. Considerations: WedPlan brand header and navigation, hero messaging, CTA hierarchy, feature cards, templates, stats, testimonials, vendor logos, footer, newsletter area, responsive desktop/mobile behavior, and visual consistency with the rose/pink wedding theme and existing design system. Acceptance: the public landing page matches the provided design direction and presents the complete marketing journey clearly across desktop and mobile.
+- **Task 10.1 ✅**: Build the Public Website landing page design from `Public Website/Public Website.png`. Considerations: WedPlan brand header and navigation, hero messaging, CTA hierarchy, feature cards, templates, stats, testimonials, vendor logos, footer, newsletter area, responsive desktop/mobile behavior, and visual consistency with the rose/pink wedding theme and existing design system. Acceptance: the public landing page matches the provided design direction and presents the complete marketing journey clearly across desktop and mobile.
 	- Build the public header, navigation, login CTA, and Start Free Trial CTA.
 	- Create the hero section with dashboard/mobile preview imagery, supporting copy, and primary/secondary actions.
 	- Add feature cards, how-it-works steps, invitation templates, trust stats, testimonials, vendor logos, final CTA, footer, and newsletter signup sections.

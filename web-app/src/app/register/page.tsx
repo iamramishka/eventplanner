@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Mail, Lock, Eye, EyeOff, User, Users, CheckCircle2, ShieldCheck, MailOpen, CalendarCheck, MapPin } from 'lucide-react';
 import styles from './register.module.css';
@@ -29,6 +30,30 @@ type FormState = {
 
 type FieldErrors = Partial<Record<keyof FormState, string>> & { terms?: string };
 
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+const minWeddingDate = toDateInputValue(new Date());
+const maxWeddingDate = `${new Date().getFullYear() + 10}-12-31`;
+const weddingDateMessage = `Please select a valid date between ${minWeddingDate} and ${maxWeddingDate}.`;
+
+function isValidWeddingDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  const isRealDate =
+    parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day;
+
+  return isRealDate && value >= minWeddingDate && value <= maxWeddingDate;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -39,6 +64,22 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [emailExists, setEmailExists] = useState(false);
+  const [emailChecking, setEmailChecking] = useState(false);
+
+  const checkEmailExists = useCallback(async (email: string) => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+    setEmailChecking(true);
+    try {
+      const res = await fetch(`/api/check-email?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      setEmailExists(!!data.exists);
+    } catch {
+      // silently ignore — full validation still happens on submit
+    } finally {
+      setEmailChecking(false);
+    }
+  }, []);
 
   // Step 2 specific states
   const [venueDeciding, setVenueDeciding] = useState(false);
@@ -47,6 +88,16 @@ export default function RegisterPage() {
   const [guestCount, setGuestCount] = useState(125);
   const [budgetDeciding, setBudgetDeciding] = useState(false);
   const [budgetAmount, setBudgetAmount] = useState(2500000);
+
+  function handleNameChange(field: 'firstName' | 'lastName' | 'groomName' | 'brideName', raw: string) {
+    // Strip anything that isn't an English letter
+    const letters = raw.replace(/[^a-zA-Z]/g, '');
+    // Auto-capitalise the first character
+    const value = letters.length > 0
+      ? letters[0].toUpperCase() + letters.slice(1)
+      : '';
+    update({ [field]: value });
+  }
 
   function update(up: Partial<FormState>) {
     setForm((s) => ({ ...s, ...up }));
@@ -62,7 +113,9 @@ export default function RegisterPage() {
     const e: FieldErrors = {};
     if (s === 1) {
       if (!form.firstName?.trim()) e.firstName = 'First name is required.';
+      else if (!/^[A-Z][a-zA-Z]*$/.test(form.firstName.trim())) e.firstName = 'English letters only, starting with a capital letter.';
       if (!form.lastName?.trim()) e.lastName = 'Last name is required.';
+      else if (!/^[A-Z][a-zA-Z]*$/.test(form.lastName.trim())) e.lastName = 'English letters only, starting with a capital letter.';
       if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
         e.email = 'Valid email is required.';
       }
@@ -80,7 +133,12 @@ export default function RegisterPage() {
       }
     }
     if (s === 2) {
-      // Step 2 validation to come later
+      if (!form.groomName?.trim()) e.groomName = "Groom's first name is required.";
+      else if (!/^[A-Z][a-zA-Z]*$/.test(form.groomName.trim())) e.groomName = "English letters only, starting with a capital letter.";
+      if (!form.brideName?.trim()) e.brideName = "Bride's first name is required.";
+      else if (!/^[A-Z][a-zA-Z]*$/.test(form.brideName.trim())) e.brideName = "English letters only, starting with a capital letter.";
+      if (!dateDeciding && !form.date) e.date = 'Please select a wedding date or check "Still deciding".';
+      else if (!dateDeciding && form.date && !isValidWeddingDate(form.date)) e.date = weddingDateMessage;
     }
     return e;
   }
@@ -113,12 +171,29 @@ export default function RegisterPage() {
       const resp = await fetch('/api/couples', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          dateDeciding,
+          venueDeciding,
+          estimatedGuests: guestsDeciding ? null : guestCount,
+          estimatedBudget: budgetDeciding ? null : budgetAmount,
+        }),
       });
       const data = await resp.json();
       if (!resp.ok) {
         setSubmitError(data?.error || 'Submission failed. Please try again.');
         setLoading(false);
+        return;
+      }
+      const result = await signIn('credentials', {
+        email: form.email,
+        password: form.password,
+        redirect: false,
+      });
+      if (result?.error) {
+        setSubmitError('Account created but sign-in failed. Please log in manually.');
+        setLoading(false);
+        router.push('/login');
         return;
       }
       setLoading(false);
@@ -190,7 +265,15 @@ export default function RegisterPage() {
         </div>
 
         <div className={styles.illustration}>
-          <Image src="/public-site/wedding-couple.png" alt="Wedding couple" fill sizes="(max-width: 900px) 100vw, 42vw" className={styles.illustrationImage} />
+          <Image
+            src="/public-site/wedding-couple.png"
+            alt="Wedding couple"
+            fill
+            sizes="(max-width: 900px) 100vw, 42vw"
+            loading="eager"
+            fetchPriority="high"
+            className={styles.illustrationImage}
+          />
         </div>
       </div>
 
@@ -228,7 +311,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.firstName ? styles.error : ''}`}
                       placeholder="Enter your first name"
                       value={form.firstName || ''}
-                      onChange={(e) => update({ firstName: e.target.value })}
+                      onChange={(e) => handleNameChange('firstName', e.target.value)}
                     />
                   </div>
                   {errors.firstName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.firstName}</div>}
@@ -242,7 +325,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.lastName ? styles.error : ''}`}
                       placeholder="Enter your last name"
                       value={form.lastName || ''}
-                      onChange={(e) => update({ lastName: e.target.value })}
+                      onChange={(e) => handleNameChange('lastName', e.target.value)}
                     />
                   </div>
                   {errors.lastName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.lastName}</div>}
@@ -255,13 +338,21 @@ export default function RegisterPage() {
                   <Mail size={18} className={styles.inputIcon} />
                   <input
                     type="email"
-                    className={`${styles.input} ${errors.email ? styles.error : ''}`}
+                    className={`${styles.input} ${errors.email || emailExists ? styles.error : ''}`}
                     placeholder="Enter your email address"
                     value={form.email || ''}
-                    onChange={(e) => update({ email: e.target.value })}
+                    onChange={(e) => { setEmailExists(false); update({ email: e.target.value }); }}
+                    onBlur={(e) => checkEmailExists(e.target.value)}
                   />
+                  {emailChecking && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#888' }}>Checking…</span>}
                 </div>
                 {errors.email && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.email}</div>}
+                {!errors.email && emailExists && (
+                  <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>
+                    An account with this email already exists.{' '}
+                    <a href="/login" style={{ color: 'red', textDecoration: 'underline' }}>Sign in instead?</a>
+                  </div>
+                )}
               </div>
 
               <div className={styles.formGroup}>
@@ -328,22 +419,11 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <button type="button" className={styles.submitBtn} onClick={next}>
+              <button type="button" className={styles.submitBtn} onClick={next} disabled={emailExists || emailChecking}>
                 Continue to Wedding Details →
               </button>
 
-              <div className={styles.orDivider}>or sign up with</div>
-
-              <div className={styles.socialBtns}>
-                <button type="button" className={styles.socialBtn}>
-                  <Image src="/public-site/google-mark.svg" alt="Google" width={20} height={20} /> Google
-                </button>
-                <button type="button" className={styles.socialBtn}>
-                  <Image src="/public-site/apple-mark.svg" alt="Apple" width={20} height={20} /> Apple
-                </button>
-              </div>
-
-              <div className={styles.securityNote}>
+<div className={styles.securityNote}>
                 <ShieldCheck size={24} className={styles.securityIcon} />
                 <div>
                   <div className={styles.securityTitle}>Your data is safe with us</div>
@@ -365,7 +445,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.groomName ? styles.error : ''}`}
                       placeholder="Enter groom's first name"
                       value={form.groomName || ''}
-                      onChange={(e) => update({ groomName: e.target.value })}
+                      onChange={(e) => handleNameChange('groomName', e.target.value)}
                     />
                   </div>
                   {errors.groomName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.groomName}</div>}
@@ -379,7 +459,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.brideName ? styles.error : ''}`}
                       placeholder="Enter bride's first name"
                       value={form.brideName || ''}
-                      onChange={(e) => update({ brideName: e.target.value })}
+                      onChange={(e) => handleNameChange('brideName', e.target.value)}
                     />
                   </div>
                   {errors.brideName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.brideName}</div>}
@@ -424,7 +504,8 @@ export default function RegisterPage() {
                     value={form.date || ''}
                     onChange={(e) => update({ date: e.target.value })}
                     disabled={dateDeciding}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={minWeddingDate}
+                    max={maxWeddingDate}
                   />
                 </div>
                 {errors.date && !dateDeciding && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.date}</div>}

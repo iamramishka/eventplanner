@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
@@ -5,12 +6,13 @@ import { signOut } from 'next-auth/react';
 import { 
   LayoutDashboard, Users, Briefcase, LayoutTemplate, CreditCard, Trash2, 
   Settings, ShieldCheck, ShieldOff, PanelLeftClose, User,
-  Menu, ChevronRight, LogOut, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle, 
-  Bell, UserCheck, Globe, Banknote, Search, Plus, Save, Check, X, Star, Eye, RefreshCw, Scroll
+  Menu, ChevronRight, LogOut, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle,
+  Search, Plus, Save, Check, X, Star, Eye, RefreshCw, Scroll
 } from 'lucide-react';
 import styles from './admin.module.css';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import CoupleDetailModal from '@/components/CoupleDetailModal';
+import AnalyticsModule from './AnalyticsModule';
 
 function cn(...classes: (string | undefined | null | false)[]) {
   return classes
@@ -27,6 +29,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [simulateLoading, setSimulateLoading] = useState(false);
   const [simulateEmpty, setSimulateEmpty] = useState(false);
+  const [platformSettings, setPlatformSettings] = useState(initialSettings || {});
   
   const handleNavClick = (mod: string) => {
     setActiveModule(mod);
@@ -36,7 +39,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
   const pendingVendors = initialVendors.filter((v: any) => v.status === 'pending' || v.status === 'pending_review').length;
   const labels: Record<string, string> = {
     dashboard: 'Dashboard', couples: 'Couples', vendors: 'Vendors',
-    templates: 'Templates', plans: 'Plans', cleanup: 'Trial Cleanup',
+    templates: 'Templates', analytics: 'Analytics', plans: 'Plans', cleanup: 'Trial Cleanup',
     cms: 'Content CMS', reports: 'Reports', settings: 'Settings', logs: 'Logs'
   };
   
@@ -64,7 +67,8 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
           <NavItem id="couples" icon={<Users size={18} />} label="Couples" active={activeModule} onClick={handleNavClick} />
           <NavItem id="vendors" icon={<Briefcase size={18} />} label="Vendors" active={activeModule} onClick={handleNavClick} badge={pendingVendors} />
           <NavItem id="templates" icon={<LayoutTemplate size={18} />} label="Templates" active={activeModule} onClick={handleNavClick} />
-          
+          <NavItem id="analytics" icon={<TrendingUp size={18} />} label="Analytics" active={activeModule} onClick={handleNavClick} />
+
           <div className={cn("nav-section-label")}>Commerce</div>
           <NavItem id="plans" icon={<CreditCard size={18} />} label="Plans" active={activeModule} onClick={handleNavClick} />
           <NavItem id="cleanup" icon={<Trash2 size={18} />} label="Trial Cleanup" active={activeModule} onClick={handleNavClick} />
@@ -117,13 +121,14 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
 
         <main className={cn("page-content")}>
           {activeModule === 'dashboard' && <DashboardModule couples={simulateEmpty ? [] : initialCouples} vendors={simulateEmpty ? [] : initialVendors} weddings={simulateEmpty ? [] : initialWeddings} loading={simulateLoading} />}
-          {activeModule === 'couples' && <CouplesModule couples={initialCouples} />}
+          {activeModule === 'couples' && <CouplesModule couples={initialCouples} platformSettings={platformSettings} />}
           {activeModule === 'vendors' && <VendorsModule vendors={initialVendors} />}
-          {activeModule === 'templates' && <TemplatesModule initialSettings={initialSettings} />}
+          {activeModule === 'templates' && <TemplatesModule initialSettings={platformSettings} />}
           {activeModule === 'plans' && <PlansModule initialPlans={initialPlans} />}
           {activeModule === 'cleanup' && <CleanupModule />}
-          {activeModule === 'settings' && <SettingsModule initialSettings={initialSettings} />}
+          {activeModule === 'settings' && <SettingsModule initialSettings={platformSettings} onSaved={setPlatformSettings} />}
           {activeModule === 'logs' && <LogsModule />}
+          {activeModule === 'analytics' && <AnalyticsModule />}
         </main>
       </div>
     </div>
@@ -228,7 +233,7 @@ function KpiCard({ color, icon, value, label, trend, up, down, loading }: any) {
   );
 }
 
-function CouplesModule({ couples: initialCouples }: any) {
+function CouplesModule({ couples: initialCouples, platformSettings }: any) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [couples, setCouples] = useState(initialCouples || []);
@@ -360,7 +365,13 @@ function CouplesModule({ couples: initialCouples }: any) {
         </div>
       </div>
 
-      <CoupleDetailModal open={detailOpen} couple={selected} onClose={() => setDetailOpen(false)} onSaved={handleSaved} />
+      <CoupleDetailModal
+        open={detailOpen}
+        couple={selected}
+        defaultTrialDays={platformSettings?.trial?.defaultTrialDays || 14}
+        onClose={() => setDetailOpen(false)}
+        onSaved={handleSaved}
+      />
       <ConfirmDialog open={confirmOpen} title="Delete Couple" message="Are you sure you want to permanently delete this couple?" onConfirm={doDelete} onCancel={() => setConfirmOpen(false)} />
     </section>
   );
@@ -510,24 +521,6 @@ function VendorsModule({ vendors: initialVendors }: any) {
   );
 }
 
-function PlaceholderModule({ title, desc }: any) {
-  return (
-    <section className={cn("module")}>
-      <div className={cn("module-header")}>
-        <div>
-          <h1 className={cn("module-title")}>{title}</h1>
-          <p className={cn("module-desc")}>{desc}</p>
-        </div>
-      </div>
-      <div className={cn("empty-state")}>
-        <Settings size={40} />
-        <h3>Under Construction</h3>
-        <p>This module is being ported to Next.js.</p>
-      </div>
-    </section>
-  );
-}
-
 function PlansModule({ initialPlans }: any) {
   const [plans, setPlans] = useState(initialPlans || []);
   const [saving, setSaving] = useState(false);
@@ -643,7 +636,7 @@ function PlansModule({ initialPlans }: any) {
   );
 }
 
-function SettingsModule({ initialSettings }: any) {
+function SettingsModule({ initialSettings, onSaved }: any) {
   const [settings, setSettings] = useState(initialSettings || {});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -677,6 +670,7 @@ function SettingsModule({ initialSettings }: any) {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to save settings');
       setSettings(data.data.settings);
+      onSaved?.(data.data.settings);
       setMessage('Settings saved.');
     } catch (e: any) {
       setMessage(e.message || 'Failed to save settings');
@@ -721,6 +715,23 @@ function SettingsModule({ initialSettings }: any) {
             <input type="checkbox" checked={Boolean(settings.publicSite?.maintenanceMode)} onChange={e => updateSection('publicSite', 'maintenanceMode', e.target.checked)} />
             Maintenance Mode
           </label>
+        </SettingsCard>
+
+        <SettingsCard title="Trial Settings">
+          <label style={{ display: 'grid', gap: 6, color: 'var(--adm-text-secondary)', fontSize: 13 }}>
+            Default trial days for new couples
+            <input
+              type="number"
+              min={1}
+              max={365}
+              className={cn("input")}
+              value={settings.trial?.defaultTrialDays || 14}
+              onChange={e => updateSection('trial', 'defaultTrialDays', Number(e.target.value))}
+            />
+          </label>
+          <p style={{ margin: 0, color: 'var(--adm-text-muted)', fontSize: 12, lineHeight: 1.5 }}>
+            New couple accounts receive this trial length automatically. Existing couples can still be adjusted one by one from Couple Management.
+          </p>
         </SettingsCard>
 
         <SettingsCard title="CMS Blocks">
@@ -856,9 +867,8 @@ function LogsModule() {
     }
   };
 
-  React.useEffect(() => {
-    loadLogs();
-  }, []);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  React.useEffect(() => { loadLogs(); }, []);
 
   return (
     <section className={cn("module")}>

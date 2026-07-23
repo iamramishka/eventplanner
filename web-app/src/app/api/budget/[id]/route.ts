@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { deleteBudgetItem, updateBudgetItem } from '@/lib/store';
+import { deleteBudgetItemRow, updateBudgetItemRow } from '@/lib/wedding-data';
 import { requireBudgetItemAccess } from '@/lib/rbac';
 
 function errorMessage(error: unknown) {
@@ -12,11 +12,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const access = await requireBudgetItemAccess(id);
     if (access.response) return access.response;
     const body = await request.json();
-    const updated = updateBudgetItem(id, body);
+    const updated = await updateBudgetItemRow(id, body);
     if (!updated) {
       return NextResponse.json({ ok: false, error: 'Budget item not found' }, { status: 404 });
     }
-
     return NextResponse.json(updated);
   } catch (error: unknown) {
     return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 400 });
@@ -27,10 +26,9 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const access = await requireBudgetItemAccess(id);
   if (access.response) return access.response;
-  const removed = deleteBudgetItem(id);
+  const removed = await deleteBudgetItemRow(id);
   if (!removed) {
     return NextResponse.json({ ok: false, error: 'Budget item not found' }, { status: 404 });
   }
-
-  return NextResponse.json({ ok: true, removed });
+  return NextResponse.json({ ok: true });
 }

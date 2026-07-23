@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -30,7 +31,31 @@ const btnGhost: React.CSSProperties = {
   fontSize: '0.875rem', cursor: 'pointer',
 };
 
-export default function CoupleDetailModal({ open, couple, onClose, onSaved }: any) {
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function daysUntil(value?: string) {
+  if (!value) return null;
+  const end = new Date(value);
+  if (Number.isNaN(end.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  return Math.ceil((end.getTime() - today.getTime()) / 86400000);
+}
+
+function formatTrialDays(days: number | null) {
+  if (days === null) return 'No trial end date set';
+  if (days > 1) return `${days} days left`;
+  if (days === 1) return '1 day left';
+  if (days === 0) return 'Trial ends today';
+  return `Expired ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} ago`;
+}
+
+export default function CoupleDetailModal({ open, couple, defaultTrialDays = 14, onClose, onSaved }: any) {
   const [form, setForm] = useState<any>(couple || {});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -52,7 +77,8 @@ export default function CoupleDetailModal({ open, couple, onClose, onSaved }: an
         body: JSON.stringify(form),
       });
       if (!res.ok) throw new Error('Save failed');
-      onSaved?.(form);
+      const data = await res.json().catch(() => null);
+      onSaved?.(data?.updated || form);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e) {
@@ -63,7 +89,17 @@ export default function CoupleDetailModal({ open, couple, onClose, onSaved }: an
     }
   };
 
-  const trialExpired = couple.plan === 'trial' && couple.trialEnds && new Date(couple.trialEnds) < new Date();
+  const trialDaysLeft = daysUntil(form.trialEnds);
+  const trialExpired = form.plan === 'trial' && trialDaysLeft !== null && trialDaysLeft < 0;
+  const setTrialFromToday = (days: number) => {
+    setForm({ ...form, plan: 'trial', trialEnds: addDays(new Date(), days).toISOString() });
+  };
+  const extendTrial = (days: number) => {
+    const current = form.trialEnds && !Number.isNaN(new Date(form.trialEnds).getTime())
+      ? new Date(form.trialEnds)
+      : new Date();
+    setForm({ ...form, plan: 'trial', trialEnds: addDays(current, days).toISOString() });
+  };
 
   return (
     <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '1rem' }}>
@@ -91,8 +127,8 @@ export default function CoupleDetailModal({ open, couple, onClose, onSaved }: an
 
         {/* Status pills */}
         <div style={{ padding: '0.75rem 1.5rem', display: 'flex', gap: 8, flexWrap: 'wrap', borderBottom: '1px solid var(--adm-border-light)', background: 'var(--adm-bg-alt)' }}>
-          <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 12, fontWeight: 600, background: couple.plan === 'premium' ? '#EDE9FE' : trialExpired ? '#FEE2E2' : '#FEF9C3', color: couple.plan === 'premium' ? '#6D28D9' : trialExpired ? '#DC2626' : '#92400E' }}>
-            {couple.plan === 'premium' ? 'Premium' : trialExpired ? 'Trial Expired' : 'Active Trial'}
+          <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 12, fontWeight: 600, background: form.plan === 'premium' ? '#EDE9FE' : trialExpired ? '#FEE2E2' : '#FEF9C3', color: form.plan === 'premium' ? '#6D28D9' : trialExpired ? '#DC2626' : '#92400E' }}>
+            {form.plan === 'premium' ? 'Premium' : trialExpired ? 'Trial Expired' : 'Active Trial'}
           </span>
           {couple.suspended && (
             <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 12, fontWeight: 600, background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -104,9 +140,9 @@ export default function CoupleDetailModal({ open, couple, onClose, onSaved }: an
               <ShieldCheck size={12} /> Active
             </span>
           )}
-          {couple.trialEnds && (
+          {form.trialEnds && (
             <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: 12, color: 'var(--adm-text-muted)', background: 'var(--adm-bg-card)', border: '1px solid var(--adm-border)', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Calendar size={12} /> Trial ends {new Date(couple.trialEnds).toLocaleDateString()}
+              <Calendar size={12} /> Trial ends {new Date(form.trialEnds).toLocaleDateString()} · {formatTrialDays(trialDaysLeft)}
             </span>
           )}
         </div>
@@ -130,7 +166,23 @@ export default function CoupleDetailModal({ open, couple, onClose, onSaved }: an
           </div>
           <div style={field}>
             <span style={label}>Trial Ends</span>
-            <input type="date" style={input} value={form.trialEnds ? form.trialEnds.substring(0, 10) : ''} onChange={e => setForm({ ...form, trialEnds: e.target.value + 'T00:00:00Z' })} />
+            <input
+              type="date"
+              style={input}
+              value={form.trialEnds ? form.trialEnds.substring(0, 10) : ''}
+              onChange={e => setForm({ ...form, trialEnds: e.target.value ? `${e.target.value}T00:00:00Z` : '' })}
+            />
+          </div>
+          <div style={{ ...field, gridColumn: '1 / -1' }}>
+            <span style={label}>Trial Control</span>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button type="button" style={btnGhost} onClick={() => setTrialFromToday(defaultTrialDays)}>
+                Set {defaultTrialDays}-day default
+              </button>
+              <button type="button" style={btnGhost} onClick={() => extendTrial(7)}>Extend +7 days</button>
+              <button type="button" style={btnGhost} onClick={() => extendTrial(30)}>Extend +30 days</button>
+              <span style={{ fontSize: 12, color: 'var(--adm-text-muted)' }}>{formatTrialDays(trialDaysLeft)}</span>
+            </div>
           </div>
           <div style={field}>
             <span style={label}>Billing State</span>
@@ -141,13 +193,26 @@ export default function CoupleDetailModal({ open, couple, onClose, onSaved }: an
               <option value="refunded">Refunded</option>
             </select>
           </div>
+          <div style={field}>
+            <span style={label}>Guest Limit Override</span>
+            <input
+              type="number"
+              min={0}
+              max={9999}
+              style={input}
+              placeholder="Leave blank to use plan default"
+              value={form.guestLimit != null ? form.guestLimit : ''}
+              onChange={e => setForm({ ...form, guestLimit: e.target.value === '' ? null : Number(e.target.value) })}
+            />
+            <span style={{ fontSize: 11, color: 'var(--adm-text-muted)', marginTop: 2 }}>Overrides the plan&rsquo;s max guest count for this couple only.</span>
+          </div>
           <div style={{ ...field, gridColumn: '1 / -1' }}>
             <span style={label}>Admin / Support Notes</span>
-            <textarea 
-              style={{ ...input, minHeight: 80, resize: 'vertical' }} 
-              placeholder="Internal notes regarding plan overrides, refunds, etc." 
-              value={form.adminNotes || ''} 
-              onChange={e => setForm({ ...form, adminNotes: e.target.value })} 
+            <textarea
+              style={{ ...input, minHeight: 80, resize: 'vertical' }}
+              placeholder="Internal notes regarding plan overrides, refunds, etc."
+              value={form.adminNotes || ''}
+              onChange={e => setForm({ ...form, adminNotes: e.target.value })}
             />
           </div>
           <div style={{ ...field, gridColumn: '1 / -1' }}>

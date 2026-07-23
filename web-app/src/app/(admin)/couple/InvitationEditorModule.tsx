@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -17,18 +18,6 @@ type Props = {
   setWedding: (wedding: any) => void;
 };
 
-const SECTION_ORDER = [
-  ['loadingScreen', 'Loading Screen'],
-  ['envelope', 'Envelope'],
-  ['hero', 'Hero'],
-  ['details', 'Details'],
-  ['message', 'Message'],
-  ['countdown', 'Countdown'],
-  ['agenda', 'Agenda'],
-  ['rsvp', 'RSVP'],
-  ['specialMessage', 'Special Message'],
-  ['venueMap', 'Venue Map'],
-] as const;
 
 export default function InvitationEditorModule({ wedding, setWedding }: Props) {
   const [draft, setDraft] = useState(() => createInvitationDraft(wedding));
@@ -43,6 +32,7 @@ export default function InvitationEditorModule({ wedding, setWedding }: Props) {
     setDraft(createInvitationDraft(wedding));
     setError('');
     setDirty(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding.id]);
 
   useEffect(() => {
@@ -63,12 +53,6 @@ export default function InvitationEditorModule({ wedding, setWedding }: Props) {
 
   const updateContent = (key: keyof typeof draft.content, value: string) => {
     setDraft(prev => ({ ...prev, content: { ...prev.content, [key]: value } }));
-    setDirty(true);
-    setSavedAt(null);
-  };
-
-  const toggleSection = (key: keyof typeof draft.sections) => {
-    setDraft(prev => ({ ...prev, sections: { ...prev.sections, [key]: !prev.sections[key] } }));
     setDirty(true);
     setSavedAt(null);
   };
@@ -172,25 +156,6 @@ export default function InvitationEditorModule({ wedding, setWedding }: Props) {
                   </div>
                 </section>
 
-                <section>
-                  <div className="settings-section-header">
-                    <span style={{ color: 'var(--adm-primary)', fontWeight: 700 }}>Section Toggles</span>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10 }}>
-                    {SECTION_ORDER.map(([key, label]) => (
-                      <button
-                        key={key}
-                        type="button"
-                        className={`btn ${draft.sections[key] ? 'btn-primary' : 'btn-outline'}`}
-                        onClick={() => toggleSection(key)}
-                        style={{ justifyContent: 'space-between' }}
-                      >
-                        <span>{label}</span>
-                        <span>{draft.sections[key] ? 'On' : 'Off'}</span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
               </div>
             ) : (
               <InvitationPreview wedding={{ ...wedding, ...draft, invitationContent: draft.content, theme: draft.theme }} />

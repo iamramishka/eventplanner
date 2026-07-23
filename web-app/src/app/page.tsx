@@ -235,7 +235,7 @@ export default function Home() {
         </div>
         <div>
           <strong>Guest tools</strong>
-          <Link href="/priya-and-kasun">Sample invitation</Link>
+          <Link href="/invitation/priya-and-kasun">Sample invitation</Link>
           <Link href="/find-event">Find invitation</Link>
           <Link href="/shortlist">Vendor shortlist</Link>
         </div>

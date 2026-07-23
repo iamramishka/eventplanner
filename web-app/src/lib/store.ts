@@ -19,37 +19,218 @@ export const BUDGET_STATUSES = ['planned', 'reserved', 'paid'] as const;
 
 type BudgetStatus = typeof BUDGET_STATUSES[number];
 
-const CHECKLIST_GROUPS = ['4 months before', '3 months before', '2 months before', '1 month before', '1 week before', 'Wedding Day', 'After Wedding'];
+const CHECKLIST_GROUPS = ['4 months before', '3 months before', '2 months before', '1 month before', '2 weeks before', '1 week before', 'Day before', 'Wedding Day', 'After Wedding'];
 
-const CHECKLIST_STARTER_TEMPLATES = [
+export const CHECKLIST_STARTER_TEMPLATES = [
   {
-    id: 'essential-planning',
-    name: 'Essential Planning',
-    description: 'Core planning tasks every couple needs to track.',
+    id: 'four-months-before',
+    name: '4 Months Before',
+    description: 'Lock the big decisions, book the main vendors, and start choosing outfits.',
     tasks: [
-      { group: '4 months before', title: 'Confirm wedding date and venue', priority: 'high', dueOffsetDays: -120, reminderOffsetDays: -127, description: 'Lock the date, venue, and major timing before inviting guests.' },
-      { group: '3 months before', title: 'Finalize guest list draft', priority: 'high', dueOffsetDays: -90, reminderOffsetDays: -97, description: 'Prepare the first complete guest list with family input.' },
-      { group: '2 months before', title: 'Send digital invitations', priority: 'medium', dueOffsetDays: -60, reminderOffsetDays: -67, description: 'Share invitation links and start tracking RSVP responses.' },
+      // Main Planning
+      { group: '4 months before', title: 'Main Planning · Decide the wedding / engagement date', priority: 'high', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: 'Main Planning · Decide the budget', priority: 'high', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: 'Main Planning · Decide the guest count', priority: 'high', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: 'Main Planning · Choose the type of function', priority: 'high', dueOffsetDays: -120, reminderOffsetDays: -125, description: 'Example: home function, hotel, hall, outdoor, church / temple / kovil / mosque.' },
+      { group: '4 months before', title: 'Main Planning · Book the venue', priority: 'high', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: 'Main Planning · Book the photographer / videographer', priority: 'high', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: 'Main Planning · Book the bridal dresser / makeup artist', priority: 'high', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: 'Main Planning · Book the decorator / florist', priority: 'medium', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: 'Main Planning · Book the catering service', priority: 'high', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: 'Main Planning · Book the DJ / band / music group', priority: 'medium', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: 'Main Planning · Decide the wedding theme and colors', priority: 'medium', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      // Legal / Religious
+      { group: '4 months before', title: 'Legal & Religious · Check marriage registration requirements', priority: 'high', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: 'Legal & Religious · Meet the religious leader if needed', priority: 'medium', dueOffsetDays: -120, reminderOffsetDays: -125, description: 'Example: priest, monk, kovil priest, moulavi.' },
+      { group: '4 months before', title: 'Legal & Religious · Decide the time for religious / customary activities', priority: 'medium', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      // Clothes
+      { group: '4 months before', title: "Clothes · Select Bride's saree / gown", priority: 'medium', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: "Clothes · Select Groom's suit / national dress", priority: 'medium', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: "Clothes · Select Bridesmaids' dresses", priority: 'low', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: "Clothes · Select Groomsmen's outfits", priority: 'low', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
+      { group: '4 months before', title: 'Clothes · Select Flower girl / page boy outfits', priority: 'low', dueOffsetDays: -120, reminderOffsetDays: -125, description: '' },
     ],
   },
   {
-    id: 'venue-vendors',
-    name: 'Venue & Vendors',
-    description: 'Booking and confirmation tasks for major suppliers.',
+    id: 'three-months-before',
+    name: '3 Months Before',
+    description: 'Guest list, invitations, vendor packages, jewelry, and day-of roles.',
     tasks: [
-      { group: '3 months before', title: 'Book photographer and videographer', priority: 'high', dueOffsetDays: -100, reminderOffsetDays: -107, description: 'Confirm package, deposit, and coverage hours.' },
-      { group: '2 months before', title: 'Confirm catering menu', priority: 'high', dueOffsetDays: -70, reminderOffsetDays: -77, description: 'Finalize menu choices, dietary options, and serving schedule.' },
-      { group: '1 month before', title: 'Review decor and floral plan', priority: 'medium', dueOffsetDays: -35, reminderOffsetDays: -42, description: 'Approve moodboard, colors, table decor, and ceremony setup.' },
+      // Guest & Invitation
+      { group: '3 months before', title: 'Guest & Invitation · Prepare final guest list', priority: 'high', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Guest & Invitation · Collect guest names and phone numbers', priority: 'medium', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Guest & Invitation · Design invitation card', priority: 'medium', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Guest & Invitation · Decide printed card or digital invitation', priority: 'medium', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Guest & Invitation · Start printing invitation cards', priority: 'medium', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      // Vendors
+      { group: '3 months before', title: 'Vendors · Confirm photographer package', priority: 'high', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Vendors · Confirm bridal dressing package', priority: 'high', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Vendors · Confirm decoration design', priority: 'medium', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Vendors · Confirm menu with caterer', priority: 'high', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Vendors · Confirm music / DJ playlist style', priority: 'medium', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Vendors · Book wedding car / vehicle', priority: 'medium', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Vendors · Book hotel rooms if needed for family or couple', priority: 'low', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      // Jewelry & Gifts
+      { group: '3 months before', title: 'Jewelry & Gifts · Buy or order wedding rings', priority: 'high', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Jewelry & Gifts · Buy or order engagement rings', priority: 'medium', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: "Jewelry & Gifts · Buy or order bride's jewelry", priority: 'medium', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Jewelry & Gifts · Buy gifts for parents or relatives if needed', priority: 'low', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      // Planning
+      { group: '3 months before', title: 'Planning · Make the full event schedule', priority: 'medium', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Planning · Decide who will welcome guests', priority: 'low', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Planning · Decide who will handle gifts, money envelopes, and guest book', priority: 'low', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
+      { group: '3 months before', title: 'Planning · Decide who will coordinate vendors on the day', priority: 'medium', dueOffsetDays: -90, reminderOffsetDays: -95, description: '' },
     ],
   },
   {
-    id: 'wedding-week',
-    name: 'Wedding Week',
-    description: 'Final checks for the last few days.',
+    id: 'two-months-before',
+    name: '2 Months Before',
+    description: 'Fittings and beauty prep, function details, song picks, and documents.',
     tasks: [
-      { group: '1 week before', title: 'Confirm final headcount', priority: 'high', dueOffsetDays: -7, reminderOffsetDays: -10, description: 'Send final guest numbers to venue and caterer.' },
-      { group: '1 week before', title: 'Pack ceremony essentials', priority: 'medium', dueOffsetDays: -3, reminderOffsetDays: -5, description: 'Prepare rings, documents, accessories, and emergency kit.' },
-      { group: 'Wedding Day', title: 'Check vendor arrival schedule', priority: 'high', dueOffsetDays: 0, reminderOffsetDays: -1, description: 'Confirm timing for venue, makeup, photography, music, and decor.' },
+      // Clothes & Beauty
+      { group: '2 months before', title: 'Clothes & Beauty · Do first fitting for bride and groom outfits', priority: 'medium', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Clothes & Beauty · Finalize bridesmaids and groomsmen outfits', priority: 'low', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Clothes & Beauty · Choose shoes and accessories', priority: 'low', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Clothes & Beauty · Start skin care / hair care routine', priority: 'medium', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Clothes & Beauty · Book salon appointments', priority: 'medium', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      // Function Details
+      { group: '2 months before', title: 'Function Details · Finalize stage design / poruwa design', priority: 'medium', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Function Details · Finalize entrance design', priority: 'low', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Function Details · Finalize table decorations', priority: 'low', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Function Details · Finalize cake structure', priority: 'medium', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Function Details · Finalize lighting', priority: 'low', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Function Details · Finalize sound system', priority: 'medium', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      // Songs
+      { group: '2 months before', title: 'Songs · Select song for couple entrance', priority: 'low', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Songs · Select song for poruwa / ceremony', priority: 'low', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Songs · Select song for first dance', priority: 'low', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Songs · Select song for cake cutting', priority: 'low', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Songs · Select song for going away', priority: 'low', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      // Documents
+      { group: '2 months before', title: 'Documents · Prepare documents for marriage registration', priority: 'high', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Documents · Confirm marriage registrar', priority: 'high', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Documents · Confirm witnesses', priority: 'medium', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      // Invitation
+      { group: '2 months before', title: 'Invitation · Start giving invitation cards', priority: 'medium', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+      { group: '2 months before', title: 'Invitation · Send digital invitations to distant guests', priority: 'medium', dueOffsetDays: -60, reminderOffsetDays: -65, description: '' },
+    ],
+  },
+  {
+    id: 'one-month-before',
+    name: '1 Month Before',
+    description: 'Re-confirm everything, finalize bride & groom prep, and ceremony items.',
+    tasks: [
+      // Final Confirmations
+      { group: '1 month before', title: 'Final Confirmations · Confirm venue booking again', priority: 'high', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Final Confirmations · Confirm photographer', priority: 'high', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Final Confirmations · Confirm videographer', priority: 'high', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Final Confirmations · Confirm bridal dresser', priority: 'high', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Final Confirmations · Confirm decorator', priority: 'medium', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Final Confirmations · Confirm caterer', priority: 'high', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Final Confirmations · Confirm music / DJ', priority: 'medium', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Final Confirmations · Confirm cake supplier', priority: 'medium', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Final Confirmations · Confirm vehicle provider', priority: 'medium', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Final Confirmations · Confirm guest count roughly', priority: 'high', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Final Confirmations · Confirm food menu and drinks', priority: 'high', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Final Confirmations · Confirm seating arrangement plan', priority: 'medium', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      // Bride & Groom
+      { group: '1 month before', title: 'Bride & Groom · Final outfit fitting', priority: 'medium', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Bride & Groom · Finalize jewelry and accessories', priority: 'medium', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Bride & Groom · Buy perfume, shoes, hair accessories, etc.', priority: 'low', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Bride & Groom · Groom haircut plan', priority: 'low', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Bride & Groom · Bride makeup trial if needed', priority: 'medium', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      // Ceremony
+      { group: '1 month before', title: 'Ceremony · Finalize poruwa / religious ceremony items', priority: 'medium', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Ceremony · Prepare oil lamp, betel leaves, flowers, trays, candles, etc.', priority: 'medium', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Ceremony · Confirm master of ceremony / announcer', priority: 'medium', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+      { group: '1 month before', title: 'Ceremony · Prepare speeches if needed', priority: 'low', dueOffsetDays: -30, reminderOffsetDays: -35, description: '' },
+    ],
+  },
+  {
+    id: 'two-weeks-before',
+    name: '2 Weeks Before',
+    description: 'Final guest count, payments, collect items, emergency kit, and rehearsal.',
+    tasks: [
+      // Guest Count
+      { group: '2 weeks before', title: 'Guest Count · Confirm attendance from guests', priority: 'high', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Guest Count · Give final guest count to hotel / caterer', priority: 'high', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Guest Count · Finalize seating chart', priority: 'high', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Guest Count · Prepare table numbers or name tags if needed', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      // Payments
+      { group: '2 weeks before', title: 'Payments · Pay vendor advances or balances if required', priority: 'high', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Payments · Keep receipts and contact numbers together', priority: 'medium', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Payments · Prepare emergency cash', priority: 'medium', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      // Final Items
+      { group: '2 weeks before', title: 'Final Items · Collect rings', priority: 'high', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Final Items · Collect outfits', priority: 'high', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Final Items · Check shoes and accessories', priority: 'medium', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Emergency Kit · Safety pins', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Emergency Kit · Hair pins', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Emergency Kit · Tissue', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Emergency Kit · Makeup touch-up items', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Emergency Kit · Medicine', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Emergency Kit · Plasters', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Emergency Kit · Needle and thread', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Emergency Kit · Phone charger', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Emergency Kit · Water bottle', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      // Rehearsal
+      { group: '2 weeks before', title: 'Rehearsal · Practice walking entrance', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Rehearsal · Practice poruwa steps', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Rehearsal · Practice ring exchange', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Rehearsal · Practice first dance', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+      { group: '2 weeks before', title: 'Rehearsal · Practice cake cutting', priority: 'low', dueOffsetDays: -14, reminderOffsetDays: -18, description: '' },
+    ],
+  },
+  {
+    id: 'one-week-before',
+    name: '1 Week Before',
+    description: 'Final vendor calls, schedules, and personal preparation.',
+    tasks: [
+      // Final Check
+      { group: '1 week before', title: 'Final Check · Call all vendors and confirm arrival times', priority: 'high', dueOffsetDays: -7, reminderOffsetDays: -9, description: '' },
+      { group: '1 week before', title: 'Final Check · Share location pins with vendors', priority: 'medium', dueOffsetDays: -7, reminderOffsetDays: -9, description: '' },
+      { group: '1 week before', title: 'Final Check · Give full schedule to photographer, decorator, and MC', priority: 'medium', dueOffsetDays: -7, reminderOffsetDays: -9, description: '' },
+      { group: '1 week before', title: 'Final Check · Confirm vehicle timing', priority: 'medium', dueOffsetDays: -7, reminderOffsetDays: -9, description: '' },
+      { group: '1 week before', title: 'Final Check · Confirm bride and groom dressing time', priority: 'medium', dueOffsetDays: -7, reminderOffsetDays: -9, description: '' },
+      { group: '1 week before', title: 'Final Check · Confirm hotel check-in if needed', priority: 'low', dueOffsetDays: -7, reminderOffsetDays: -9, description: '' },
+      // Personal Preparation
+      { group: '1 week before', title: 'Personal Prep · Bride: final facial / waxing / nails / hair treatment', priority: 'medium', dueOffsetDays: -7, reminderOffsetDays: -9, description: '' },
+      { group: '1 week before', title: 'Personal Prep · Groom: haircut, shave, grooming', priority: 'medium', dueOffsetDays: -7, reminderOffsetDays: -9, description: '' },
+      { group: '1 week before', title: 'Personal Prep · Sleep well and avoid last-minute stress', priority: 'low', dueOffsetDays: -7, reminderOffsetDays: -9, description: '' },
+      { group: '1 week before', title: 'Personal Prep · Pack bags if going to hotel or honeymoon', priority: 'medium', dueOffsetDays: -7, reminderOffsetDays: -9, description: '' },
+    ],
+  },
+  {
+    id: 'day-before',
+    name: 'Day Before',
+    description: 'Get everything ready the night before so the morning is calm.',
+    tasks: [
+      { group: 'Day before', title: 'Keep all outfits ready', priority: 'high', dueOffsetDays: -1, reminderOffsetDays: -2, description: '' },
+      { group: 'Day before', title: 'Keep jewelry and rings safely', priority: 'high', dueOffsetDays: -1, reminderOffsetDays: -2, description: '' },
+      { group: 'Day before', title: 'Keep documents ready', priority: 'high', dueOffsetDays: -1, reminderOffsetDays: -2, description: '' },
+      { group: 'Day before', title: 'Keep payment envelopes ready', priority: 'high', dueOffsetDays: -1, reminderOffsetDays: -2, description: '' },
+      { group: 'Day before', title: 'Charge phones and power banks', priority: 'medium', dueOffsetDays: -1, reminderOffsetDays: -2, description: '' },
+      { group: 'Day before', title: 'Assign one trusted person to manage calls and problems on the day', priority: 'medium', dueOffsetDays: -1, reminderOffsetDays: -2, description: '' },
+    ],
+  },
+  {
+    id: 'final-day-checklist',
+    name: 'Final Day Checklist',
+    description: 'The simple list of everything to have in hand on the wedding day.',
+    tasks: [
+      { group: 'Wedding Day', title: 'Bring · Rings', priority: 'high', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · Bride and groom outfits', priority: 'high', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · Jewelry', priority: 'high', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · Shoes', priority: 'medium', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · Marriage documents', priority: 'high', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · ID cards', priority: 'high', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · Payment envelopes', priority: 'high', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · Phone chargers', priority: 'low', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · Emergency kit', priority: 'medium', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · Flower bouquet', priority: 'medium', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · Vehicle keys', priority: 'medium', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · Contact list of vendors', priority: 'medium', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
+      { group: 'Wedding Day', title: 'Bring · Food and water for bride and groom', priority: 'low', dueOffsetDays: 0, reminderOffsetDays: -1, description: '' },
     ],
   },
 ];

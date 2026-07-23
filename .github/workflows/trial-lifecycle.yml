@@ -9,26 +9,23 @@ jobs:
   run-lifecycle:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      PRODUCTION_BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
     steps:
-      - name: Validate secrets
-        env:
-          PRODUCTION_BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      - name: Check lifecycle configuration
+        id: config
         run: |
-          if [ -z "$PRODUCTION_BASE_URL" ]; then
-            echo "Missing PRODUCTION_BASE_URL secret" >&2
-            exit 1
+          if [ -z "$PRODUCTION_BASE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::notice::Trial lifecycle skipped because PRODUCTION_BASE_URL and/or CRON_SECRET is not configured."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
-          if [ -z "$CRON_SECRET" ]; then
-            echo "Missing CRON_SECRET secret" >&2
-            exit 1
-          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - name: Expire trials
-        env:
-          PRODUCTION_BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        if: steps.config.outputs.enabled == 'true'
         run: |
           curl --fail --show-error --silent \
             -X POST \
@@ -36,9 +33,7 @@ jobs:
             "${PRODUCTION_BASE_URL}/api/internal/cron/trials/expire"
 
       - name: Move expired trials to grace
-        env:
-          PRODUCTION_BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        if: steps.config.outputs.enabled == 'true'
         run: |
           curl --fail --show-error --silent \
             -X POST \
@@ -46,9 +41,7 @@ jobs:
             "${PRODUCTION_BASE_URL}/api/internal/cron/trials/grace"
 
       - name: Suspend grace-expired weddings
-        env:
-          PRODUCTION_BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        if: steps.config.outputs.enabled == 'true'
         run: |
           curl --fail --show-error --silent \
             -X POST \

@@ -1,11 +1,26 @@
 import Link from 'next/link';
-import { getGuestByToken, getRsvpByGuestId, getWeddingForGuest } from '@/lib/store';
+import { getGuestByToken, getRsvpByGuestId, getWeddingRow } from '@/lib/wedding-data';
 import RsvpTokenForm from './RsvpTokenForm';
 
 export default async function RsvpTokenPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const guest = getGuestByToken(token);
-  const wedding = guest ? getWeddingForGuest(guest) : null;
+  const guest = await getGuestByToken(token);
+  const weddingRow = guest ? await getWeddingRow(guest.weddingId) : null;
+  const wedding = weddingRow
+    ? {
+        id: weddingRow.id,
+        slug: weddingRow.slug,
+        brideName: weddingRow.brideFirstName,
+        groomName: weddingRow.groomFirstName,
+        weddingTitle: `${weddingRow.brideFirstName} & ${weddingRow.groomFirstName}`,
+        date: weddingRow.eventDate ? weddingRow.eventDate.slice(0, 10) : '',
+        time: '',
+        venueName: weddingRow.venueName || '',
+        venueAddress: '',
+        rsvpDeadline: '',
+        theme: {},
+      }
+    : null;
 
   if (!guest || !wedding) {
     return (
@@ -22,7 +37,7 @@ export default async function RsvpTokenPage({ params }: { params: Promise<{ toke
     );
   }
 
-  const rsvp = getRsvpByGuestId(guest.id);
+  const rsvp = await getRsvpByGuestId(guest.id);
 
   return (
     <RsvpTokenForm
@@ -31,17 +46,17 @@ export default async function RsvpTokenPage({ params }: { params: Promise<{ toke
         wedding,
         guest: {
           name: guest.name,
-          maxMembers: Number(guest.maxMembers) || 1,
-          rsvpStatus: guest.rsvpStatus || 'Pending',
+          maxMembers: Number(guest.maxAllowedMembers) || 1,
+          rsvpStatus: rsvp ? ((rsvp.status || '').toLowerCase() === 'attending' ? 'Confirmed' : 'Declined') : 'Pending',
         },
         rsvp: rsvp
           ? {
-              attending: !!rsvp.attending,
-              memberCount: Number(rsvp.memberCount) || 0,
+              attending: (rsvp.status || '').toLowerCase() === 'attending',
+              memberCount: Number(rsvp.attendingCount) || 0,
               mealPreference: rsvp.mealPreference || '',
               liquorPreference: rsvp.liquorPreference || '',
-              notes: rsvp.notes || '',
-              updatedAt: rsvp.updatedAt,
+              notes: rsvp.specialNote || '',
+              updatedAt: rsvp.updatedAt || undefined,
             }
           : null,
       }}

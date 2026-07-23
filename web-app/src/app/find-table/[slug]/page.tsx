@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { db } from '@/lib/store';
+import { getWeddingBySlug } from '@/lib/wedding-data';
 import FindTableClient from './FindTableClient';
 
 export default async function FindTablePage({
@@ -11,7 +11,18 @@ export default async function FindTablePage({
 }) {
   const { slug } = await params;
   const resolvedSearchParams = await searchParams;
-  const wedding = db.weddings.findUnique((item) => item.slug === slug);
+  const weddingRow = await getWeddingBySlug(slug);
+  const wedding = weddingRow
+    ? {
+        id: weddingRow.id,
+        slug: weddingRow.slug,
+        brideName: weddingRow.brideFirstName,
+        groomName: weddingRow.groomFirstName,
+        weddingTitle: `${weddingRow.brideFirstName} & ${weddingRow.groomFirstName}`,
+        date: weddingRow.eventDate ? weddingRow.eventDate.slice(0, 10) : '',
+        venueName: weddingRow.venueName || '',
+      }
+    : null;
   const tokenParam = Array.isArray(resolvedSearchParams?.token) ? resolvedSearchParams?.token[0] : resolvedSearchParams?.token;
 
   if (!wedding) {

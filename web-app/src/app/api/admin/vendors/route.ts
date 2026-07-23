@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { getAllVendors, addVendorRegistration, deleteVendor, getVendorByEmail, toPublicVendor } from '@/lib/vendorStore';
 import { auditLog } from '@/lib/audit';
