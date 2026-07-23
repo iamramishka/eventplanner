@@ -20,7 +20,7 @@ export async function PUT(req: Request) {
       action: 'admin-settings-update',
       targetId: 'platform',
       data: {
-        sections: Object.keys(patch).filter((key) => ['branding', 'contact', 'publicSite', 'cmsBlocks', 'templates'].includes(key)),
+        sections: Object.keys(patch).filter((key) => ['branding', 'contact', 'publicSite', 'trial', 'cmsBlocks', 'templates'].includes(key)),
         templateCount: updated.settings.templates.length,
         updatedAt: updated.updatedAt,
       },

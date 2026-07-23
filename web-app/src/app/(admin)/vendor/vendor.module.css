@@ -59,7 +59,7 @@
 .sidebarLogoIcon {
   width: 36px;
   height: 36px;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -123,7 +123,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   cursor: pointer;
   color: var(--adm-text-secondary);
   margin-bottom: 4px;
@@ -168,7 +168,7 @@
   font-size: 10px;
   font-weight: 700;
   padding: 1px 6px;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
 }
 
 .collapsed .navBadge {
@@ -196,14 +196,14 @@
 
 .progressBarBg {
   background: var(--adm-bg-alt);
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   height: 4px;
 }
 
 .progressBarFill {
   background: var(--inv-rose);
   height: 100%;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
 }
 
 /* MAIN CONTENT */
@@ -238,7 +238,7 @@
 .headerToggle {
   width: 36px;
   height: 36px;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -276,7 +276,7 @@
   font-size: 11px;
   font-weight: 600;
   padding: 2px 8px;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   margin-left: 0.5rem;
 }
 
@@ -337,7 +337,7 @@
   right: 0;
   top: calc(100% + 8px);
   background: white;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-lg);
   box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
   border: 1px solid var(--adm-border);
   min-width: 220px;
@@ -480,10 +480,10 @@
   margin-bottom: 1rem;
 }
 
-.kpiIcon.purple { background: #F5F3FF; color: #8B5CF6; }
-.kpiIcon.teal { background: #F0FDFA; color: #0D9488; }
-.kpiIcon.warning { background: #FFFBEB; color: #D97706; }
-.kpiIcon.success { background: #ECFDF5; color: #10B981; }
+.kpiIcon.purple { background: var(--adm-purple-bg); color: var(--adm-purple); }
+.kpiIcon.teal { background: var(--adm-teal-bg); color: var(--adm-teal); }
+.kpiIcon.warning { background: var(--adm-warning-bg); color: var(--adm-warning-dark); }
+.kpiIcon.success { background: var(--adm-success-bg); color: var(--adm-success); }
 
 .kpiLabel {
   font-size: 0.85rem;
@@ -567,7 +567,7 @@
 .badge {
   display: inline-flex;
   padding: 4px 10px;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: capitalize;

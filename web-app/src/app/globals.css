@@ -66,6 +66,13 @@
   --adm-danger-bg:   #FEF2F2;
   --adm-info:        #3B82F6;
   --adm-info-bg:     #EFF6FF;
+  --adm-purple:      #8B5CF6;
+  --adm-purple-bg:   #F5F3FF;
+  --adm-orange:      #F97316;
+  --adm-orange-bg:   #FFF7ED;
+  --adm-teal:        #0D9488;
+  --adm-teal-bg:     #F0FDFA;
+  --adm-warning-dark: #D97706;
 
   /* Text */
   --adm-text-primary:   #1E1618;

@@ -46,20 +46,22 @@ function getCountdown(targetMs: number): CountdownValue {
 export default function CountdownTimer({ date, time, timezone = 'UTC' }: CountdownTimerProps) {
   const targetMs = useMemo(() => (date ? getZonedDateTimeMs(date, time || '00:00', timezone) : Number.NaN), [date, time, timezone]);
   const eventLabel = useMemo(() => formatEventDateTime(date, time, timezone), [date, time, timezone]);
-  const [countdown, setCountdown] = useState<CountdownValue>(() => getCountdown(targetMs));
+  // Start with zeros but correct status — avoids SSR/client Date.now() mismatch.
+  const [countdown, setCountdown] = useState<CountdownValue>(() =>
+    Number.isFinite(targetMs) && targetMs > Date.now()
+      ? { days: 0, hours: 0, minutes: 0, seconds: 0, status: 'upcoming' }
+      : EMPTY_COUNTDOWN
+  );
 
   useEffect(() => {
     if (!Number.isFinite(targetMs)) return undefined;
 
-    const initialTimer = window.setTimeout(() => {
-      setCountdown(getCountdown(targetMs));
-    }, 0);
+    setCountdown(getCountdown(targetMs));
     const interval = window.setInterval(() => {
       setCountdown(getCountdown(targetMs));
     }, 1000);
 
     return () => {
-      window.clearTimeout(initialTimer);
       window.clearInterval(interval);
     };
   }, [targetMs]);

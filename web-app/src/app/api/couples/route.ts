@@ -4,6 +4,8 @@ import path from 'path';
 import { addWedding } from '@/lib/store';
 import { auditLog } from '@/lib/audit';
 import { dbSelect, dbInsert } from '@/lib/supabase-db';
+import { getAdminSettings } from '@/lib/adminSettings';
+import { upsertAdminCouple } from '@/lib/adminCouples';
 import bcrypt from 'bcrypt';
 
 type CreatedWedding = ReturnType<typeof addWedding> & {
@@ -41,6 +43,12 @@ function slugify(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'wedding';
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
 }
 
 async function uniqueWeddingSlug(baseSlug: string) {
@@ -97,6 +105,7 @@ export async function POST(req: Request) {
     });
 
     const weddingId = crypto.randomUUID();
+    const now = new Date();
     const wedding = await dbInsert<DbWedding>('Wedding', {
       id: weddingId,
       userId: user.id,
@@ -108,11 +117,22 @@ export async function POST(req: Request) {
       setupCompleted: true,
       estimatedGuests: Number.isFinite(Number(body?.estimatedGuests)) ? Number(body.estimatedGuests) : null,
       estimatedBudget: Number.isFinite(Number(body?.estimatedBudget)) ? Number(body.estimatedBudget) : null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     });
 
     const created: CreatedWedding = addWedding({ ...(body || {}), id: wedding.id, userId: user.id, email, slug });
+    const defaultTrialDays = getAdminSettings().settings.trial.defaultTrialDays;
+    upsertAdminCouple({
+      id: user.id,
+      name: `${brideName} & ${groomName}`,
+      email,
+      plan: 'trial',
+      trialEnds: addDays(now, defaultTrialDays).toISOString(),
+      createdAt: now.toISOString(),
+      suspended: false,
+      billingState: 'active',
+    });
 
     if (profileImageBase64) {
       const match = profileImageBase64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
