@@ -4,7 +4,7 @@
     "name": "Nimesha & Thilina",
     "email": "nimesha@test.com",
     "plan": "premium",
-    "createdAt": "2026-01-10T10:00:00Z",
+    "createdAt": "2026-01-10T10:00:00.000Z",
     "suspended": false,
     "billingState": "active"
   },
@@ -13,8 +13,8 @@
     "name": "Priya & Kasun",
     "email": "hello@priyakasun.com",
     "plan": "trial",
-    "trialEnds": "2026-10-10T10:00:00Z",
-    "createdAt": "2026-05-01T10:00:00Z",
+    "trialEnds": "2026-10-10T10:00:00.000Z",
+    "createdAt": "2026-05-01T10:00:00.000Z",
     "suspended": false,
     "billingState": "active"
   },
@@ -23,8 +23,8 @@
     "name": "Dilshan & Chamari",
     "email": "dilshan@test.com",
     "plan": "trial",
-    "trialEnds": "2026-04-10T10:00:00Z",
-    "createdAt": "2026-04-01T10:00:00Z",
+    "trialEnds": "2026-04-10T10:00:00.000Z",
+    "createdAt": "2026-04-01T10:00:00.000Z",
     "suspended": true,
     "billingState": "past_due"
   },
@@ -33,7 +33,7 @@
     "name": "Ashan & Nadeesha",
     "email": "ashan@test.com",
     "plan": "premium",
-    "createdAt": "2026-03-15T10:00:00Z",
+    "createdAt": "2026-03-15T10:00:00.000Z",
     "suspended": false,
     "billingState": "active"
   },
@@ -42,8 +42,8 @@
     "name": "Ruwan & Samantha",
     "email": "ruwan@test.com",
     "plan": "trial",
-    "trialEnds": "2026-12-01T10:00:00Z",
-    "createdAt": "2026-04-20T10:00:00Z",
+    "trialEnds": "2026-12-01T10:00:00.000Z",
+    "createdAt": "2026-04-20T10:00:00.000Z",
     "suspended": false,
     "billingState": "active"
   },
@@ -52,8 +52,8 @@
     "name": "Isuru & Tharaka",
     "email": "isuru@test.com",
     "plan": "trial",
-    "trialEnds": "2026-03-01T10:00:00Z",
-    "createdAt": "2026-02-10T10:00:00Z",
+    "trialEnds": "2026-03-01T10:00:00.000Z",
+    "createdAt": "2026-02-10T10:00:00.000Z",
     "suspended": false,
     "billingState": "canceled"
   },
@@ -62,7 +62,7 @@
     "name": "Nuwan & Malsha",
     "email": "nuwan@test.com",
     "plan": "premium",
-    "createdAt": "2026-05-05T10:00:00Z",
+    "createdAt": "2026-05-05T10:00:00.000Z",
     "suspended": false,
     "billingState": "active"
   },
@@ -71,8 +71,18 @@
     "name": "Lakshan & Hiruni",
     "email": "lakshan@test.com",
     "plan": "trial",
-    "trialEnds": "2026-11-30T10:00:00Z",
-    "createdAt": "2026-05-10T10:00:00Z",
+    "trialEnds": "2026-11-30T10:00:00.000Z",
+    "createdAt": "2026-05-10T10:00:00.000Z",
+    "suspended": false,
+    "billingState": "active"
+  },
+  {
+    "id": "1edbcafe-ac09-4fee-a066-be3a9469a7df",
+    "name": "John & Michele",
+    "email": "a1@gmail.com",
+    "plan": "trial",
+    "trialEnds": "2026-07-31T13:44:03.843Z",
+    "createdAt": "2026-07-17T13:44:03.843Z",
     "suspended": false,
     "billingState": "active"
   }
