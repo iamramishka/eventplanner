@@ -44,6 +44,7 @@
       "reviewedBy": "admin",
       "reviewedAt": "2026-05-17T10:00:00.000Z",
       "featured": true,
+      "points": 10,
       "createdAt": "2026-05-14T10:00:00.000Z",
       "updatedAt": "2026-05-17T10:00:00.000Z"
     },
@@ -84,6 +85,7 @@
       "reviewedBy": "admin",
       "reviewedAt": "2026-05-18T10:00:00.000Z",
       "featured": false,
+      "points": 10,
       "createdAt": "2026-05-15T10:00:00.000Z",
       "updatedAt": "2026-05-18T10:00:00.000Z"
     },
@@ -124,6 +126,7 @@
       "reviewedBy": "admin",
       "reviewedAt": "2026-05-19T10:00:00.000Z",
       "featured": false,
+      "points": 10,
       "createdAt": "2026-05-16T10:00:00.000Z",
       "updatedAt": "2026-05-19T10:00:00.000Z"
     },
@@ -164,6 +167,7 @@
       "reviewedBy": "admin",
       "reviewedAt": "2026-05-20T10:00:00.000Z",
       "featured": false,
+      "points": 10,
       "createdAt": "2026-05-17T10:00:00.000Z",
       "updatedAt": "2026-05-20T10:00:00.000Z"
     },
@@ -204,6 +208,7 @@
       "reviewedBy": "admin",
       "reviewedAt": "2026-05-21T10:00:00.000Z",
       "featured": false,
+      "points": 10,
       "createdAt": "2026-05-18T10:00:00.000Z",
       "updatedAt": "2026-05-21T10:00:00.000Z"
     },
@@ -243,6 +248,7 @@
       "reviewedBy": "admin",
       "reviewedAt": "2026-05-22T10:00:00.000Z",
       "featured": false,
+      "points": 10,
       "createdAt": "2026-05-19T10:00:00.000Z",
       "updatedAt": "2026-05-22T10:00:00.000Z"
     }

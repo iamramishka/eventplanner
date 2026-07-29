@@ -83,6 +83,8 @@ export type VendorMessageThread = {
   coupleName: string;
   subject: string;
   unread: boolean;
+  locked: boolean;        // true by default on new threads; false for seeded demo threads
+  pointsCost: number;     // cost in points to unlock (default 5; 0 for seeded threads)
   lastMessageAt: string;
   messages: {
     id: string;
@@ -162,6 +164,8 @@ export type VendorRegistration = {
   reviewedBy: string | null;
   reviewedAt: string | null;
   featured?: boolean;
+  // Points balance (vendor rewards)
+  points?: number;
   // Timestamps
   createdAt: string;
   updatedAt: string;
@@ -609,6 +613,8 @@ function initVendorStore() {
         coupleName: 'Priya & Kasun',
         subject: 'Availability for August 15',
         unread: true,
+        locked: false,
+        pointsCost: 0,
         lastMessageAt: new Date(Date.now() - 6 * 3600000).toISOString(),
         messages: [
           {
@@ -632,6 +638,8 @@ function initVendorStore() {
         coupleName: 'Nadeesha & Tharaka',
         subject: 'Pre-wedding shoot details',
         unread: false,
+        locked: false,
+        pointsCost: 0,
         lastMessageAt: new Date(Date.now() - 20 * 3600000).toISOString(),
         messages: [
           {
@@ -1062,11 +1070,46 @@ export function createMessageThread(
     coupleName,
     subject,
     unread: true,
+    locked: true,
+    pointsCost: 5,
     lastMessageAt: now,
     messages: [{ id: `msg_${Date.now().toString(36)}`, sender: 'couple', body: fullBody, createdAt: now }],
   };
   vendorStore.messageThreads.push(thread);
   return thread;
+}
+
+export function getPointsBalance(vendorId: string): number {
+  const vendor = getVendorById(vendorId);
+  return vendor?.points ?? 0;
+}
+
+export function deductPoints(vendorId: string, amount: number): boolean {
+  const idx = vendorStore.vendors.findIndex(v => v.id === vendorId);
+  if (idx === -1) return false;
+  const current = vendorStore.vendors[idx].points ?? 0;
+  if (current < amount) return false;
+  vendorStore.vendors[idx] = { ...vendorStore.vendors[idx], points: current - amount };
+  return true;
+}
+
+export function unlockThread(vendorId: string, threadId: string): VendorMessageThread | null {
+  const idx = vendorStore.messageThreads.findIndex(
+    t => t.vendorId === vendorId && t.id === threadId
+  );
+  if (idx === -1) return null;
+  const updated: VendorMessageThread = {
+    ...vendorStore.messageThreads[idx],
+    locked: false,
+  };
+  vendorStore.messageThreads[idx] = updated;
+  return updated;
+}
+
+export function getThreadById(vendorId: string, threadId: string): VendorMessageThread | null {
+  return vendorStore.messageThreads.find(
+    t => t.vendorId === vendorId && t.id === threadId
+  ) ?? null;
 }
 
 export function getPayoutsByVendor(vendorId: string): VendorPayout[] {
@@ -1120,6 +1163,7 @@ export function getVendorPortalData(vendorId: string) {
     messages,
     payouts,
     settings: getSettingsByVendor(vendorId),
+    points: getPointsBalance(vendorId),
     analytics: {
       bookingCount: bookings.length,
       pendingBookings: bookings.filter(b => b.status === 'pending').length,
