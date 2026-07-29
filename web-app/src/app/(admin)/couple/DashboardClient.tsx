@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, Settings, Users, CheckSquare,
@@ -4316,14 +4317,18 @@ function VendorProfileView({ vendor, isSaved, onSave, onBack, onBook, saving }: 
         </div>
       </div>
 
-      {showQuote && <GetQuoteDrawer vendor={vendor} onClose={() => setShowQuote(false)} />}
-      {bookedPkg && (
+      {showQuote && createPortal(
+        <GetQuoteDrawer vendor={vendor} onClose={() => setShowQuote(false)} />,
+        document.body
+      )}
+      {bookedPkg && createPortal(
         <BookingConfirmedModal
           vendor={vendor}
           pkg={bookedPkg}
           onClose={() => setBookedPkg(null)}
           onBack={() => { setBookedPkg(null); onBack(); }}
-        />
+        />,
+        document.body
       )}
     </section>
   );
