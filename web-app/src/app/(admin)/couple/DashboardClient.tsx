@@ -316,6 +316,9 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
   const [activeModule, setActiveModule]         = useState('overview');
   const [sidebarOpen, setSidebarOpen]           = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [formDirty, setFormDirty]               = useState(false);
+  const [pendingNav, setPendingNav]             = useState<string | null>(null);
+  const saveFormRef = useRef<(() => Promise<boolean | void>) | null>(null);
 
   const [wedding, setWedding] = useState(initialWedding);
   const [guests, setGuests]   = useState(initialGuests);
@@ -340,13 +343,51 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const GUARDED_MODULES = ['settings', 'theme', 'music', 'notifications'];
+  const activeModuleLabel = NAV_ITEMS.find(item => item.id === activeModule)?.label || 'this page';
+
   const handleNavigate = (module: string) => {
+    if (GUARDED_MODULES.includes(activeModule) && formDirty && module !== activeModule) {
+      setPendingNav(module);
+      return;
+    }
     setActiveModule(module);
     setSidebarOpen(false);
   };
 
+  const confirmNavSave = async () => {
+    const saved = await saveFormRef.current?.();
+    if (saved === false) return;
+    setFormDirty(false);
+    setActiveModule(pendingNav!);
+    setSidebarOpen(false);
+    setPendingNav(null);
+  };
+
+  const confirmNavDiscard = () => {
+    setFormDirty(false);
+    setActiveModule(pendingNav!);
+    setSidebarOpen(false);
+    setPendingNav(null);
+  };
+
   return (
     <div className="app-shell">
+      {/* ── Unsaved Changes Modal ── */}
+      {pendingNav && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}>
+          <div style={{ background: 'var(--adm-card-bg, #fff)', borderRadius: 16, padding: '32px 28px', maxWidth: 420, width: '90%', boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
+            <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 10, color: 'var(--adm-text)' }}>Unsaved Changes</div>
+            <p style={{ color: 'var(--adm-text-muted)', fontSize: 15, lineHeight: 1.6, marginBottom: 28 }}>
+              You have unsaved changes in {activeModuleLabel}. If you leave now, your changes will be lost.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline" style={{ color: 'var(--adm-danger, #e53935)', borderColor: 'var(--adm-danger, #e53935)' }} onClick={confirmNavDiscard}>Discard Changes</button>
+              <button className="btn btn-primary" onClick={() => void confirmNavSave()}>Save &amp; Continue</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* ── Sidebar ── */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         {/* Brand */}
@@ -474,10 +515,10 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
         {/* Page content */}
         <div className="page-content">
           {activeModule === 'overview'  && <OverviewModule  wedding={wedding} guests={guests} rsvps={rsvps} agenda={agenda} budget={budget} checklist={checklist} onNavigate={handleNavigate} />}
-          {activeModule === 'settings'  && <SettingsModule  wedding={wedding} setWedding={setWedding} />}
-          {activeModule === 'theme'      && <ThemeDesignModule wedding={wedding} setWedding={setWedding} />}
+          {activeModule === 'settings'  && <SettingsModule  wedding={wedding} setWedding={setWedding} onDirtyChange={setFormDirty} saveRef={saveFormRef} />}
+          {activeModule === 'theme'      && <ThemeDesignModule wedding={wedding} setWedding={setWedding} onDirtyChange={setFormDirty} saveRef={saveFormRef} />}
           {activeModule === 'gallery'    && <GalleryModule wedding={wedding} />}
-          {activeModule === 'music'      && <MusicModule wedding={wedding} setWedding={setWedding} />}
+          {activeModule === 'music'      && <MusicModule wedding={wedding} setWedding={setWedding} onDirtyChange={setFormDirty} saveRef={saveFormRef} />}
           {activeModule === 'agenda'     && <AgendaModule wedding={wedding} agenda={agenda} setAgenda={setAgenda} />}
           {activeModule === 'budget'     && <BudgetModule wedding={wedding} initialBudget={budget} setBudget={setBudget} />}
           {activeModule === 'checklist'  && <ChecklistModule wedding={wedding} checklist={checklist} setChecklist={setChecklist} />}
@@ -486,7 +527,7 @@ export default function DashboardClient({ initialWedding, initialGuests, initial
           {activeModule === 'analytics' && <CoupleAnalyticsModule weddingId={wedding?.id} />}
           {activeModule === 'tables'    && <TablesModule    wedding={wedding} guests={guests} rsvps={rsvps} />}
           {activeModule === 'vendors'   && <VendorsModule   wedding={wedding} setWedding={setWedding} />}
-          {activeModule === 'notifications' && <NotificationsModule wedding={wedding} guests={guests} rsvps={rsvps} checklist={checklist} budget={budget} setWedding={setWedding} onNavigate={handleNavigate} />}
+          {activeModule === 'notifications' && <NotificationsModule wedding={wedding} guests={guests} rsvps={rsvps} checklist={checklist} budget={budget} setWedding={setWedding} onNavigate={handleNavigate} onDirtyChange={setFormDirty} saveRef={saveFormRef} />}
           {activeModule === 'account'   && <AccountModule   wedding={wedding} onNavigate={handleNavigate} />}
         </div>
       </main>
@@ -1074,7 +1115,7 @@ const SECTION_TOGGLE_ORDER = [
   ['specialMessage','Special Message'],
 ] as const;
 
-function ThemeDesignModule({ wedding, setWedding }: any) {
+function ThemeDesignModule({ wedding, setWedding, onDirtyChange, saveRef }: any) {
   const [theme, setTheme] = useState<InvitationTheme>(() => normalizeInvitationTheme(wedding.theme));
   const [sections, setSections] = useState<Record<string, boolean>>(() => ({ ...DEFAULT_INVITATION_SECTIONS, ...(wedding.sections || {}) }));
   const [saving, setSaving] = useState(false);
@@ -1101,6 +1142,7 @@ function ThemeDesignModule({ wedding, setWedding }: any) {
       if (!res.ok) throw new Error('Failed to save theme');
       const updated = await res.json();
       setWedding(updated);
+      onDirtyChange?.(false);
       setPreviewKey(k => k + 1); // reload the live preview iframe
     } catch (err: any) {
       setError(err?.message || 'Unable to save theme changes.');
@@ -1110,6 +1152,7 @@ function ThemeDesignModule({ wedding, setWedding }: any) {
   };
 
   const scheduleThemeSave = (next: InvitationTheme) => {
+    onDirtyChange?.(true);
     if (themeSaveTimer.current) window.clearTimeout(themeSaveTimer.current);
     themeSaveTimer.current = window.setTimeout(() => { void saveTheme(next); }, 600);
   };
@@ -1144,6 +1187,7 @@ function ThemeDesignModule({ wedding, setWedding }: any) {
       if (!res.ok) throw new Error('Failed to save section visibility');
       const updated = await res.json();
       setWedding(updated);
+      onDirtyChange?.(false);
       setPreviewKey(k => k + 1); // reload the live preview iframe
     } catch (err: any) {
       setError(err?.message || 'Unable to save section changes.');
@@ -1156,6 +1200,7 @@ function ThemeDesignModule({ wedding, setWedding }: any) {
     const next = { ...sections, [key]: !sections[key] };
     setSections(next);
     setSaved(false);
+    onDirtyChange?.(true);
     // Debounce: rapid toggles batch into a single save + preview reload.
     if (sectionSaveTimer.current) window.clearTimeout(sectionSaveTimer.current);
     sectionSaveTimer.current = window.setTimeout(() => { void saveSections(next); }, 600);
@@ -1173,15 +1218,20 @@ function ThemeDesignModule({ wedding, setWedding }: any) {
       if (!res.ok) throw new Error('Failed to save theme');
       const updated = await res.json();
       setWedding(updated);
+      onDirtyChange?.(false);
       setSaved(true);
       setPreviewKey(k => k + 1);
       window.setTimeout(() => setSaved(false), 2500);
+      return true;
     } catch (err: any) {
       setError(err?.message || 'Unable to save theme changes.');
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  useEffect(() => { if (saveRef) saveRef.current = handleSave; });
 
   const handleExport = () => {
     const spec = buildThemeSpecMarkdown(wedding, theme);
@@ -2446,6 +2496,25 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
     notes: '',
   });
 
+  const latestBudgetItemsRef = useRef<BudgetItemRecord[]>(items);
+  const noteTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  useEffect(() => { latestBudgetItemsRef.current = items; }, [items]);
+  useEffect(() => {
+    const timers = noteTimers.current;
+    return () => { timers.forEach(t => clearTimeout(t)); };
+  }, []);
+
+  const scheduleNotesSave = (itemId: string, notes: string) => {
+    const existing = noteTimers.current.get(itemId);
+    if (existing) clearTimeout(existing);
+    const t = setTimeout(() => {
+      noteTimers.current.delete(itemId);
+      const latestItem = latestBudgetItemsRef.current.find(item => item.id === itemId);
+      if (latestItem) void saveItem({ ...latestItem, notes });
+    }, 600);
+    noteTimers.current.set(itemId, t);
+  };
+
   const summary = useMemo(() => calculateClientBudget(items, categories), [items, categories]);
   const budgetResponse = useMemo<BudgetResponse>(() => ({
     weddingId: wedding.id,
@@ -2649,8 +2718,14 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
                 {categories.map(category => <option key={category} value={category}>{category}</option>)}
               </select>
               <input className="form-input" value={newItem.name} onChange={event => setNewItem(prev => ({ ...prev, name: event.target.value }))} placeholder="Item name" />
-              <input className="form-input" type="number" min="0" value={newItem.estimated} onChange={event => setNewItem(prev => ({ ...prev, estimated: Number(event.target.value || 0) }))} placeholder="Estimated" />
-              <input className="form-input" type="number" min="0" value={newItem.actual} onChange={event => setNewItem(prev => ({ ...prev, actual: Number(event.target.value || 0) }))} placeholder="Actual" />
+              <div className="budget-amount-field">
+                <span className="budget-amount-label">Estimated (LKR)</span>
+                <input className="form-input" type="number" min="0" value={newItem.estimated} onChange={event => setNewItem(prev => ({ ...prev, estimated: Number(event.target.value || 0) }))} placeholder="0" />
+              </div>
+              <div className="budget-amount-field">
+                <span className="budget-amount-label">Actual (LKR)</span>
+                <input className="form-input" type="number" min="0" value={newItem.actual} onChange={event => setNewItem(prev => ({ ...prev, actual: Number(event.target.value || 0) }))} placeholder="0" />
+              </div>
               <select className="form-input" value={newItem.status} onChange={event => setNewItem(prev => ({ ...prev, status: event.target.value as BudgetStatus }))}>
                 {BUDGET_STATUS_OPTIONS.map(status => <option key={status} value={status}>{status}</option>)}
               </select>
@@ -2668,8 +2743,8 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
                   <tr>
                     <th>Category</th>
                     <th>Item</th>
-                    <th>Estimated</th>
-                    <th>Actual</th>
+                    <th>Estimated (LKR)</th>
+                    <th>Actual (LKR)</th>
                     <th>Status</th>
                     <th>Notes</th>
                     <th>Actions</th>
@@ -2691,7 +2766,7 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
                           {BUDGET_STATUS_OPTIONS.map(status => <option key={status} value={status}>{status}</option>)}
                         </select>
                       </td>
-                      <td><textarea className="form-input budget-line-note" value={item.notes || ''} onChange={event => updateDraftItem(item.id, { notes: event.target.value })} /></td>
+                      <td><textarea className="form-input budget-line-note" value={item.notes || ''} onChange={event => { updateDraftItem(item.id, { notes: event.target.value }); scheduleNotesSave(item.id, event.target.value); }} /></td>
                       <td>
                         <div className="table-actions">
                           <button className="table-action-btn" title="Save budget item" aria-label="Save budget item" disabled={savingId === item.id} onClick={() => void saveItem(item)}>
@@ -2742,28 +2817,86 @@ function BudgetModule({ wedding, initialBudget, setBudget: setParentBudget }: { 
 /* ════════════════════════════════════════
    SETTINGS MODULE
 ════════════════════════════════════════ */
-function SettingsModule({ wedding, setWedding }: any) {
+function SettingsModule({ wedding, setWedding, onDirtyChange, saveRef }: any) {
   const [formData, setFormData] = useState(wedding);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [guestsDeciding, setGuestsDeciding] = useState(formData.estimatedGuests == null);
+  const [budgetDeciding, setBudgetDeciding] = useState(formData.estimatedBudget == null);
+  const [guestCount, setGuestCount] = useState<number>(formData.estimatedGuests ?? 125);
+  const [budgetAmount, setBudgetAmount] = useState<number>(formData.estimatedBudget ?? 2500000);
+  const [guestEditing, setGuestEditing] = useState(false);
+  const [guestInputVal, setGuestInputVal] = useState('');
+  const [budgetEditing, setBudgetEditing] = useState(false);
+  const [budgetInputVal, setBudgetInputVal] = useState('');
+  const markDirty = () => onDirtyChange?.(true);
 
-  const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const commitGuests = () => {
+    const raw = Number(guestInputVal);
+    if (!isNaN(raw) && guestInputVal.trim() !== '') {
+      const clamped = Math.round(Math.max(0, Math.min(500, raw)) / 25) * 25;
+      setGuestCount(clamped);
+      setFormData((f: any) => ({ ...f, estimatedGuests: clamped }));
+      markDirty();
+    }
+    setGuestEditing(false);
+  };
+
+  const commitBudget = () => {
+    const raw = Number(budgetInputVal);
+    if (!isNaN(raw) && budgetInputVal.trim() !== '') {
+      const clamped = Math.round(Math.max(0, Math.min(10000000, raw)) / 100000) * 100000;
+      setBudgetAmount(clamped);
+      setFormData((f: any) => ({ ...f, estimatedBudget: clamped }));
+      markDirty();
+    }
+    setBudgetEditing(false);
+  };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const maxDate = `${new Date().getFullYear() + 10}-12-31`;
+
+  const handleChange = (e: any) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    markDirty();
+  };
+
+  const validateSettings = (): string | null => {
+    const date = formData.date ? String(formData.date).slice(0, 10) : '';
+    const rsvp = formData.rsvpDeadline ? String(formData.rsvpDeadline).slice(0, 10) : '';
+    if (date) {
+      if (date < today) return 'Wedding date must be in the future.';
+      if (date > maxDate) return `Wedding date must be within the next 10 years (before ${maxDate}).`;
+    }
+    if (rsvp) {
+      if (rsvp > maxDate) return `RSVP deadline must be within the next 10 years (before ${maxDate}).`;
+      if (date && rsvp >= date) return 'RSVP deadline must be before the wedding date.';
+    }
+    return null;
+  };
 
   const handleSave = async () => {
+    const validationError = validateSettings();
+    if (validationError) { setSaveError(validationError); return false; }
     setSaving(true);
     setSaveError('');
     try {
       const updated = await patchWeddingRecord(wedding.id, formData);
       setWedding(updated);
+      onDirtyChange?.(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+      return true;
     } catch (err: any) {
       setSaveError(err?.message || 'Unable to save settings.');
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  useEffect(() => { if (saveRef) saveRef.current = handleSave; });
 
   return (
     <section className="module">
@@ -2816,7 +2949,7 @@ function SettingsModule({ wedding, setWedding }: any) {
         <div className="form-grid-3">
           <div className="form-group">
             <label className="form-label">Date</label>
-            <input type="date" className="form-input" name="date" value={formData.date || ''} onChange={handleChange} />
+            <input type="date" className="form-input" name="date" value={formData.date || ''} onChange={handleChange} min={today} max={maxDate} />
           </div>
           <div className="form-group">
             <label className="form-label">Time</label>
@@ -2824,7 +2957,7 @@ function SettingsModule({ wedding, setWedding }: any) {
           </div>
           <div className="form-group">
             <label className="form-label">RSVP Deadline</label>
-            <input type="date" className="form-input" name="rsvpDeadline" value={formData.rsvpDeadline || ''} onChange={handleChange} />
+            <input type="date" className="form-input" name="rsvpDeadline" value={formData.rsvpDeadline || ''} onChange={handleChange} min={today} max={maxDate} />
           </div>
           <div className="form-group">
             <label className="form-label">Venue Name</label>
@@ -2857,6 +2990,115 @@ function SettingsModule({ wedding, setWedding }: any) {
           <div className="form-group">
             <label className="form-label">Public Slug</label>
             <input type="text" className="form-input" name="slug" value={formData.slug || ''} onChange={handleChange} placeholder="priya-and-kasun" />
+          </div>
+        </div>
+      </div>
+
+      <div className="card settings-card">
+        <div className="settings-section-header">
+          <TrendingUp size={18} style={{ color: 'var(--adm-primary)' }} /><h3>Planning Estimates</h3>
+        </div>
+        <div className="form-grid-2">
+          {/* Guests slider */}
+          <div className="form-group">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>Estimated Number of Guests</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--adm-text-muted)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={guestsDeciding} style={{ accentColor: 'var(--adm-primary)' }}
+                  onChange={e => {
+                    setGuestsDeciding(e.target.checked);
+                    setFormData((f: any) => ({ ...f, estimatedGuests: e.target.checked ? null : guestCount }));
+                    markDirty();
+                  }} />
+                Still deciding
+              </label>
+            </div>
+            <div className={`settings-slider-container${guestsDeciding ? ' disabled' : ''}`}>
+              <div className="settings-slider-header">
+                <span>Number of guests</span>
+                {guestEditing ? (
+                  <input
+                    type="number" autoFocus min="0" max="500"
+                    value={guestInputVal}
+                    onChange={e => setGuestInputVal(e.target.value)}
+                    onBlur={commitGuests}
+                    onKeyDown={e => { if (e.key === 'Enter') commitGuests(); if (e.key === 'Escape') setGuestEditing(false); }}
+                    style={{ width: 90, fontSize: 14, fontWeight: 700, color: 'var(--adm-primary)', border: '1px solid var(--adm-primary)', borderRadius: 6, padding: '2px 6px', textAlign: 'right' }}
+                  />
+                ) : (
+                  <span className="settings-slider-value" title="Click to type a value" onClick={() => { setGuestInputVal(String(guestCount)); setGuestEditing(true); }} style={{ cursor: 'text', borderBottom: '1px dashed var(--adm-primary)' }}>
+                    {guestCount} guests
+                  </span>
+                )}
+              </div>
+              <div className="settings-slider-controls">
+                <button type="button" className="settings-slider-btn" disabled={guestsDeciding}
+                  onClick={() => { const v = Math.max(0, guestCount - 25); setGuestCount(v); setFormData((f: any) => ({ ...f, estimatedGuests: v })); markDirty(); }}>−</button>
+                <div className="settings-slider-track">
+                  <div className="settings-slider-fill" style={{ width: `${(guestCount / 500) * 100}%` }} />
+                  <input type="range" min="0" max="500" step="25" value={guestCount} disabled={guestsDeciding}
+                    style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer', margin: 0, top: 0, left: 0 }}
+                    onChange={e => { const v = Number(e.target.value); setGuestCount(v); setFormData((f: any) => ({ ...f, estimatedGuests: v })); markDirty(); }} />
+                  <div className="settings-slider-thumb" style={{ left: `${(guestCount / 500) * 100}%` }} />
+                </div>
+                <button type="button" className="settings-slider-btn" disabled={guestsDeciding}
+                  onClick={() => { const v = Math.min(500, guestCount + 25); setGuestCount(v); setFormData((f: any) => ({ ...f, estimatedGuests: v })); markDirty(); }}>+</button>
+              </div>
+              <div className="settings-slider-labels">
+                <span>0</span><span>125</span><span>250</span><span>375</span><span>500</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Budget slider */}
+          <div className="form-group">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>Estimated Budget (LKR)</label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--adm-text-muted)', cursor: 'pointer' }}>
+                <input type="checkbox" checked={budgetDeciding} style={{ accentColor: 'var(--adm-primary)' }}
+                  onChange={e => {
+                    setBudgetDeciding(e.target.checked);
+                    setFormData((f: any) => ({ ...f, estimatedBudget: e.target.checked ? null : budgetAmount }));
+                    markDirty();
+                  }} />
+                Still deciding
+              </label>
+            </div>
+            <div className={`settings-slider-container${budgetDeciding ? ' disabled' : ''}`}>
+              <div className="settings-slider-header">
+                <span>Budget range</span>
+                {budgetEditing ? (
+                  <input
+                    type="number" autoFocus min="0" max="10000000"
+                    value={budgetInputVal}
+                    onChange={e => setBudgetInputVal(e.target.value)}
+                    onBlur={commitBudget}
+                    onKeyDown={e => { if (e.key === 'Enter') commitBudget(); if (e.key === 'Escape') setBudgetEditing(false); }}
+                    style={{ width: 120, fontSize: 14, fontWeight: 700, color: 'var(--adm-primary)', border: '1px solid var(--adm-primary)', borderRadius: 6, padding: '2px 6px', textAlign: 'right' }}
+                  />
+                ) : (
+                  <span className="settings-slider-value" title="Click to type a value" onClick={() => { setBudgetInputVal(String(budgetAmount)); setBudgetEditing(true); }} style={{ cursor: 'text', borderBottom: '1px dashed var(--adm-primary)' }}>
+                    {(budgetAmount / 1000000).toFixed(1)}M LKR
+                  </span>
+                )}
+              </div>
+              <div className="settings-slider-controls">
+                <button type="button" className="settings-slider-btn" disabled={budgetDeciding}
+                  onClick={() => { const v = Math.max(0, budgetAmount - 500000); setBudgetAmount(v); setFormData((f: any) => ({ ...f, estimatedBudget: v })); markDirty(); }}>−</button>
+                <div className="settings-slider-track">
+                  <div className="settings-slider-fill" style={{ width: `${(budgetAmount / 10000000) * 100}%` }} />
+                  <input type="range" min="0" max="10000000" step="100000" value={budgetAmount} disabled={budgetDeciding}
+                    style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0, cursor: 'pointer', margin: 0, top: 0, left: 0 }}
+                    onChange={e => { const v = Number(e.target.value); setBudgetAmount(v); setFormData((f: any) => ({ ...f, estimatedBudget: v })); markDirty(); }} />
+                  <div className="settings-slider-thumb" style={{ left: `${(budgetAmount / 10000000) * 100}%` }} />
+                </div>
+                <button type="button" className="settings-slider-btn" disabled={budgetDeciding}
+                  onClick={() => { const v = Math.min(10000000, budgetAmount + 500000); setBudgetAmount(v); setFormData((f: any) => ({ ...f, estimatedBudget: v })); markDirty(); }}>+</button>
+              </div>
+              <div className="settings-slider-labels">
+                <span>0</span><span>2.5M</span><span>5M</span><span>7.5M</span><span>10M LKR</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3922,7 +4164,7 @@ function VendorsModule({ wedding, setWedding }: any) {
 ════════════════════════════════════════ */
 const DEFAULT_MUSIC_URL = '/audio/default.mp3';
 
-function MusicModule({ wedding, setWedding }: any) {
+function MusicModule({ wedding, setWedding, onDirtyChange, saveRef }: any) {
   const [form, setForm] = useState({
     enabled: wedding.music?.enabled !== false && wedding.sections?.music !== false,
     sourceUrl: wedding.music?.sourceUrl || '',
@@ -3937,21 +4179,28 @@ function MusicModule({ wedding, setWedding }: any) {
   const usingDefault = !form.sourceUrl;
   const activeUrl = form.sourceUrl || DEFAULT_MUSIC_URL;
 
-  async function saveMusic(e: React.FormEvent) {
-    e.preventDefault();
+  const markDirty = () => onDirtyChange?.(true);
+
+  async function saveMusic(e?: React.FormEvent) {
+    e?.preventDefault();
     setSaving(true);
     setError('');
     try {
       const music = { ...form };
       const updated = await patchWeddingRecord(wedding.id, { music, sections: { ...(wedding.sections || {}), music: form.enabled } });
       setWedding(updated);
+      onDirtyChange?.(false);
       setMessage('Music settings saved.');
+      return true;
     } catch (err: any) {
       setError(err.message || 'Unable to save music settings.');
+      return false;
     } finally {
       setSaving(false);
     }
   }
+
+  useEffect(() => { if (saveRef) saveRef.current = () => saveMusic(); });
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -3978,6 +4227,7 @@ function MusicModule({ wedding, setWedding }: any) {
       const data = await res.json();
       if (!res.ok || !data?.ok) throw new Error(data?.error || 'Upload failed.');
       setForm(f => ({ ...f, sourceUrl: data.url }));
+      markDirty();
       setMessage('MP3 uploaded — click “Save Music” to apply it.');
     } catch (err: any) {
       setError(err?.message || 'Upload failed.');
@@ -3989,6 +4239,7 @@ function MusicModule({ wedding, setWedding }: any) {
 
   function removeCustomTrack() {
     setForm(f => ({ ...f, sourceUrl: '' }));
+    markDirty();
     setMessage('Reverted to the default track — click “Save Music” to apply.');
   }
 
@@ -4005,7 +4256,7 @@ function MusicModule({ wedding, setWedding }: any) {
       <form className="card music-settings-card" onSubmit={saveMusic}>
         <label className="toggle-row">
           <span><strong>Enable music section</strong><small>Show the floating music control on the invitation.</small></span>
-          <input type="checkbox" checked={form.enabled} onChange={e => setForm(f => ({ ...f, enabled: e.target.checked }))} />
+          <input type="checkbox" checked={form.enabled} onChange={e => { setForm(f => ({ ...f, enabled: e.target.checked })); markDirty(); }} />
         </label>
 
         <div className="form-field">
@@ -4028,7 +4279,6 @@ function MusicModule({ wedding, setWedding }: any) {
             )}
             <input ref={fileRef} type="file" accept="audio/mpeg,.mp3" hidden onChange={handleUpload} />
           </div>
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <audio controls src={activeUrl} style={{ width: '100%', marginTop: 12 }} />
           <small style={{ color: 'var(--adm-text-secondary)', fontSize: 12 }}>
             MP3 only, up to 10 MB. Leave it on the default track to use the built-in music.
@@ -4037,7 +4287,7 @@ function MusicModule({ wedding, setWedding }: any) {
 
         <label className="toggle-row">
           <span><strong>Mute by default</strong><small>Recommended so guests choose when audio starts.</small></span>
-          <input type="checkbox" checked={form.muteDefault} onChange={e => setForm(f => ({ ...f, muteDefault: e.target.checked }))} />
+          <input type="checkbox" checked={form.muteDefault} onChange={e => { setForm(f => ({ ...f, muteDefault: e.target.checked })); markDirty(); }} />
         </label>
 
         <div className="module-actions">
@@ -4051,7 +4301,7 @@ function MusicModule({ wedding, setWedding }: any) {
 /* ════════════════════════════════════════
    NOTIFICATIONS MODULE
 ════════════════════════════════════════ */
-function NotificationsModule({ wedding, guests, rsvps, checklist, budget, setWedding, onNavigate }: any) {
+function NotificationsModule({ wedding, guests, rsvps, checklist, budget, setWedding, onNavigate, onDirtyChange, saveRef }: any) {
   const pending = Math.max(0, guests.length - rsvps.length);
   const dueSoon = getChecklistStats(checklist || []).dueSoon;
   const overBudget = (budget?.totals?.remaining || 0) < 0;
@@ -4064,7 +4314,7 @@ function NotificationsModule({ wedding, guests, rsvps, checklist, budget, setWed
     pending > 0 && { id: 'pending-rsvps', icon: Clock, title: `${pending} RSVP${pending === 1 ? '' : 's'} pending`, detail: 'Send reminders from the Guests module.', action: 'guests' },
     dueSoon > 0 && { id: 'due-soon', icon: AlertCircle, title: `${dueSoon} checklist item${dueSoon === 1 ? '' : 's'} due soon`, detail: 'Review upcoming planning tasks.', action: 'checklist' },
     overBudget && { id: 'budget', icon: Wallet, title: 'Budget needs attention', detail: 'Actuals are above the estimated total.', action: 'budget' },
-    !(wedding.sections?.music) && { id: 'music-off', icon: Music, title: 'Invitation music is disabled', detail: 'Turn it on from Music Settings if needed.', action: 'music' },
+    (wedding.music?.enabled === false) && { id: 'music-off', icon: Music, title: 'Invitation music is disabled', detail: 'Turn it on from Music Settings if needed.', action: 'music' },
   ].filter(Boolean) as any[];
 
   async function savePrefs() {
@@ -4073,13 +4323,18 @@ function NotificationsModule({ wedding, guests, rsvps, checklist, budget, setWed
     try {
       const updated = await patchWeddingRecord(wedding.id, { notificationPreferences: prefs });
       setWedding(updated);
+      onDirtyChange?.(false);
       setMessage('Notification preferences saved.');
+      return true;
     } catch (err: any) {
       setError(err.message || 'Unable to save notification preferences.');
+      return false;
     } finally {
       setSaving(false);
     }
   }
+
+  useEffect(() => { if (saveRef) saveRef.current = () => savePrefs(); });
 
   return (
     <section className="module">
@@ -4117,7 +4372,7 @@ function NotificationsModule({ wedding, guests, rsvps, checklist, budget, setWed
           ].map(([key, title, copy]) => (
             <label className="toggle-row" key={key}>
               <span><strong>{title}</strong><small>{copy}</small></span>
-              <input type="checkbox" checked={!!prefs[key]} onChange={e => setPrefs((p: any) => ({ ...p, [key]: e.target.checked }))} />
+              <input type="checkbox" checked={!!prefs[key]} onChange={e => { setPrefs((p: any) => ({ ...p, [key]: e.target.checked })); onDirtyChange?.(true); }} />
             </label>
           ))}
           <button className="btn btn-primary" onClick={savePrefs} disabled={saving}>{saving ? 'Saving...' : 'Save Preferences'}</button>

@@ -28,6 +28,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: process.cwd(),
+  },
   // Monorepo root — traces become web-app/... paths so Vercel resolves them correctly
   outputFileTracingRoot: path.join(__dirname, '../'),
   images: {

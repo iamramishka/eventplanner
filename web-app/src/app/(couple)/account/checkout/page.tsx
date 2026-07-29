@@ -1,6 +1,8 @@
 import { getAdminSettings } from '@/lib/adminSettings';
 import CheckoutClient from './CheckoutClient';
 
+export const dynamic = 'force-dynamic';
+
 export default function CheckoutPage() {
   const premiumPlan = getAdminSettings().plans.find((plan) => plan.id === 'premium');
 
