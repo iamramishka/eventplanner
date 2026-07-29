@@ -4041,20 +4041,6 @@ function VendorsModule({ wedding, setWedding }: any) {
   const savedMarketplace = vendors.filter(v => savedIds.includes(v.id));
   const bookedCount = customVendors.filter(v => v.status === 'booked').length;
 
-  function addToBookedVendors(vendor: any, pkg: any) {
-    const entry = {
-      id: `custom_${Date.now()}`,
-      businessName: vendor.businessName,
-      category: vendor.category,
-      contact: vendor.website || '',
-      quote: `${vendor.currency || 'LKR'} ${Number(pkg.price).toLocaleString()}`,
-      notes: pkg.name,
-      status: 'booked',
-      createdAt: new Date().toISOString(),
-    };
-    savePlan({ ...plan, customVendors: [...customVendors, entry] }, `${vendor.businessName} added to your vendor tracker.`);
-  }
-
   if (profileVendor) {
     return (
       <VendorProfileView
@@ -4062,7 +4048,6 @@ function VendorsModule({ wedding, setWedding }: any) {
         isSaved={savedIds.includes(profileVendor.id)}
         onSave={() => toggleSaved(profileVendor.id)}
         onBack={() => setProfileVendor(null)}
-        onBook={addToBookedVendors}
         saving={saving}
       />
     );
@@ -4221,18 +4206,12 @@ function VendorsModule({ wedding, setWedding }: any) {
 /* ════════════════════════════════════════
    VENDOR PROFILE VIEW
 ════════════════════════════════════════ */
-function VendorProfileView({ vendor, isSaved, onSave, onBack, onBook, saving }: any) {
+function VendorProfileView({ vendor, isSaved, onSave, onBack, saving }: any) {
   const [showQuote, setShowQuote] = useState(false);
-  const [bookedPkg, setBookedPkg] = useState<any>(null);
 
   const initials = vendor.businessName
     .split(' ').filter((w: string) => w.length > 0).slice(0, 2)
     .map((w: string) => w[0].toUpperCase()).join('');
-
-  function handleOrderNow(pkg: any) {
-    onBook(vendor, pkg);
-    setBookedPkg(pkg);
-  }
 
   const hasPortfolio = vendor.portfolioImages?.length > 0;
 
@@ -4297,14 +4276,8 @@ function VendorProfileView({ vendor, isSaved, onSave, onBack, onBook, saving }: 
             <div className="vp-pkg-list">
               {vendor.packages.map((pkg: any, i: number) => (
                 <div className="vp-pkg-card" key={i}>
-                  <div>
-                    <strong className="vp-pkg-name">{pkg.name}</strong>
-                    {pkg.description && <p className="vp-pkg-desc">{pkg.description}</p>}
-                    <span className="vp-pkg-price">{vendor.currency || 'LKR'} {Number(pkg.price).toLocaleString()}</span>
-                  </div>
-                  <button className="btn btn-primary vp-order-btn" onClick={() => handleOrderNow(pkg)} disabled={saving}>
-                    Order Now
-                  </button>
+                  <strong className="vp-pkg-name">{pkg.name}</strong>
+                  {pkg.description && <p className="vp-pkg-desc">{pkg.description}</p>}
                 </div>
               ))}
             </div>
@@ -4326,14 +4299,6 @@ function VendorProfileView({ vendor, isSaved, onSave, onBack, onBook, saving }: 
       </div>
 
       {showQuote && <GetQuoteDrawer vendor={vendor} onClose={() => setShowQuote(false)} />}
-      {bookedPkg && (
-        <BookingConfirmedModal
-          vendor={vendor}
-          pkg={bookedPkg}
-          onClose={() => setBookedPkg(null)}
-          onBack={() => { setBookedPkg(null); onBack(); }}
-        />
-      )}
     </section>
   );
 }
@@ -4431,41 +4396,6 @@ function GetQuoteDrawer({ vendor, onClose }: any) {
             <p className="gq-note">Vendor will receive this in their dashboard and via email.</p>
           </>
         )}
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════
-   BOOKING CONFIRMED MODAL
-════════════════════════════════════════ */
-function BookingConfirmedModal({ vendor, pkg, onClose, onBack }: any) {
-  return (
-    <div className="bc-overlay">
-      <div className="bc-modal">
-        <div className="bc-check-ring">
-          <div className="bc-check-inner"><Check size={28} color="#22c55e" strokeWidth={3} /></div>
-        </div>
-        <h2 className="bc-title">Booking Requested!</h2>
-        <div className="bc-summary">
-          <div className="bc-row">
-            <span><Store size={13} /> Vendor</span>
-            <strong>{vendor.businessName}</strong>
-          </div>
-          <div className="bc-row">
-            <span><ClipboardList size={13} /> Package</span>
-            <strong>{pkg.name}</strong>
-          </div>
-          <div className="bc-row">
-            <span><DollarSign size={13} /> Price</span>
-            <strong className="bc-price">{vendor.currency || 'LKR'} {Number(pkg.price).toLocaleString()}</strong>
-          </div>
-        </div>
-        <p className="bc-auto-note"><CheckCircle size={14} /> Added to your budget tracker automatically.</p>
-        <div className="bc-actions">
-          <button className="btn btn-primary" onClick={onClose}>View Budget</button>
-          <button className="btn btn-outline" onClick={onBack}>Back to Vendors</button>
-        </div>
       </div>
     </div>
   );
