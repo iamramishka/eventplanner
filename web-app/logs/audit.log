@@ -81,3 +81,4 @@
 {"ts":"2026-07-13T17:23:47.347Z","action":"token-rsvp-submit","targetId":"7ab114bf-51a2-490f-9a0c-10a42629fe30","data":{"weddingId":"70346daf-7367-4d0e-8c78-8f356f59e351","guestName":"Dinesh Kumara","attending":false}}
 {"ts":"2026-07-13T17:25:38.813Z","action":"token-rsvp-submit","targetId":"17930f07-a0ad-45d3-b50e-556949949577","data":{"weddingId":"70346daf-7367-4d0e-8c78-8f356f59e351","guestName":"Prasad Rajapaksha","attending":true}}
 {"ts":"2026-07-13T17:26:02.098Z","action":"token-rsvp-submit","targetId":"17930f07-a0ad-45d3-b50e-556949949577","data":{"weddingId":"70346daf-7367-4d0e-8c78-8f356f59e351","guestName":"Prasad Rajapaksha","attending":true}}
+{"ts":"2026-07-29T18:49:45.050Z","action":"create-wedding","targetId":"1188a2c5-5481-4e61-830a-ab74d65551d1","data":{"groomName":"John","brideName":"Sudehi","date":"2027-04-08","userId":"cb495b08-4d33-4c13-862c-f4420c64b7bb"}}
