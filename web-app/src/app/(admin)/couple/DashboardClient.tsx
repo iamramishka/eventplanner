@@ -4175,17 +4175,8 @@ function VendorsModule({ wedding, setWedding }: any) {
       {/* ── Private Vendor Tracker ── */}
       <div className="card" style={{ marginTop: 24 }}>
         <div className="panel-header"><h3>Private Vendor Tracker</h3><span className="text-muted">Quotes, notes, and booking status</span></div>
-        <form className="vendor-custom-form" onSubmit={addCustomVendor}>
-          <input className="form-input" value={customForm.businessName} onChange={e => setCustomForm(f => ({ ...f, businessName: e.target.value }))} placeholder="Business name" />
-          <select className="form-input" value={customForm.category} onChange={e => setCustomForm(f => ({ ...f, category: e.target.value }))}>
-            {['Venue', 'Catering', 'Photography', 'Decor', 'Makeup', 'Music', 'Cake', 'Jewelry', 'Transport', 'Other'].map(item => <option key={item}>{item}</option>)}
-          </select>
-          <input className="form-input" value={customForm.contact} onChange={e => setCustomForm(f => ({ ...f, contact: e.target.value }))} placeholder="Phone, email, or URL" />
-          <input className="form-input" value={customForm.quote} onChange={e => setCustomForm(f => ({ ...f, quote: e.target.value }))} placeholder="Quote / estimate" />
-          <button className="btn btn-primary" disabled={saving || !customForm.businessName.trim()}><Plus size={14} /> Add</button>
-        </form>
         {customVendors.length === 0 ? (
-          <div className="empty-hint">Add vendors you are considering outside the marketplace.</div>
+          <div className="empty-hint">Vendors you book from the marketplace will appear here.</div>
         ) : (
           <div className="table-wrapper">
             <table className="data-table">
