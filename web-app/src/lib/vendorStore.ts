@@ -136,6 +136,9 @@ export type VendorRegistration = {
   logoBase64: string | null;
   coverImageBase64?: string | null;
   portfolioImages: string[];
+  // Public metrics
+  rating?: number;
+  reviewCount?: number;
   // Verification docs
   businessRegNumber: string;
   taxIdNumber: string;
@@ -415,6 +418,8 @@ function cleanVendorPatch(current: VendorRegistration, data: Partial<Omit<Vendor
   if ('reviewedBy' in data) updated.reviewedBy = cleanNullableString(data.reviewedBy, current.reviewedBy, 120);
   if ('reviewedAt' in data) updated.reviewedAt = cleanNullableString(data.reviewedAt, current.reviewedAt, 80);
   if ('featured' in data) updated.featured = Boolean(data.featured);
+  if ('rating' in data) updated.rating = cleanOptionalNonNegativeNumber(data.rating, null) ?? undefined;
+  if ('reviewCount' in data) updated.reviewCount = cleanOptionalNonNegativeNumber(data.reviewCount, null) ?? undefined;
   return updated;
 }
 
@@ -783,7 +788,13 @@ export function toPublicVendor(v: VendorRegistration) {
     serviceArea: v.serviceArea,
     basePrice: v.basePrice,
     currency: v.currency,
+    pricingNotes: v.pricingNotes,
     packages: v.packages,
+    coverImageBase64: v.coverImageBase64 ?? null,
+    logoBase64: v.logoBase64,
+    portfolioImages: v.portfolioImages,
+    rating: v.rating ?? null,
+    reviewCount: v.reviewCount ?? null,
     status: v.status,
     onboardingStep: v.onboardingStep,
     featured: Boolean(v.featured),

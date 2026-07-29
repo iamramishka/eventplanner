@@ -14,7 +14,7 @@ import {
   Eye, AlertCircle, X, Check, Plus,
   UserCircle, LogOut, HelpCircle, Diamond, RefreshCw,
   Home, Upload, Download, Trash2, GripVertical, Printer, Copy, FileText,
-  BarChart2,
+  BarChart2, Search, SlidersHorizontal,
 } from 'lucide-react';
 import { AGENDA_ICON_SET, AgendaIcon } from '@/components/agenda-icons';
 import './dashboard.css';
@@ -4041,82 +4041,112 @@ function VendorsModule({ wedding, setWedding }: any) {
   const savedMarketplace = vendors.filter(v => savedIds.includes(v.id));
   const bookedCount = customVendors.filter(v => v.status === 'booked').length;
 
+  const ALL_PILLS = ['All', ...Array.from(new Set(vendors.map(v => v.category).filter(Boolean)))];
+
+  function renderStars(rating: number) {
+    const full = Math.floor(rating);
+    const half = rating - full >= 0.5;
+    return Array.from({ length: 5 }, (_, i) => (
+      <span key={i} className={i < full ? 'vm-star filled' : (i === full && half ? 'vm-star half' : 'vm-star')}>★</span>
+    ));
+  }
+
   return (
-    <section className="module">
-      <div className="module-header">
+    <section className="module vm-section">
+      {/* ── Header ── */}
+      <div className="vm-top-row">
         <div>
-          <p className="eyebrow">Planning</p>
-          <h1 className="module-title">Vendor Management</h1>
-          <p className="module-subtitle">Browse approved vendors, shortlist options, and track custom quotes without entering the vendor portal.</p>
+          <p className="eyebrow">MARKETPLACE</p>
+          <h1 className="module-title">Vendor Marketplace</h1>
+          <p className="module-subtitle">Discover and connect with trusted wedding vendors. Compare, favourite, and choose the best for your big day.</p>
+        </div>
+        <div className="vm-header-actions">
+          <div className="vm-search-box">
+            <Search size={15} className="vm-search-icon" />
+            <input className="vm-search-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search vendors or services..." />
+          </div>
+          <button className="vm-filters-btn"><SlidersHorizontal size={15} /> Filters</button>
         </div>
       </div>
 
       {(message || error) && <div className={`module-alert ${error ? 'module-alert-error' : 'module-alert-success'}`}>{error || <><Check size={16} /> {message}</>}</div>}
 
-      <div className="kpi-grid6">
-        <KpiCard icon={<Store size={20} />} colorClass="kpi-rose" value={vendors.length} label="Marketplace" sub="Approved vendors" />
-        <KpiCard icon={<Heart size={20} />} colorClass="kpi-green" value={savedIds.length} label="Shortlisted" sub="Saved from marketplace" />
-        <KpiCard icon={<ClipboardList size={20} />} colorClass="kpi-purple" value={customVendors.length} label="Custom Vendors" sub="Your private tracker" />
-        <KpiCard icon={<CheckCircle size={20} />} colorClass="kpi-amber" value={bookedCount} label="Booked" sub="Marked confirmed" />
+      {/* ── Category pills ── */}
+      <div className="vm-pills">
+        {ALL_PILLS.map(pill => (
+          <button key={pill} className={`vm-pill${category === pill ? ' vm-pill-active' : ''}`} onClick={() => setCategory(pill)}>
+            {pill}
+          </button>
+        ))}
       </div>
 
-      <div className="vendor-workspace-grid">
-        <div className="card">
-          <div className="panel-header">
-            <h3>Marketplace Browse</h3>
-            {saving && <span className="text-muted">Saving...</span>}
-          </div>
-          <div className="module-toolbar">
-            <input className="form-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search vendor, category, location" />
-            <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
-              {categories.map(item => <option key={item}>{item}</option>)}
-            </select>
-          </div>
-          {loading ? (
-            <div className="empty-hint">Loading vendors...</div>
-          ) : filteredVendors.length === 0 ? (
-            <EmptyStatePanel icon={<Store size={36} />} title="No vendors match" description="Try a broader search or add a custom vendor below." />
-          ) : (
-            <div className="vendor-card-list">
-              {filteredVendors.map(v => (
-                <div className="vendor-card" key={v.id}>
-                  <div>
-                    <strong>{v.businessName}</strong>
-                    <span>{v.category} · {v.location || 'Location TBD'}</span>
-                    <p>{v.description}</p>
-                  </div>
-                  <div className="vendor-card-actions">
-                    <span className="badge badge-slate">{formatCurrency(v.basePrice || 0)}</span>
-                    {v.website && <a className="btn-ghost-sm" href={v.website} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Site</a>}
-                    <button className="btn-ghost-sm" onClick={() => setViewVendor(v)}><Eye size={13} /> View</button>
-                    <button className="btn btn-outline" onClick={() => toggleSaved(v.id)} disabled={saving}>
-                      {savedIds.includes(v.id) ? 'Saved' : 'Save'}
-                    </button>
-                  </div>
+      {/* ── Vendor card grid ── */}
+      {loading ? (
+        <div className="empty-hint">Loading vendors...</div>
+      ) : filteredVendors.length === 0 ? (
+        <EmptyStatePanel icon={<Store size={36} />} title="No vendors match" description="Try a broader search or different category." />
+      ) : (
+        <div className="vm-grid">
+          {filteredVendors.map(v => {
+            const saved = savedIds.includes(v.id);
+            return (
+              <div className="vm-card" key={v.id} onClick={() => setViewVendor(v)}>
+                <div className="vm-card-photo" style={v.coverImageBase64 ? { backgroundImage: `url(${v.coverImageBase64})` } : {}}>
+                  {!v.coverImageBase64 && <div className={`vm-card-placeholder vm-cat-${(v.category || '').toLowerCase().replace(/\s+/g, '-')}`} />}
+                  <button
+                    className={`vm-card-heart${saved ? ' saved' : ''}`}
+                    title={saved ? 'Remove from shortlist' : 'Save to shortlist'}
+                    onClick={e => { e.stopPropagation(); toggleSaved(v.id); }}
+                    disabled={saving}
+                  >
+                    <Heart size={16} fill={saved ? 'currentColor' : 'none'} />
+                  </button>
+                  {v.featured && <span className="vm-featured-badge">Featured</span>}
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="vm-card-info">
+                  <strong className="vm-card-name">{v.businessName}</strong>
+                  <span className="vm-card-meta">{v.category}{v.location ? ` · ${v.location.replace(', Sri Lanka', '')}` : ''}</span>
+                  {v.rating ? (
+                    <div className="vm-card-stars">
+                      {renderStars(v.rating)}
+                      <span className="vm-card-rating">{v.rating.toFixed(1)}</span>
+                      {v.reviewCount && <span className="vm-card-reviews">({v.reviewCount} reviews)</span>}
+                    </div>
+                  ) : <div className="vm-card-stars"><span className="vm-card-reviews">No reviews yet</span></div>}
+                  <span className="vm-card-price">
+                    {v.currency || 'LKR'} {(v.basePrice || 0).toLocaleString()}
+                    {v.category === 'Catering' ? ' / pax' : ''}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
+      )}
 
-        <div className="card">
-          <div className="panel-header"><h3>Shortlist</h3><span className="text-muted">{savedMarketplace.length} saved</span></div>
-          {savedMarketplace.length === 0 ? (
-            <EmptyStatePanel icon={<Heart size={34} />} title="No saved vendors" description="Save marketplace vendors to compare them here." />
-          ) : (
-            <div className="compact-list">
-              {savedMarketplace.map(v => (
-                <div className="compact-row" key={v.id}>
-                  <div><strong>{v.businessName}</strong><span>{v.category}</span></div>
+      {/* ── Shortlist ── */}
+      {savedMarketplace.length > 0 && (
+        <div className="card" style={{ marginTop: 32 }}>
+          <div className="panel-header"><h3>Your Shortlist</h3><span className="text-muted">{savedMarketplace.length} saved</span></div>
+          <div className="compact-list">
+            {savedMarketplace.map(v => (
+              <div className="compact-row" key={v.id}>
+                <div>
+                  <strong>{v.businessName}</strong>
+                  <span>{v.category}{v.location ? ` · ${v.location.replace(', Sri Lanka', '')}` : ''}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="table-action-btn" title="View" onClick={() => setViewVendor(v)}><Eye size={14} /></button>
                   <button className="table-action-btn" title="Remove" onClick={() => toggleSaved(v.id)}><Trash2 size={14} /></button>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="card">
+      {/* ── Private Vendor Tracker ── */}
+      <div className="card" style={{ marginTop: 24 }}>
         <div className="panel-header"><h3>Private Vendor Tracker</h3><span className="text-muted">Quotes, notes, and booking status</span></div>
         <form className="vendor-custom-form" onSubmit={addCustomVendor}>
           <input className="form-input" value={customForm.businessName} onChange={e => setCustomForm(f => ({ ...f, businessName: e.target.value }))} placeholder="Business name" />
@@ -4127,7 +4157,6 @@ function VendorsModule({ wedding, setWedding }: any) {
           <input className="form-input" value={customForm.quote} onChange={e => setCustomForm(f => ({ ...f, quote: e.target.value }))} placeholder="Quote / estimate" />
           <button className="btn btn-primary" disabled={saving || !customForm.businessName.trim()}><Plus size={14} /> Add</button>
         </form>
-
         {customVendors.length === 0 ? (
           <div className="empty-hint">Add vendors you are considering outside the marketplace.</div>
         ) : (
