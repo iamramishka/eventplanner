@@ -1042,6 +1042,32 @@ export function appendVendorMessage(vendorId: string, threadId: string, body: st
   return updated;
 }
 
+export function createMessageThread(
+  vendorId: string,
+  coupleName: string,
+  subject: string,
+  body: string,
+  meta?: { weddingDate?: string; guestCount?: string }
+): VendorMessageThread {
+  const now = new Date().toISOString();
+  const metaLines: string[] = [];
+  if (meta?.weddingDate) metaLines.push(`Wedding Date: ${meta.weddingDate}`);
+  if (meta?.guestCount) metaLines.push(`Guest Count: ${meta.guestCount}`);
+  const fullBody = metaLines.length > 0 ? `${body}\n\n---\n${metaLines.join(' · ')}` : body;
+  const thread: VendorMessageThread = {
+    id: `thread_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    vendorId,
+    bookingId: null,
+    coupleName,
+    subject,
+    unread: true,
+    lastMessageAt: now,
+    messages: [{ id: `msg_${Date.now().toString(36)}`, sender: 'couple', body: fullBody, createdAt: now }],
+  };
+  vendorStore.messageThreads.push(thread);
+  return thread;
+}
+
 export function getPayoutsByVendor(vendorId: string): VendorPayout[] {
   return vendorStore.payouts
     .filter(p => p.vendorId === vendorId)

@@ -11,6 +11,7 @@ declare module 'lucide-react' {
   export const AlertCircle: LucideIcon;
   export const AlertTriangle: LucideIcon;
   export const ArrowDown: LucideIcon;
+  export const ArrowLeft: LucideIcon;
   export const ArrowRight: LucideIcon;
   export const ArrowUp: LucideIcon;
   export const Banknote: LucideIcon;
@@ -27,6 +28,7 @@ declare module 'lucide-react' {
   export const CheckCircle2: LucideIcon;
   export const CheckSquare: LucideIcon;
   export const ChevronDown: LucideIcon;
+  export const ChevronLeft: LucideIcon;
   export const ChevronRight: LucideIcon;
   export const ChevronUp: LucideIcon;
   export const ClipboardList: LucideIcon;

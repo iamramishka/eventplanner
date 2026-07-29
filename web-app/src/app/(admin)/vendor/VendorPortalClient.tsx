@@ -9,7 +9,7 @@ import {
   ToggleLeft, ToggleRight, Upload, X, Save, AlertCircle,
   Globe, DollarSign, Image as ImageIcon, FileText,
   Search, ImageOff, RefreshCw, Check, Filter,
-  Info
+  Info, Send
 } from 'lucide-react';
 import styles from './vendor.module.css';
 
@@ -1288,6 +1288,31 @@ function AvailabilityModule({ vendorId, listings, availability, onPortalChange }
   );
 }
 
+function avatarInitials(name: string) {
+  return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function extractMeta(body: string): { clean: string; weddingDate?: string; guestCount?: string } {
+  const parts = body.split('\n\n---\n');
+  if (parts.length < 2) return { clean: body };
+  const meta: Record<string, string> = {};
+  parts[1].split(' · ').forEach(chunk => {
+    const [k, ...rest] = chunk.split(': ');
+    if (k && rest.length) meta[k.trim()] = rest.join(': ').trim();
+  });
+  return { clean: parts[0], weddingDate: meta['Wedding Date'], guestCount: meta['Guest Count'] };
+}
+
 function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }: any) {
   const [activeId, setActiveId] = useState(initialThreads[0]?.id || '');
   const [replyText, setReplyText] = useState('');
@@ -1295,12 +1320,15 @@ function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const threads = initialThreads.map((thread: any) => ({
     ...thread,
     unread: thread.unread && !readIds[thread.id],
-    lastMessage: thread.messages?.[thread.messages.length - 1]?.body || 'No messages yet.',
+    lastMessage: thread.messages?.[thread.messages.length - 1]?.body?.split('\n')[0] || 'No messages yet.',
   }));
   const active = threads.find((t: any) => t.id === activeId) || threads[0];
+  const activeMeta: { clean?: string; weddingDate?: string; guestCount?: string } = active?.messages?.[0]?.body ? extractMeta(active.messages[0].body) : {};
 
   async function patchPortal(payload: any) {
     const res = await fetch(`/api/vendors/${vendor.id}/portal`, {
@@ -1323,6 +1351,7 @@ function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }
     } catch (err: any) {
       setError(err.message || 'Message update failed.');
     }
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
   }
 
   async function sendReply() {
@@ -1334,12 +1363,64 @@ function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }
       await patchPortal({ messageReply: { threadId: active.id, message: replyText } });
       setReplyText('');
       setNotice('Reply sent.');
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
     } catch (err: any) {
       setError(err.message || 'Message send failed.');
     } finally {
       setSaving(false);
     }
   }
+
+  const inboxStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: '300px 1fr',
+    gap: 0,
+    border: '1px solid var(--adm-border)',
+    borderRadius: 16,
+    overflow: 'hidden',
+    minHeight: 520,
+    background: 'var(--adm-card-bg)',
+  };
+  const listPanelStyle: React.CSSProperties = {
+    borderRight: '1px solid var(--adm-border)',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  };
+  const listHeaderStyle: React.CSSProperties = {
+    padding: '16px 18px',
+    borderBottom: '1px solid var(--adm-border)',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  };
+  const chatPanelStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  };
+  const chatHeaderStyle: React.CSSProperties = {
+    padding: '14px 20px',
+    borderBottom: '1px solid var(--adm-border)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  };
+  const bubbleAreaStyle: React.CSSProperties = {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  };
+  const replyAreaStyle: React.CSSProperties = {
+    borderTop: '1px solid var(--adm-border)',
+    padding: '14px 16px',
+    display: 'flex',
+    gap: 10,
+    alignItems: 'flex-end',
+  };
 
   return (
     <section className={styles.moduleSection}>
@@ -1352,38 +1433,118 @@ function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }
       </div>
       {notice && <div className="opsNotice"><Check size={15} /> {notice}</div>}
       {error && <div className="opsNotice error"><AlertCircle size={15} /> {error}</div>}
-      {threads.length === 0 ? <EmptyState icon={<MessageSquare size={30} />} title="No enquiries yet" desc="Messages from shortlisted couples and booking requests will appear here." /> : (
-        <div className="opsGrid">
-          <div className="opsCard">
-            <div className="opsCardHeader"><div className="opsTitle"><MessageSquare size={18} /> Inbox</div><span className="opsMuted">{threads.filter((t: any) => t.unread).length} unread</span></div>
-            <div className="opsList">
-              {threads.map((thread: any) => (
-                <button key={thread.id} className="opsRow" style={{ textAlign: 'left', borderColor: active?.id === thread.id ? 'var(--inv-rose)' : undefined }} onClick={() => openThread(thread.id)}>
-                  <div className="opsRowMain">
-                    <div className="opsRowTitle">{thread.coupleName}</div>
-                    <div className="opsRowMeta">{thread.lastMessage}</div>
-                  </div>
-                  {thread.unread && <span className="opsStatus unread">Unread</span>}
-                </button>
-              ))}
+      {threads.length === 0 ? (
+        <EmptyState icon={<MessageSquare size={30} />} title="No enquiries yet" desc="Messages from shortlisted couples and booking requests will appear here." />
+      ) : (
+        <div style={inboxStyle}>
+          {/* ─── Left: thread list ─── */}
+          <div style={listPanelStyle}>
+            <div style={listHeaderStyle}>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>Inbox</span>
+              <span style={{ fontSize: 12, color: 'var(--adm-text-muted)', background: 'var(--adm-hover-bg)', borderRadius: 20, padding: '2px 10px' }}>
+                {threads.filter((t: any) => t.unread).length} unread
+              </span>
+            </div>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {threads.map((thread: any) => {
+                const isActive = active?.id === thread.id;
+                return (
+                  <button
+                    key={thread.id}
+                    onClick={() => openThread(thread.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '14px 16px',
+                      background: isActive ? 'var(--adm-hover-bg)' : 'transparent',
+                      borderLeft: isActive ? '3px solid var(--inv-rose, #e86a8a)' : '3px solid transparent',
+                      border: 'none', borderBottom: '1px solid var(--adm-border)', cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    <div style={{
+                      width: 40, height: 40, borderRadius: '50%', background: '#2d3748',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0, color: '#e2e8f0', fontWeight: 700, fontSize: 13,
+                    }}>
+                      {avatarInitials(thread.coupleName)}
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                        <span style={{ fontWeight: thread.unread ? 700 : 500, fontSize: 14, color: 'var(--adm-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 130 }}>{thread.coupleName}</span>
+                        <span style={{ fontSize: 11, color: 'var(--adm-text-muted)', flexShrink: 0 }}>{timeAgo(thread.lastMessageAt)}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 12, color: 'var(--adm-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{thread.lastMessage}</span>
+                        {thread.unread && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#e86a8a', flexShrink: 0, display: 'inline-block' }} />}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="opsCard">
-            <div className="opsCardHeader"><div className="opsTitle"><User size={18} /> {active?.coupleName || 'Conversation'}</div><span className="opsMuted">{active?.subject}</span></div>
-            <div className="opsList">
-              {active?.messages?.map((message: any) => (
-                <div key={message.id} className="opsRow" style={{ background: message.sender === 'vendor' ? 'white' : 'var(--adm-bg-alt)' }}>
-                  <div className="opsRowMain">
-                    <div className="opsRowTitle">{message.sender === 'vendor' ? vendor.businessName : active.coupleName}</div>
-                    <div className="opsRowMeta">{message.body}</div>
+
+          {/* ─── Right: chat panel ─── */}
+          <div style={chatPanelStyle}>
+            {active ? (
+              <>
+                <div style={chatHeaderStyle}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#2d3748', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e2e8f0', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+                    {avatarInitials(active.coupleName)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--adm-text)' }}>{active.coupleName}</div>
+                    <div style={{ fontSize: 12, color: 'var(--adm-text-muted)', display: 'flex', gap: 12, marginTop: 2 }}>
+                      {activeMeta.weddingDate && <span>📅 {activeMeta.weddingDate}</span>}
+                      {activeMeta.guestCount && <span>👥 {activeMeta.guestCount} guests</span>}
+                      {!activeMeta.weddingDate && !activeMeta.guestCount && <span>{active.subject}</span>}
+                    </div>
                   </div>
                 </div>
-              ))}
-              <textarea className="opsInput opsTextarea" rows={4} value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Write a reply..." />
-              <button className={`${styles.btn} ${styles.btnPrimary}`} style={{ alignSelf: 'flex-start' }} onClick={sendReply} disabled={saving || !replyText.trim()}>
-                {saving ? <><RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> Sending...</> : <><MessageSquare size={15} /> Send reply</>}
-              </button>
-            </div>
+
+                <div style={bubbleAreaStyle}>
+                  {active.messages?.map((msg: any) => {
+                    const isVendor = msg.sender === 'vendor';
+                    const { clean } = extractMeta(msg.body);
+                    return (
+                      <div key={msg.id} style={{ display: 'flex', justifyContent: isVendor ? 'flex-end' : 'flex-start' }}>
+                        <div style={{
+                          maxWidth: '72%', padding: '10px 14px', borderRadius: isVendor ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
+                          background: isVendor ? 'var(--inv-rose, #e86a8a)' : 'var(--adm-hover-bg)',
+                          color: isVendor ? '#fff' : 'var(--adm-text)',
+                          fontSize: 14, lineHeight: 1.55,
+                        }}>
+                          <div style={{ whiteSpace: 'pre-wrap' }}>{clean}</div>
+                          <div style={{ fontSize: 11, opacity: .65, marginTop: 4, textAlign: 'right' }}>{timeAgo(msg.createdAt)}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <div style={replyAreaStyle}>
+                  <textarea
+                    style={{ flex: 1, border: '1px solid var(--adm-border)', borderRadius: 10, padding: '10px 12px', fontSize: 14, resize: 'none', background: 'var(--adm-card-bg)', color: 'var(--adm-text)', fontFamily: 'inherit', lineHeight: 1.5, outline: 'none' }}
+                    rows={3}
+                    value={replyText}
+                    onChange={e => setReplyText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendReply(); }}
+                    placeholder="Write a reply… (Ctrl+Enter to send)"
+                  />
+                  <button
+                    className={`${styles.btn} ${styles.btnPrimary}`}
+                    onClick={sendReply}
+                    disabled={saving || !replyText.trim()}
+                    style={{ alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    {saving ? <><RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Sending</> : <><Send size={14} /> Send Reply</>}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--adm-text-muted)', fontSize: 14 }}>
+                Select a conversation to view messages.
+              </div>
+            )}
           </div>
         </div>
       )}
