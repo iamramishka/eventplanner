@@ -3978,6 +3978,7 @@ function VendorsModule({ wedding, setWedding }: any) {
   const [saving, setSaving] = useState(false);
   const [plan, setPlan] = useState<any>(wedding.vendorPlan || { savedVendorIds: [], customVendors: [] });
   const [customForm, setCustomForm] = useState({ businessName: '', category: 'Photography', contact: '', quote: '', notes: '' });
+  const [viewVendor, setViewVendor] = useState<any>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -4087,6 +4088,7 @@ function VendorsModule({ wedding, setWedding }: any) {
                   <div className="vendor-card-actions">
                     <span className="badge badge-slate">{formatCurrency(v.basePrice || 0)}</span>
                     {v.website && <a className="btn-ghost-sm" href={v.website} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Site</a>}
+                    <button className="btn-ghost-sm" onClick={() => setViewVendor(v)}><Eye size={13} /> View</button>
                     <button className="btn btn-outline" onClick={() => toggleSaved(v.id)} disabled={saving}>
                       {savedIds.includes(v.id) ? 'Saved' : 'Save'}
                     </button>
@@ -4155,7 +4157,110 @@ function VendorsModule({ wedding, setWedding }: any) {
           </div>
         )}
       </div>
+
+      {viewVendor && (
+        <VendorDetailModal
+          vendor={viewVendor}
+          isSaved={savedIds.includes(viewVendor.id)}
+          onSave={() => toggleSaved(viewVendor.id)}
+          onClose={() => setViewVendor(null)}
+        />
+      )}
     </section>
+  );
+}
+
+function VendorDetailModal({ vendor, isSaved, onSave, onClose }: { vendor: any; isSaved: boolean; onSave: () => void; onClose: () => void }) {
+  const packages: any[] = vendor.packages || [];
+  const portfolio: string[] = vendor.portfolioImages || [];
+  return (
+    <div className="vdm-overlay" onClick={onClose}>
+      <div className="vdm-sheet" onClick={e => e.stopPropagation()}>
+        {vendor.coverImageBase64 && (
+          <div className="vdm-cover"><img src={vendor.coverImageBase64} alt={vendor.businessName} /></div>
+        )}
+        <div className="vdm-body">
+          <div className="vdm-header-row">
+            <div className="vdm-identity">
+              {vendor.logoBase64 && (
+                <div className="vdm-logo"><img src={vendor.logoBase64} alt="logo" /></div>
+              )}
+              <div>
+                <h2 className="vdm-name">{vendor.businessName}</h2>
+                <p className="vdm-meta">
+                  {vendor.category}{vendor.subcategory ? ` · ${vendor.subcategory}` : ''}
+                  {vendor.location ? ` · ${vendor.location}` : ''}
+                  {vendor.yearsInBusiness ? ` · ${vendor.yearsInBusiness} yrs experience` : ''}
+                </p>
+              </div>
+            </div>
+            <button className="vdm-close-btn" onClick={onClose}><X size={18} /></button>
+          </div>
+
+          <div className="vdm-chips">
+            {vendor.basePrice > 0 && (
+              <span className="badge badge-slate">{vendor.currency || 'LKR'} {Number(vendor.basePrice).toLocaleString()}</span>
+            )}
+            {vendor.rating && <span className="vdm-chip">⭐ {vendor.rating}</span>}
+            {vendor.serviceArea && (
+              <span className="vdm-chip"><MapPin size={12} /> {vendor.serviceArea}</span>
+            )}
+            {vendor.website && (
+              <a className="btn-ghost-sm" href={vendor.website} target="_blank" rel="noreferrer">
+                <ExternalLink size={13} /> Website
+              </a>
+            )}
+            <button className={`btn ${isSaved ? 'btn-primary' : 'btn-outline'} vdm-save-btn`} onClick={onSave}>
+              <Heart size={14} /> {isSaved ? 'Saved' : 'Save'}
+            </button>
+          </div>
+
+          {vendor.description && (
+            <div className="vdm-section">
+              <p className="vdm-section-label">About</p>
+              <p className="vdm-desc">{vendor.description}</p>
+            </div>
+          )}
+
+          {packages.length > 0 && (
+            <div className="vdm-section">
+              <p className="vdm-section-label">Packages</p>
+              <div className="vdm-packages">
+                {packages.map((pkg: any, i: number) => (
+                  <div className="vdm-pkg" key={i}>
+                    <div className="vdm-pkg-info">
+                      <strong>{pkg.name}</strong>
+                      {pkg.description && <span>{pkg.description}</span>}
+                    </div>
+                    {pkg.price && (
+                      <span className="vdm-pkg-price">{vendor.currency || 'LKR'} {Number(pkg.price).toLocaleString()}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {vendor.pricingNotes && (
+            <div className="vdm-section">
+              <p className="vdm-section-label">Pricing Notes</p>
+              <p className="vdm-desc">{vendor.pricingNotes}</p>
+            </div>
+          )}
+
+          {portfolio.length > 0 && (
+            <div className="vdm-section">
+              <p className="vdm-section-label">Portfolio</p>
+              <div className="vdm-portfolio">
+                {portfolio.slice(0, 6).map((img: string, i: number) => (
+                  <div className="vdm-photo" key={i}><img src={img} alt={`Portfolio ${i + 1}`} /></div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
