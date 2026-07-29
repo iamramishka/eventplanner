@@ -14,7 +14,7 @@ import {
   Eye, AlertCircle, X, Check, Plus,
   UserCircle, LogOut, HelpCircle, Diamond, RefreshCw,
   Home, Upload, Download, Trash2, GripVertical, Printer, Copy, FileText,
-  BarChart2,
+  BarChart2, Search, SlidersHorizontal, ChevronLeft, Lock, MessageSquare,
 } from 'lucide-react';
 import { AGENDA_ICON_SET, AgendaIcon } from '@/components/agenda-icons';
 import './dashboard.css';
@@ -3978,6 +3978,7 @@ function VendorsModule({ wedding, setWedding }: any) {
   const [saving, setSaving] = useState(false);
   const [plan, setPlan] = useState<any>(wedding.vendorPlan || { savedVendorIds: [], customVendors: [] });
   const [customForm, setCustomForm] = useState({ businessName: '', category: 'Photography', contact: '', quote: '', notes: '' });
+  const [profileVendor, setProfileVendor] = useState<any>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -4040,81 +4041,139 @@ function VendorsModule({ wedding, setWedding }: any) {
   const savedMarketplace = vendors.filter(v => savedIds.includes(v.id));
   const bookedCount = customVendors.filter(v => v.status === 'booked').length;
 
+  function addToBookedVendors(vendor: any, pkg: any) {
+    const entry = {
+      id: `custom_${Date.now()}`,
+      businessName: vendor.businessName,
+      category: vendor.category,
+      contact: vendor.website || '',
+      quote: `${vendor.currency || 'LKR'} ${Number(pkg.price).toLocaleString()}`,
+      notes: pkg.name,
+      status: 'booked',
+      createdAt: new Date().toISOString(),
+    };
+    savePlan({ ...plan, customVendors: [...customVendors, entry] }, `${vendor.businessName} added to your vendor tracker.`);
+  }
+
+  if (profileVendor) {
+    return (
+      <VendorProfileView
+        vendor={profileVendor}
+        isSaved={savedIds.includes(profileVendor.id)}
+        onSave={() => toggleSaved(profileVendor.id)}
+        onBack={() => setProfileVendor(null)}
+        onBook={addToBookedVendors}
+        saving={saving}
+      />
+    );
+  }
+
+  const ALL_PILLS = ['All', ...Array.from(new Set(vendors.map(v => v.category).filter(Boolean)))];
+
+  function renderStars(rating: number) {
+    const full = Math.floor(rating);
+    const half = rating - full >= 0.5;
+    return Array.from({ length: 5 }, (_, i) => (
+      <span key={i} className={i < full ? 'vm-star filled' : (i === full && half ? 'vm-star half' : 'vm-star')}>★</span>
+    ));
+  }
+
   return (
-    <section className="module">
-      <div className="module-header">
+    <section className="module vm-section">
+      {/* ── Header ── */}
+      <div className="vm-top-row">
         <div>
-          <p className="eyebrow">Planning</p>
-          <h1 className="module-title">Vendor Management</h1>
-          <p className="module-subtitle">Browse approved vendors, shortlist options, and track custom quotes without entering the vendor portal.</p>
+          <p className="eyebrow">MARKETPLACE</p>
+          <h1 className="module-title">Vendor Marketplace</h1>
+          <p className="module-subtitle">Discover and connect with trusted wedding vendors. Compare, favourite, and choose the best for your big day.</p>
+        </div>
+        <div className="vm-header-actions">
+          <div className="vm-search-box">
+            <Search size={15} className="vm-search-icon" />
+            <input className="vm-search-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search vendors or services..." />
+          </div>
+          <button className="vm-filters-btn"><SlidersHorizontal size={15} /> Filters</button>
         </div>
       </div>
 
       {(message || error) && <div className={`module-alert ${error ? 'module-alert-error' : 'module-alert-success'}`}>{error || <><Check size={16} /> {message}</>}</div>}
 
-      <div className="kpi-grid6">
-        <KpiCard icon={<Store size={20} />} colorClass="kpi-rose" value={vendors.length} label="Marketplace" sub="Approved vendors" />
-        <KpiCard icon={<Heart size={20} />} colorClass="kpi-green" value={savedIds.length} label="Shortlisted" sub="Saved from marketplace" />
-        <KpiCard icon={<ClipboardList size={20} />} colorClass="kpi-purple" value={customVendors.length} label="Custom Vendors" sub="Your private tracker" />
-        <KpiCard icon={<CheckCircle size={20} />} colorClass="kpi-amber" value={bookedCount} label="Booked" sub="Marked confirmed" />
+      {/* ── Category pills ── */}
+      <div className="vm-pills">
+        {ALL_PILLS.map(pill => (
+          <button key={pill} className={`vm-pill${category === pill ? ' vm-pill-active' : ''}`} onClick={() => setCategory(pill)}>
+            {pill}
+          </button>
+        ))}
       </div>
 
-      <div className="vendor-workspace-grid">
-        <div className="card">
-          <div className="panel-header">
-            <h3>Marketplace Browse</h3>
-            {saving && <span className="text-muted">Saving...</span>}
-          </div>
-          <div className="module-toolbar">
-            <input className="form-input" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search vendor, category, location" />
-            <select className="form-input" value={category} onChange={e => setCategory(e.target.value)}>
-              {categories.map(item => <option key={item}>{item}</option>)}
-            </select>
-          </div>
-          {loading ? (
-            <div className="empty-hint">Loading vendors...</div>
-          ) : filteredVendors.length === 0 ? (
-            <EmptyStatePanel icon={<Store size={36} />} title="No vendors match" description="Try a broader search or add a custom vendor below." />
-          ) : (
-            <div className="vendor-card-list">
-              {filteredVendors.map(v => (
-                <div className="vendor-card" key={v.id}>
-                  <div>
-                    <strong>{v.businessName}</strong>
-                    <span>{v.category} · {v.location || 'Location TBD'}</span>
-                    <p>{v.description}</p>
-                  </div>
-                  <div className="vendor-card-actions">
-                    <span className="badge badge-slate">{formatCurrency(v.basePrice || 0)}</span>
-                    {v.website && <a className="btn-ghost-sm" href={v.website} target="_blank" rel="noreferrer"><ExternalLink size={13} /> Site</a>}
-                    <button className="btn btn-outline" onClick={() => toggleSaved(v.id)} disabled={saving}>
-                      {savedIds.includes(v.id) ? 'Saved' : 'Save'}
-                    </button>
-                  </div>
+      {/* ── Vendor card grid ── */}
+      {loading ? (
+        <div className="empty-hint">Loading vendors...</div>
+      ) : filteredVendors.length === 0 ? (
+        <EmptyStatePanel icon={<Store size={36} />} title="No vendors match" description="Try a broader search or different category." />
+      ) : (
+        <div className="vm-grid">
+          {filteredVendors.map(v => {
+            const saved = savedIds.includes(v.id);
+            return (
+              <div className="vm-card" key={v.id} onClick={() => setProfileVendor(v)}>
+                <div className="vm-card-photo" style={v.coverImageBase64 ? { backgroundImage: `url(${v.coverImageBase64})` } : {}}>
+                  {!v.coverImageBase64 && <div className={`vm-card-placeholder vm-cat-${(v.category || '').toLowerCase().replace(/\s+/g, '-')}`} />}
+                  <button
+                    className={`vm-card-heart${saved ? ' saved' : ''}`}
+                    title={saved ? 'Remove from shortlist' : 'Save to shortlist'}
+                    onClick={e => { e.stopPropagation(); toggleSaved(v.id); }}
+                    disabled={saving}
+                  >
+                    <Heart size={16} fill={saved ? 'currentColor' : 'none'} />
+                  </button>
+                  {v.featured && <span className="vm-featured-badge">Featured</span>}
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="vm-card-info">
+                  <strong className="vm-card-name">{v.businessName}</strong>
+                  <span className="vm-card-meta">{v.category}{v.location ? ` · ${v.location.replace(', Sri Lanka', '')}` : ''}</span>
+                  {v.rating ? (
+                    <div className="vm-card-stars">
+                      {renderStars(v.rating)}
+                      <span className="vm-card-rating">{v.rating.toFixed(1)}</span>
+                      {v.reviewCount && <span className="vm-card-reviews">({v.reviewCount} reviews)</span>}
+                    </div>
+                  ) : <div className="vm-card-stars"><span className="vm-card-reviews">No reviews yet</span></div>}
+                  <span className="vm-card-price">
+                    {v.currency || 'LKR'} {(v.basePrice || 0).toLocaleString()}
+                    {v.category === 'Catering' ? ' / pax' : ''}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
+      )}
 
-        <div className="card">
-          <div className="panel-header"><h3>Shortlist</h3><span className="text-muted">{savedMarketplace.length} saved</span></div>
-          {savedMarketplace.length === 0 ? (
-            <EmptyStatePanel icon={<Heart size={34} />} title="No saved vendors" description="Save marketplace vendors to compare them here." />
-          ) : (
-            <div className="compact-list">
-              {savedMarketplace.map(v => (
-                <div className="compact-row" key={v.id}>
-                  <div><strong>{v.businessName}</strong><span>{v.category}</span></div>
+      {/* ── Shortlist ── */}
+      {savedMarketplace.length > 0 && (
+        <div className="card" style={{ marginTop: 32 }}>
+          <div className="panel-header"><h3>Your Shortlist</h3><span className="text-muted">{savedMarketplace.length} saved</span></div>
+          <div className="compact-list">
+            {savedMarketplace.map(v => (
+              <div className="compact-row" key={v.id}>
+                <div>
+                  <strong>{v.businessName}</strong>
+                  <span>{v.category}{v.location ? ` · ${v.location.replace(', Sri Lanka', '')}` : ''}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="table-action-btn" title="View" onClick={() => setProfileVendor(v)}><Eye size={14} /></button>
                   <button className="table-action-btn" title="Remove" onClick={() => toggleSaved(v.id)}><Trash2 size={14} /></button>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="card">
+      {/* ── Private Vendor Tracker ── */}
+      <div className="card" style={{ marginTop: 24 }}>
         <div className="panel-header"><h3>Private Vendor Tracker</h3><span className="text-muted">Quotes, notes, and booking status</span></div>
         <form className="vendor-custom-form" onSubmit={addCustomVendor}>
           <input className="form-input" value={customForm.businessName} onChange={e => setCustomForm(f => ({ ...f, businessName: e.target.value }))} placeholder="Business name" />
@@ -4125,7 +4184,6 @@ function VendorsModule({ wedding, setWedding }: any) {
           <input className="form-input" value={customForm.quote} onChange={e => setCustomForm(f => ({ ...f, quote: e.target.value }))} placeholder="Quote / estimate" />
           <button className="btn btn-primary" disabled={saving || !customForm.businessName.trim()}><Plus size={14} /> Add</button>
         </form>
-
         {customVendors.length === 0 ? (
           <div className="empty-hint">Add vendors you are considering outside the marketplace.</div>
         ) : (
@@ -4155,7 +4213,261 @@ function VendorsModule({ wedding, setWedding }: any) {
           </div>
         )}
       </div>
+
     </section>
+  );
+}
+
+/* ════════════════════════════════════════
+   VENDOR PROFILE VIEW
+════════════════════════════════════════ */
+function VendorProfileView({ vendor, isSaved, onSave, onBack, onBook, saving }: any) {
+  const [showQuote, setShowQuote] = useState(false);
+  const [bookedPkg, setBookedPkg] = useState<any>(null);
+
+  const initials = vendor.businessName
+    .split(' ').filter((w: string) => w.length > 0).slice(0, 2)
+    .map((w: string) => w[0].toUpperCase()).join('');
+
+  function handleOrderNow(pkg: any) {
+    onBook(vendor, pkg);
+    setBookedPkg(pkg);
+  }
+
+  const hasPortfolio = vendor.portfolioImages?.length > 0;
+
+  return (
+    <section className="module vp-module">
+      <button className="vp-back" onClick={onBack}><ChevronLeft size={15} /> Back to Vendors</button>
+
+      {/* Hero */}
+      <div className="vp-hero">
+        {vendor.coverImageBase64
+          ? <img src={vendor.coverImageBase64} className="vp-hero-img" alt={vendor.businessName} />
+          : <div className="vp-hero-placeholder" />}
+        <div className="vp-logo-circle">
+          {vendor.logoBase64
+            ? <img src={vendor.logoBase64} alt="logo" />
+            : <span className="vp-logo-initials">{initials}</span>}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="vp-body">
+        {/* Left col */}
+        <div className="vp-left">
+          <h1 className="vp-name">{vendor.businessName}</h1>
+          <div className="vp-meta-row">
+            <span className="vp-cat-badge"><ImageIcon size={13} /> {vendor.category}</span>
+            {vendor.location && <span className="vp-location"><MapPin size={13} /> {vendor.location}</span>}
+          </div>
+          {vendor.rating && (
+            <div className="vp-stars-row">
+              {[1,2,3,4,5].map(i => (
+                <span key={i} className={i <= Math.round(vendor.rating) ? 'vp-star filled' : 'vp-star'}>★</span>
+              ))}
+              <span className="vp-rating-num">{vendor.rating.toFixed(1)}</span>
+              {vendor.reviewCount && <span className="vp-review-count">({vendor.reviewCount} reviews)</span>}
+            </div>
+          )}
+          {vendor.description && <p className="vp-desc">{vendor.description}</p>}
+
+          <div className="vp-gallery-section">
+            <h3>Gallery</h3>
+            {hasPortfolio ? (
+              <>
+                <div className="vp-gallery-grid">
+                  {vendor.portfolioImages.slice(0, 6).map((img: string, i: number) => (
+                    <div className="vp-gallery-photo" key={i}><img src={img} alt={`Gallery ${i+1}`} /></div>
+                  ))}
+                </div>
+                <button className="vp-view-gallery-btn">View Full Gallery <ChevronRight size={15} /></button>
+              </>
+            ) : (
+              <div className="vp-gallery-empty"><ImageIcon size={28} /><p>No gallery photos yet</p></div>
+            )}
+          </div>
+        </div>
+
+        {/* Right sidebar */}
+        <div className="vp-sidebar">
+          <h3 className="vp-sidebar-title">Packages &amp; Booking</h3>
+
+          {vendor.packages?.length > 0 ? (
+            <div className="vp-pkg-list">
+              {vendor.packages.map((pkg: any, i: number) => (
+                <div className="vp-pkg-card" key={i}>
+                  <div>
+                    <strong className="vp-pkg-name">{pkg.name}</strong>
+                    {pkg.description && <p className="vp-pkg-desc">{pkg.description}</p>}
+                    <span className="vp-pkg-price">{vendor.currency || 'LKR'} {Number(pkg.price).toLocaleString()}</span>
+                  </div>
+                  <button className="btn btn-primary vp-order-btn" onClick={() => handleOrderNow(pkg)} disabled={saving}>
+                    Order Now
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="vp-custom-pricing">
+              <FileText size={32} />
+              <p>This vendor offers custom pricing</p>
+            </div>
+          )}
+
+          <button className="vp-get-quote-btn" onClick={() => setShowQuote(true)}>
+            <MessageSquare size={15} /> Get Quote
+          </button>
+          <button className={`vp-shortlist-btn${isSaved ? ' saved' : ''}`} onClick={onSave} disabled={saving}>
+            <Heart size={15} fill={isSaved ? 'currentColor' : 'none'} />
+            {isSaved ? 'Saved to Shortlist' : 'Save to Shortlist'}
+          </button>
+        </div>
+      </div>
+
+      {showQuote && <GetQuoteDrawer vendor={vendor} onClose={() => setShowQuote(false)} />}
+      {bookedPkg && (
+        <BookingConfirmedModal
+          vendor={vendor}
+          pkg={bookedPkg}
+          onClose={() => setBookedPkg(null)}
+          onBack={() => { setBookedPkg(null); onBack(); }}
+        />
+      )}
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════
+   GET QUOTE DRAWER
+════════════════════════════════════════ */
+function GetQuoteDrawer({ vendor, onClose }: any) {
+  const [msgText, setMsgText] = useState('');
+  const [weddingDate, setWeddingDate] = useState('');
+  const [guestCount, setGuestCount] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [err, setErr] = useState('');
+  const isPremium = false; // payment gate — couples on free/trial plan cannot send
+
+  const initials = vendor.businessName.split(' ').slice(0, 2).map((w: string) => w[0]?.toUpperCase()).join('');
+
+  async function handleSend() {
+    if (!isPremium || !msgText.trim()) return;
+    setSending(true); setErr('');
+    try {
+      const res = await fetch('/api/messages/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendorId: vendor.id, message: msgText, weddingDate, guestCount }),
+      });
+      if (!res.ok) throw new Error('Failed to send message.');
+      setSent(true);
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="gq-overlay">
+      <div className="gq-backdrop" onClick={onClose} />
+      <div className="gq-drawer">
+        <button className="gq-close" onClick={onClose}><X size={20} /></button>
+
+        <div className="gq-header">
+          <div className="gq-vendor-avatar">
+            {vendor.logoBase64 ? <img src={vendor.logoBase64} alt="logo" /> : <span>{initials}</span>}
+          </div>
+          <div>
+            <strong className="gq-vendor-name">{vendor.businessName}</strong>
+            <p className="gq-vendor-status"><span className="gq-dot" />Typically replies within a few hours</p>
+          </div>
+        </div>
+
+        {sent ? (
+          <div className="gq-sent-state">
+            <div className="gq-sent-check"><Check size={28} /></div>
+            <p>Message sent! The vendor will reply to your inbox shortly.</p>
+          </div>
+        ) : (
+          <>
+            <p className="gq-intro">Send a message to get a quote or ask any questions.</p>
+
+            <div className="gq-message-wrap">
+              <textarea
+                className="gq-textarea"
+                rows={5}
+                value={msgText}
+                onChange={e => setMsgText(e.target.value)}
+                placeholder="Describe your event, date, requirements..."
+                disabled={!isPremium}
+              />
+              {!isPremium && (
+                <div className="gq-lock-overlay">
+                  <div className="gq-lock-box">
+                    <Lock size={18} />
+                    <span>Upgrade to send messages</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="gq-field">
+              <label><Calendar size={13} /> Wedding date</label>
+              <input type="date" className="form-input" value={weddingDate} onChange={e => setWeddingDate(e.target.value)} disabled={!isPremium} />
+            </div>
+            <div className="gq-field">
+              <label><UsersIcon size={13} /> Guest count (approx.)</label>
+              <input type="number" className="form-input" value={guestCount} onChange={e => setGuestCount(e.target.value)} placeholder="e.g., 150" disabled={!isPremium} />
+            </div>
+
+            {err && <p className="gq-error">{err}</p>}
+
+            <button className="btn btn-primary gq-send-btn" onClick={handleSend} disabled={!isPremium || !msgText.trim() || sending}>
+              <Send size={15} /> {sending ? 'Sending...' : 'Send'}
+            </button>
+            <p className="gq-note">Vendor will receive this in their dashboard and via email.</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   BOOKING CONFIRMED MODAL
+════════════════════════════════════════ */
+function BookingConfirmedModal({ vendor, pkg, onClose, onBack }: any) {
+  return (
+    <div className="bc-overlay">
+      <div className="bc-modal">
+        <div className="bc-check-ring">
+          <div className="bc-check-inner"><Check size={28} color="#22c55e" strokeWidth={3} /></div>
+        </div>
+        <h2 className="bc-title">Booking Requested!</h2>
+        <div className="bc-summary">
+          <div className="bc-row">
+            <span><Store size={13} /> Vendor</span>
+            <strong>{vendor.businessName}</strong>
+          </div>
+          <div className="bc-row">
+            <span><ClipboardList size={13} /> Package</span>
+            <strong>{pkg.name}</strong>
+          </div>
+          <div className="bc-row">
+            <span><DollarSign size={13} /> Price</span>
+            <strong className="bc-price">{vendor.currency || 'LKR'} {Number(pkg.price).toLocaleString()}</strong>
+          </div>
+        </div>
+        <p className="bc-auto-note"><CheckCircle size={14} /> Added to your budget tracker automatically.</p>
+        <div className="bc-actions">
+          <button className="btn btn-primary" onClick={onClose}>View Budget</button>
+          <button className="btn btn-outline" onClick={onBack}>Back to Vendors</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
