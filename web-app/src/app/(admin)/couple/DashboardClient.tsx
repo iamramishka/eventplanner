@@ -4043,6 +4043,10 @@ function VendorsModule({ wedding, setWedding }: any) {
   const bookedCount = customVendors.filter(v => v.status === 'booked').length;
 
   function addToBookedVendors(vendor: any, pkg: any) {
+    const alreadyBooked = customVendors.some(
+      v => v.businessName === vendor.businessName && v.notes === pkg.name
+    );
+    if (alreadyBooked) return;
     const entry = {
       id: `custom_${Date.now()}`,
       businessName: vendor.businessName,
