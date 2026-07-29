@@ -3968,6 +3968,16 @@ function ChecklistModule({ wedding, checklist, setChecklist }: { wedding: any; c
 /* ════════════════════════════════════════
    VENDORS MODULE
 ════════════════════════════════════════ */
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
 function VendorsModule({ wedding, setWedding }: any) {
   const [vendors, setVendors] = useState<any[]>([]);
   const [query, setQuery] = useState('');
@@ -3979,6 +3989,7 @@ function VendorsModule({ wedding, setWedding }: any) {
   const [plan, setPlan] = useState<any>(wedding.vendorPlan || { savedVendorIds: [], customVendors: [] });
   const [customForm, setCustomForm] = useState({ businessName: '', category: 'Photography', contact: '', quote: '', notes: '' });
   const [profileVendor, setProfileVendor] = useState<any>(null);
+  const [sentThreads, setSentThreads] = useState<any[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -3989,6 +4000,16 @@ function VendorsModule({ wedding, setWedding }: any) {
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, []);
+
+  useEffect(() => {
+    const coupleName = wedding?.partner1Name && wedding?.partner2Name
+      ? `${wedding.partner1Name} & ${wedding.partner2Name}`
+      : 'A Couple';
+    fetch(`/api/messages/couple?coupleName=${encodeURIComponent(coupleName)}`)
+      .then(r => r.json())
+      .then(d => setSentThreads(d.threads || []))
+      .catch(() => {});
+  }, [wedding?.partner1Name, wedding?.partner2Name]);
 
   const categories = ['All', ...Array.from(new Set(vendors.map(v => v.category).filter(Boolean)))];
   const savedIds: string[] = plan.savedVendorIds || [];
@@ -4198,6 +4219,32 @@ function VendorsModule({ wedding, setWedding }: any) {
           </div>
         )}
       </div>
+
+      {/* ── Sent Enquiries ── */}
+      {sentThreads.length > 0 && (
+        <div className="card" style={{ marginTop: 24 }}>
+          <div className="panel-header">
+            <h3>Sent Enquiries</h3>
+            <span className="text-muted">{sentThreads.length} sent</span>
+          </div>
+          <div className="compact-list">
+            {sentThreads.map((t: any) => (
+              <div className="compact-row" key={t.id}>
+                <div>
+                  <strong>{t.vendorName}</strong>
+                  <span>{t.vendorCategory} · {t.subject}</span>
+                </div>
+                <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--adm-text-muted)' }}>
+                  {t.lastReply
+                    ? <span style={{ color: '#16a34a', fontWeight: 600 }}>Reply received</span>
+                    : 'Awaiting reply'}
+                  <br />{timeAgo(t.lastMessageAt)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
     </section>
   );
