@@ -2996,4 +2996,7 @@ body {
   outline: none;
   border-color: var(--adm-primary, #c8956c);
 }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
