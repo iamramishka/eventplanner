@@ -24,9 +24,10 @@ export async function POST(req: Request) {
     const access = await requireWeddingAccess(String(body.weddingId));
     if (access.response) return access.response;
     if (!body?.guestId) return NextResponse.json({ ok: false, error: 'guestId required' }, { status: 400 });
+    const status = String(body.status || '').toLowerCase();
     const created = await addRsvpForGuestId(String(body.guestId), {
       ...body,
-      attending: body.status === 'confirmed' || body.attending === true,
+      attending: ['confirmed', 'accepted', 'attending', 'yes'].includes(status) || body.attending === true,
       memberCount: body.attendingCount ?? body.memberCount,
     });
     await auditLog({ action: 'create-rsvp', targetId: created.id, data: body });

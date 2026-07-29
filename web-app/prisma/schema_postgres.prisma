@@ -72,7 +72,14 @@ model Wedding {
   groomFirstName     String
   brideFirstName     String
   eventDate          DateTime?
+  eventTime          String?
   venueName          String?
+  venueAddress       String?
+  venueMapLink       String?
+  rsvpDeadline       DateTime?
+  specialNoteText    String?
+  contactEmail       String?
+  contactWhatsApp    String?
   slug               String   @unique
   setupCompleted     Boolean  @default(false)
   estimatedGuests    Int?

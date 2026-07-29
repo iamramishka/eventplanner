@@ -36,11 +36,8 @@ function minutes(value: string) {
 function validateAgendaPayload(body: AgendaPayload) {
   const title = String(body?.title || '').trim();
   const startTime = String(body?.startTime || '').trim();
-  const endTime = String(body?.endTime || '').trim();
   if (!title) return 'Title is required';
   if (!TIME_RE.test(startTime)) return 'Start time must use HH:mm format';
-  if (!TIME_RE.test(endTime)) return 'End time must use HH:mm format';
-  if (minutes(endTime) <= minutes(startTime)) return 'End time must be after start time';
   return '';
 }
 
@@ -54,7 +51,7 @@ function buildScheduleExport(wedding: WeddingRow, events: DashboardAgenda[]) {
     '',
     '| Time | Event | Notes |',
     '| --- | --- | --- |',
-    ...events.map(event => `| ${event.startTime}-${event.endTime} | ${event.title} | ${(event.description || '-').replace(/\|/g, '/')} |`),
+    ...events.map(event => `| ${event.startTime} | ${event.title} | ${(event.description || '-').replace(/\|/g, '/')} |`),
     '',
   ];
   return lines.join('\n');
@@ -106,7 +103,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ wed
     const event = await createAgenda(weddingId, {
       title: String(body.title).trim(),
       startTime: String(body.startTime).trim(),
-      endTime: String(body.endTime).trim(),
       description: String(body.description || '').trim(),
       icon: String(body.icon || 'CalendarDays').trim(),
     });

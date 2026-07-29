@@ -66,6 +66,7 @@ export default function TablesModule({ wedding, guests, rsvps }: { wedding: Wedd
   const [dragOverTableId, setDragOverTableId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const [lastSnapshot, setLastSnapshot] = useState<AssignmentSnapshot | null>(null);
   const [guestTargets, setGuestTargets] = useState<Record<string, string>>({});
   const [tableSelects, setTableSelects] = useState<Record<string, string>>({});
@@ -110,10 +111,11 @@ export default function TablesModule({ wedding, guests, rsvps }: { wedding: Wedd
     return map;
   }, [rsvps]);
 
-  // Chairs a guest occupies: confirmed attending count once they've replied, else their max members.
+  // Chairs a guest occupies: attending → their party count; declined → 0 (no chairs);
+  // no reply yet → reserve their max members.
   const seatCount = useCallback((guestId: string) => {
     const rsvp = rsvpByGuest[guestId];
-    if (rsvp?.attending) return Math.max(1, Number(rsvp.memberCount) || 1);
+    if (rsvp) return rsvp.attending ? Math.max(1, Number(rsvp.memberCount) || 1) : 0;
     const guest = (guests || []).find(g => g.id === guestId);
     return Math.max(1, Number(guest?.maxMembers) || 1);
   }, [rsvpByGuest, guests]);
@@ -134,17 +136,25 @@ export default function TablesModule({ wedding, guests, rsvps }: { wedding: Wedd
     const failed = json.data?.results?.filter(item => !item.ok) || [];
     if (failed.length) {
       setError(failed.map(item => `${item.guestName || item.guestId}: ${item.error}`).join(' | '));
-    } else if (!json.ok && json.error) {
-      setError(json.error);
-    } else {
-      setError('');
+      setMessage('');
+      return;
     }
-    setMessage(fallback);
+    if (!json.ok && json.error) {
+      setError(json.error);
+      setMessage('');
+      return;
+    }
+    setError('');
+    // Tie the confirmation to the actual server placement, not an optimistic guess.
+    const target = json.data?.targetTable?.name;
+    const who = json.data?.guestName;
+    setMessage(who && target ? `${who} assigned to ${target}.` : fallback);
   }
 
   async function postAssignment(body: AssignmentRequest, successMessage: string) {
     setError('');
     setMessage('');
+    setBusy(true);
     try {
       const res = await fetch(`/api/weddings/${weddingId}/tables/assign`, {
         method: 'POST',
@@ -161,6 +171,7 @@ export default function TablesModule({ wedding, guests, rsvps }: { wedding: Wedd
     } finally {
       // Always re-sync the table view with server state so assignments reflect immediately.
       await fetchTables();
+      setBusy(false);
     }
   }
 
@@ -168,6 +179,10 @@ export default function TablesModule({ wedding, guests, rsvps }: { wedding: Wedd
     e.preventDefault();
     if (!name.trim()) {
       setError('Table name is required.');
+      return;
+    }
+    if (!Number.isFinite(capacity) || capacity < 1 || capacity > 100) {
+      setError('Capacity must be a whole number between 1 and 100.');
       return;
     }
     try {
@@ -300,7 +315,7 @@ export default function TablesModule({ wedding, guests, rsvps }: { wedding: Wedd
           <input id="table-name" className="form-input" placeholder="Family Table" value={name} onChange={event => setName(event.target.value)} />
           <label className="form-label" htmlFor="table-capacity">Capacity</label>
           <input id="table-capacity" className="form-input" type="number" min="1" max="100" value={capacity} onChange={event => setCapacity(Number(event.target.value || 1))} />
-          <button className="btn btn-primary" type="submit">Create</button>
+          <button className="btn btn-primary" type="submit" disabled={!name.trim() || capacity < 1 || capacity > 100}>Create</button>
         </form>
 
         <div className="card seating-bulk-card">
@@ -312,8 +327,8 @@ export default function TablesModule({ wedding, guests, rsvps }: { wedding: Wedd
               <option value="">Target table</option>
               {tables.map(table => <option key={table.id} value={table.id}>{tableLabel(table)}</option>)}
             </select>
-            <button className="btn btn-secondary" type="button" onClick={() => setBulkSelection({})}>Clear Selected</button>
-            <button className="btn btn-primary" type="button" onClick={bulkAssign}>Assign {selectedBulkIds.length || ''}</button>
+            <button className="btn btn-secondary" type="button" onClick={() => setBulkSelection({})} disabled={selectedBulkIds.length === 0}>Clear Selected</button>
+            <button className="btn btn-primary" type="button" onClick={bulkAssign} disabled={!bulkTargetTable || selectedBulkIds.length === 0 || busy}>Assign {selectedBulkIds.length || ''}</button>
           </div>
           <p className="module-subtitle" style={{ margin: 0 }}>{selectedBulkIds.length} selected from unassigned guests.</p>
         </div>
@@ -347,8 +362,8 @@ export default function TablesModule({ wedding, guests, rsvps }: { wedding: Wedd
                       <option value="">Choose table</option>
                       {tables.map(table => <option key={table.id} value={table.id}>{tableLabel(table)}</option>)}
                     </select>
-                    <button className="table-action-btn" type="button" onClick={() => assignGuest(guest.id, guestTargets[guest.id])}>Assign</button>
-                    {assignedTable && <button className="table-action-btn" type="button" onClick={() => unassignGuest(guest.id)}>Unassign</button>}
+                    <button className="table-action-btn" type="button" onClick={() => assignGuest(guest.id, guestTargets[guest.id])} disabled={!guestTargets[guest.id] || busy}>Assign</button>
+                    {assignedTable && <button className="table-action-btn" type="button" onClick={() => unassignGuest(guest.id)} disabled={busy}>Unassign</button>}
                   </div>
                 </div>
               );
@@ -421,7 +436,7 @@ export default function TablesModule({ wedding, guests, rsvps }: { wedding: Wedd
                         <option value="">Move</option>
                         {tables.filter(target => target.id !== table.id).map(target => <option key={target.id} value={target.id}>{target.name}</option>)}
                       </select>
-                      <button type="button" className="guest-chip-remove" onClick={() => moveTargets[guestId] ? assignGuest(guestId, moveTargets[guestId]) : unassignGuest(guestId)}>
+                      <button type="button" className="guest-chip-remove" disabled={busy} onClick={() => moveTargets[guestId] ? assignGuest(guestId, moveTargets[guestId]) : unassignGuest(guestId)}>
                         {moveTargets[guestId] ? 'Move' : 'Unassign'}
                       </button>
                     </div>
@@ -438,7 +453,7 @@ export default function TablesModule({ wedding, guests, rsvps }: { wedding: Wedd
                     <option value="">Select unassigned guest</option>
                     {unassignedGuests.map(guest => <option key={guest.id} value={guest.id}>{guest.name}</option>)}
                   </select>
-                  <button className="btn btn-secondary" type="button" onClick={() => assignGuest(tableSelects[table.id], table.id)}>Assign Here</button>
+                  <button className="btn btn-secondary" type="button" onClick={() => assignGuest(tableSelects[table.id], table.id)} disabled={!tableSelects[table.id] || busy}>Assign Here</button>
                 </div>
               </article>
             );
@@ -455,9 +470,9 @@ export default function TablesModule({ wedding, guests, rsvps }: { wedding: Wedd
           <div className="seating-print-grid">
             {tables.map(table => (
               <div key={table.id} className="seating-print-table">
-                <strong>{table.name} ({(table.assignedGuestIds || []).length}/{table.capacity})</strong>
+                <strong>{table.name} ({tableSeatsUsed(table)}/{table.capacity} chairs)</strong>
                 <ol>
-                  {(table.assignedGuestIds || []).map(guestId => <li key={guestId}>{guestName(guestId)}</li>)}
+                  {(table.assignedGuestIds || []).map(guestId => <li key={guestId}>{guestName(guestId)}{seatCount(guestId) > 1 ? ` ×${seatCount(guestId)}` : ''}</li>)}
                 </ol>
               </div>
             ))}

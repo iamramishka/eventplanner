@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { dbSelect } from '@/lib/supabase-db';
 import { db } from '@/lib/store';
+import { getAdminSettings } from '@/lib/adminSettings';
+import { getAdminCouples } from '@/lib/adminCouples';
 import {
   listGuests, listRsvpsByWedding, listAgenda, listChecklist, getBudgetResponse,
 } from '@/lib/wedding-data';
@@ -21,8 +23,12 @@ interface WeddingRow {
   venueMapLink: string | null;
   rsvpDeadline: string | null;
   specialNoteText: string | null;
+  contactEmail: string | null;
+  contactWhatsApp: string | null;
   estimatedGuests: number | null;
   estimatedBudget: number | null;
+  userId: string;
+  createdAt?: string | null;
 }
 
 /** Map a Supabase Wedding row into the shape the dashboard UI expects. */
@@ -41,15 +47,41 @@ function mapWedding(w: WeddingRow) {
     venueMapLink: w.venueMapLink || '',
     rsvpDeadline: w.rsvpDeadline ? w.rsvpDeadline.slice(0, 10) : '',
     specialNoteText: w.specialNoteText || '',
+    contactEmail: w.contactEmail || '',
+    contactWhatsApp: w.contactWhatsApp || '',
     estimatedGuests: w.estimatedGuests ?? null,
     estimatedBudget: w.estimatedBudget ?? null,
+    ownerUserId: w.userId,
+    createdAt: w.createdAt || '',
     sections: {},
     theme: {},
     music: null,
     notificationPreferences: {},
-    contactEmail: '',
-    contactWhatsApp: '',
     vendorPlan: null,
+  };
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function withTrialMetadata(wedding: any) {
+  const defaultTrialDays = getAdminSettings().settings.trial.defaultTrialDays;
+  const ownerUserId = wedding.ownerUserId || wedding.userId;
+  const adminCouple = getAdminCouples().find((couple) => (
+    couple.id === ownerUserId || (wedding.contactEmail && couple.email === wedding.contactEmail)
+  ));
+  const createdAt = adminCouple?.createdAt || wedding.createdAt || new Date().toISOString();
+  const createdDate = new Date(createdAt);
+  const fallbackTrialEnds = addDays(Number.isNaN(createdDate.getTime()) ? new Date() : createdDate, defaultTrialDays).toISOString();
+
+  return {
+    ...wedding,
+    plan: adminCouple?.plan || wedding.plan || 'trial',
+    trialEnds: adminCouple?.trialEnds || wedding.trialEnds || fallbackTrialEnds,
+    defaultTrialDays,
   };
 }
 
@@ -77,6 +109,8 @@ export default async function CoupleDashboardPage({ searchParams }: { searchPara
     const demo = db.weddings.findUnique((w: any) => w.id === 'w_1');
     if (demo) wedding = demo as any;
   }
+
+  if (wedding) wedding = withTrialMetadata(wedding);
 
   if (!wedding) {
     return (

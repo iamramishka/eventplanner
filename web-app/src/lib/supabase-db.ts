@@ -1,17 +1,51 @@
-// Thin REST wrapper over Supabase PostgREST — used instead of Prisma wire protocol.
-// The Prisma Supavisor pooler is not configured for this project; REST API works fine.
+// DB helpers — backed by Prisma for both local Docker Postgres and Supabase Postgres.
+// Storage helpers still use Supabase Storage REST API.
+import { prisma } from '@/lib/prisma';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-function headers() {
-  return {
-    apikey: SERVICE_ROLE_KEY,
-    Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-    'Content-Type': 'application/json',
-    Prefer: 'return=representation',
-  };
+// ── filter parsing ──────────────────────────────────────────────────────────
+// Converts PostgREST-style filter values (e.g. "eq.abc123") to Prisma where clauses.
+function parseFilters(filters: Record<string, string>): Record<string, unknown> {
+  const where: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(filters)) {
+    if (val.startsWith('eq.')) {
+      where[key] = val.slice(3);
+    } else {
+      where[key] = val;
+    }
+  }
+  return where;
 }
+
+// Converts "id,name,email" → { id: true, name: true, email: true }
+// Returns undefined (= select all) when select is '*'.
+function parseSelect(select: string): Record<string, boolean> | undefined {
+  if (select === '*') return undefined;
+  return Object.fromEntries(select.split(',').map(f => [f.trim(), true]));
+}
+
+// Maps Supabase table name (PascalCase) to Prisma client delegate (camelCase).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function model(table: string): any {
+  const key = table.charAt(0).toLowerCase() + table.slice(1);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (prisma as any)[key];
+}
+
+// Prisma returns Date objects for DateTime fields; callers expect ISO strings (old Supabase REST behaviour).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeDates(val: any): any {
+  if (val instanceof Date) return val.toISOString();
+  if (Array.isArray(val)) return val.map(serializeDates);
+  if (val !== null && typeof val === 'object') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out: Record<string, any> = {};
+    for (const k of Object.keys(val)) out[k] = serializeDates(val[k]);
+    return out;
+  }
+  return val;
+}
+
+// ── DB operations ───────────────────────────────────────────────────────────
 
 export async function dbSelect<T>(
   table: string,
@@ -19,34 +53,36 @@ export async function dbSelect<T>(
   select = '*',
   limit = 100,
 ): Promise<T[]> {
-  const params = new URLSearchParams({ select, limit: String(limit) });
-  for (const [k, v] of Object.entries(filters)) params.set(k, v);
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, { headers: headers() });
-  if (!res.ok) throw new Error(`dbSelect ${table}: ${res.status} ${await res.text()}`);
-  return res.json();
+  const { order: orderRaw, ...rest } = filters;
+  const selectClause = parseSelect(select);
+
+  // Convert "columnName.asc" / "columnName.desc" → Prisma orderBy
+  let orderBy: Record<string, string> | undefined;
+  if (orderRaw) {
+    const dotIdx = orderRaw.lastIndexOf('.');
+    const col = orderRaw.slice(0, dotIdx);
+    const dir = orderRaw.slice(dotIdx + 1) === 'desc' ? 'desc' : 'asc';
+    orderBy = { [col]: dir };
+  }
+
+  const rows = await model(table).findMany({
+    where: parseFilters(rest),
+    ...(selectClause ? { select: selectClause } : {}),
+    ...(orderBy ? { orderBy } : {}),
+    take: limit,
+  });
+  return serializeDates(rows) as T[];
 }
 
 export async function dbInsert<T>(table: string, data: Record<string, unknown>): Promise<T> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error(`dbInsert ${table}: ${res.status} ${await res.text()}`);
-  const rows: T[] = await res.json();
-  return rows[0];
+  return model(table).create({ data });
 }
 
 export async function dbDelete(
   table: string,
   filters: Record<string, string>,
 ): Promise<void> {
-  const params = new URLSearchParams(filters);
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
-    method: 'DELETE',
-    headers: headers(),
-  });
-  if (!res.ok) throw new Error(`dbDelete ${table}: ${res.status} ${await res.text()}`);
+  await model(table).deleteMany({ where: parseFilters(filters) });
 }
 
 export async function dbUpdate(
@@ -54,43 +90,63 @@ export async function dbUpdate(
   filters: Record<string, string>,
   data: Record<string, unknown>,
 ): Promise<void> {
-  const params = new URLSearchParams(filters);
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
-    method: 'PATCH',
-    headers: headers(),
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error(`dbUpdate ${table}: ${res.status} ${await res.text()}`);
+  const where = parseFilters(filters);
+  // Use update() for id-only filters — it handles @updatedAt automatically
+  // and is the correct Prisma method for single-row primary-key updates.
+  if ('id' in where && Object.keys(where).length === 1) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { updatedAt: _ignored, ...rest } = data;
+    await model(table).update({ where: { id: where.id }, data: rest });
+  } else {
+    await model(table).updateMany({ where, data });
+  }
 }
 
-// ── Supabase Storage (wedding-media bucket) ──
+export async function dbUpsert<T>(
+  table: string,
+  data: Record<string, unknown>,
+  onConflict: string,
+): Promise<T> {
+  const conflictValue = data[onConflict];
+  return model(table).upsert({
+    where: { [onConflict]: conflictValue },
+    create: data,
+    update: data,
+  });
+}
+
+// ── Supabase Storage (kept as REST — not replicated locally) ────────────────
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const STORAGE_BUCKET = 'wedding-media';
 
-/**
- * Upload raw image bytes to the public wedding-media bucket and return the public URL.
- * `objectPath` is the path within the bucket, e.g. "gallery/<weddingId>/<file>.jpg".
- */
+function storageHeaders() {
+  return {
+    apikey: SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    'Content-Type': 'application/octet-stream',
+  };
+}
+
 export async function storageUpload(
   objectPath: string,
   bytes: Buffer | Uint8Array,
   contentType: string,
 ): Promise<string> {
+  if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+    throw new Error('Storage upload requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+  }
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${objectPath}`, {
     method: 'POST',
-    headers: {
-      apikey: SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-      'Content-Type': contentType,
-      'x-upsert': 'true',
-    },
+    headers: { ...storageHeaders(), 'Content-Type': contentType, 'x-upsert': 'true' },
     body: bytes as unknown as BodyInit,
   });
   if (!res.ok) throw new Error(`storageUpload ${objectPath}: ${res.status} ${await res.text()}`);
   return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${objectPath}`;
 }
 
-/** Remove an object from the bucket given its public URL (best-effort). */
 export async function storageDeleteByUrl(publicUrl: string): Promise<void> {
+  if (!SUPABASE_URL || !SERVICE_ROLE_KEY) return;
   const marker = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
   const idx = publicUrl.indexOf(marker);
   if (idx === -1) return;
