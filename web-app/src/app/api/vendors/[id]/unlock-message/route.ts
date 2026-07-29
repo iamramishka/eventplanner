@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole } from '@/lib/rbac';
+import { requireVendorAccess } from '@/lib/rbac';
 import {
-  getVendorById,
   getThreadById,
   deductPoints,
   unlockThread,
@@ -15,16 +14,11 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const guard = await requireRole(['VENDOR', 'SUPER_ADMIN']);
+  const { id } = await params;
+  const guard = await requireVendorAccess(id);
   if (guard.response) return guard.response;
 
   try {
-    const { id } = await params;
-
-    if (!getVendorById(id)) {
-      return NextResponse.json({ error: 'Vendor not found.' }, { status: 404 });
-    }
-
     const body = await req.json();
     const threadId = String(body.threadId || '').trim();
     if (!threadId) {

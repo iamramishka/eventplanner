@@ -14,7 +14,7 @@ import {
   Eye, AlertCircle, X, Check, Plus,
   UserCircle, LogOut, HelpCircle, Diamond, RefreshCw,
   Home, Upload, Download, Trash2, GripVertical, Printer, Copy, FileText,
-  BarChart2, Search, SlidersHorizontal, ChevronLeft, Lock, MessageSquare,
+  BarChart2, Search, SlidersHorizontal, ChevronLeft, MessageSquare,
 } from 'lucide-react';
 import { AGENDA_ICON_SET, AgendaIcon } from '@/components/agenda-icons';
 import './dashboard.css';
