@@ -1,9 +1,7 @@
-// PRODUCTION: PostgreSQL via Supabase.
-// To use: copy this to schema.prisma, set DATABASE_URL + DIRECT_URL in .env, run prisma generate + migrate deploy.
+// LOCAL DEV: SQLite. For production Postgres, see schema_postgres.prisma.
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -17,18 +15,12 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
-  role          Role      @default(COUPLE)
+  role          String    @default("COUPLE")
   accounts      Account[]
   sessions      Session[]
   weddings      Wedding[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-}
-
-enum Role {
-  SUPER_ADMIN
-  COUPLE
-  VENDOR
 }
 
 model Account {
@@ -37,12 +29,12 @@ model Account {
   type               String
   provider           String
   providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
+  refresh_token      String?
+  access_token       String?
   expires_at         Int?
   token_type         String?
   scope              String?
-  id_token           String?  @db.Text
+  id_token           String?
   session_state      String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -72,14 +64,7 @@ model Wedding {
   groomFirstName     String
   brideFirstName     String
   eventDate          DateTime?
-  eventTime          String?
   venueName          String?
-  venueAddress       String?
-  venueMapLink       String?
-  rsvpDeadline       DateTime?
-  specialNoteText    String?
-  contactEmail       String?
-  contactWhatsApp    String?
   slug               String   @unique
   setupCompleted     Boolean  @default(false)
   estimatedGuests    Int?
@@ -105,9 +90,9 @@ model SiteSettings {
   id             String   @id @default(cuid())
   weddingId      String   @unique
   siteTitle      String?
-  sectionToggles Json?
-  colors         Json?
-  musicSettings  Json?
+  sectionToggles String?
+  colors         String?
+  musicSettings  String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -125,7 +110,7 @@ model Guest {
   invitationType      String
   maxAllowedMembers   Int      @default(1)
   note                String?
-  inviteToken         String   @unique @default(uuid())
+  inviteToken         String   @default(cuid())
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

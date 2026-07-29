@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
@@ -64,22 +64,6 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [emailExists, setEmailExists] = useState(false);
-  const [emailChecking, setEmailChecking] = useState(false);
-
-  const checkEmailExists = useCallback(async (email: string) => {
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
-    setEmailChecking(true);
-    try {
-      const res = await fetch(`/api/check-email?email=${encodeURIComponent(email)}`);
-      const data = await res.json();
-      setEmailExists(!!data.exists);
-    } catch {
-      // silently ignore — full validation still happens on submit
-    } finally {
-      setEmailChecking(false);
-    }
-  }, []);
 
   // Step 2 specific states
   const [venueDeciding, setVenueDeciding] = useState(false);
@@ -88,16 +72,6 @@ export default function RegisterPage() {
   const [guestCount, setGuestCount] = useState(125);
   const [budgetDeciding, setBudgetDeciding] = useState(false);
   const [budgetAmount, setBudgetAmount] = useState(2500000);
-
-  function handleNameChange(field: 'firstName' | 'lastName' | 'groomName' | 'brideName', raw: string) {
-    // Strip anything that isn't an English letter
-    const letters = raw.replace(/[^a-zA-Z]/g, '');
-    // Auto-capitalise the first character
-    const value = letters.length > 0
-      ? letters[0].toUpperCase() + letters.slice(1)
-      : '';
-    update({ [field]: value });
-  }
 
   function update(up: Partial<FormState>) {
     setForm((s) => ({ ...s, ...up }));
@@ -113,9 +87,7 @@ export default function RegisterPage() {
     const e: FieldErrors = {};
     if (s === 1) {
       if (!form.firstName?.trim()) e.firstName = 'First name is required.';
-      else if (!/^[A-Z][a-zA-Z]*$/.test(form.firstName.trim())) e.firstName = 'English letters only, starting with a capital letter.';
       if (!form.lastName?.trim()) e.lastName = 'Last name is required.';
-      else if (!/^[A-Z][a-zA-Z]*$/.test(form.lastName.trim())) e.lastName = 'English letters only, starting with a capital letter.';
       if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
         e.email = 'Valid email is required.';
       }
@@ -134,9 +106,7 @@ export default function RegisterPage() {
     }
     if (s === 2) {
       if (!form.groomName?.trim()) e.groomName = "Groom's first name is required.";
-      else if (!/^[A-Z][a-zA-Z]*$/.test(form.groomName.trim())) e.groomName = "English letters only, starting with a capital letter.";
       if (!form.brideName?.trim()) e.brideName = "Bride's first name is required.";
-      else if (!/^[A-Z][a-zA-Z]*$/.test(form.brideName.trim())) e.brideName = "English letters only, starting with a capital letter.";
       if (!dateDeciding && !form.date) e.date = 'Please select a wedding date or check "Still deciding".';
       else if (!dateDeciding && form.date && !isValidWeddingDate(form.date)) e.date = weddingDateMessage;
     }
@@ -311,7 +281,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.firstName ? styles.error : ''}`}
                       placeholder="Enter your first name"
                       value={form.firstName || ''}
-                      onChange={(e) => handleNameChange('firstName', e.target.value)}
+                      onChange={(e) => update({ firstName: e.target.value })}
                     />
                   </div>
                   {errors.firstName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.firstName}</div>}
@@ -325,7 +295,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.lastName ? styles.error : ''}`}
                       placeholder="Enter your last name"
                       value={form.lastName || ''}
-                      onChange={(e) => handleNameChange('lastName', e.target.value)}
+                      onChange={(e) => update({ lastName: e.target.value })}
                     />
                   </div>
                   {errors.lastName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.lastName}</div>}
@@ -338,21 +308,13 @@ export default function RegisterPage() {
                   <Mail size={18} className={styles.inputIcon} />
                   <input
                     type="email"
-                    className={`${styles.input} ${errors.email || emailExists ? styles.error : ''}`}
+                    className={`${styles.input} ${errors.email ? styles.error : ''}`}
                     placeholder="Enter your email address"
                     value={form.email || ''}
-                    onChange={(e) => { setEmailExists(false); update({ email: e.target.value }); }}
-                    onBlur={(e) => checkEmailExists(e.target.value)}
+                    onChange={(e) => update({ email: e.target.value })}
                   />
-                  {emailChecking && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#888' }}>Checking…</span>}
                 </div>
                 {errors.email && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.email}</div>}
-                {!errors.email && emailExists && (
-                  <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>
-                    An account with this email already exists.{' '}
-                    <a href="/login" style={{ color: 'red', textDecoration: 'underline' }}>Sign in instead?</a>
-                  </div>
-                )}
               </div>
 
               <div className={styles.formGroup}>
@@ -419,7 +381,7 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <button type="button" className={styles.submitBtn} onClick={next} disabled={emailExists || emailChecking}>
+              <button type="button" className={styles.submitBtn} onClick={next}>
                 Continue to Wedding Details →
               </button>
 
@@ -445,7 +407,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.groomName ? styles.error : ''}`}
                       placeholder="Enter groom's first name"
                       value={form.groomName || ''}
-                      onChange={(e) => handleNameChange('groomName', e.target.value)}
+                      onChange={(e) => update({ groomName: e.target.value })}
                     />
                   </div>
                   {errors.groomName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.groomName}</div>}
@@ -459,7 +421,7 @@ export default function RegisterPage() {
                       className={`${styles.input} ${errors.brideName ? styles.error : ''}`}
                       placeholder="Enter bride's first name"
                       value={form.brideName || ''}
-                      onChange={(e) => handleNameChange('brideName', e.target.value)}
+                      onChange={(e) => update({ brideName: e.target.value })}
                     />
                   </div>
                   {errors.brideName && <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{errors.brideName}</div>}

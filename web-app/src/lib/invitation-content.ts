@@ -11,14 +11,13 @@ export type InvitationSectionFlags = {
   loadingScreen: boolean;
   envelope: boolean;
   hero: boolean;
-  message: boolean;
   details: boolean;
+  message: boolean;
   countdown: boolean;
   agenda: boolean;
-  gallery: boolean;
   rsvp: boolean;
-  findTable: boolean;
   specialMessage: boolean;
+  venueMap: boolean;
 };
 
 export type InvitationTheme = {
@@ -139,14 +138,13 @@ export const DEFAULT_INVITATION_SECTIONS: InvitationSectionFlags = {
   loadingScreen: true,
   envelope: true,
   hero: true,
-  message: true,
   details: true,
+  message: true,
   countdown: true,
   agenda: true,
-  gallery: true,
   rsvp: true,
-  findTable: true,
   specialMessage: true,
+  venueMap: true,
 };
 
 export function createInvitationDraft(wedding: {
