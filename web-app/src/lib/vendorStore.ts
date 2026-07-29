@@ -1093,6 +1093,14 @@ export function deductPoints(vendorId: string, amount: number): boolean {
   return true;
 }
 
+export function addPoints(vendorId: string, amount: number): boolean {
+  const idx = vendorStore.vendors.findIndex(v => v.id === vendorId);
+  if (idx === -1) return false;
+  const current = vendorStore.vendors[idx].points ?? 0;
+  vendorStore.vendors[idx] = { ...vendorStore.vendors[idx], points: current + amount };
+  return true;
+}
+
 export function unlockThread(vendorId: string, threadId: string): VendorMessageThread | null {
   const idx = vendorStore.messageThreads.findIndex(
     t => t.vendorId === vendorId && t.id === threadId

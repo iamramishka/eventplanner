@@ -1322,6 +1322,7 @@ function MessagesModule({ vendor, threads: initialThreads = [], points: initialP
   const [saving, setSaving] = useState(false);
   const [points, setPoints] = useState(initialPoints);
   const [unlocking, setUnlocking] = useState<string | null>(null);
+  const [buying, setBuying] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const threads = initialThreads.map((thread: any) => ({
@@ -1473,6 +1474,32 @@ function MessagesModule({ vendor, threads: initialThreads = [], points: initialP
                 <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--adm-primary, #c8956c)', background: '#fef3c7', borderRadius: 20, padding: '2px 10px' }}>
                   {points} pts
                 </span>
+                {points < 10 && (
+                  <button
+                    disabled={buying}
+                    onClick={async () => {
+                      setBuying(true);
+                      try {
+                        const res = await fetch(`/api/vendors/${vendor.id}/points`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ amount: 20 }),
+                        });
+                        const data = await res.json();
+                        if (res.ok) setPoints(data.points);
+                      } finally {
+                        setBuying(false);
+                      }
+                    }}
+                    style={{
+                      fontSize: 11, fontWeight: 600, color: '#92400e',
+                      background: '#fef3c7', border: '1px solid #f59e0b',
+                      borderRadius: 20, padding: '3px 10px', cursor: 'pointer',
+                    }}
+                  >
+                    {buying ? 'Buying…' : '+ Buy Points'}
+                  </button>
+                )}
               </div>
             </div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
