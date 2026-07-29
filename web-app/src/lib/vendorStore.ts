@@ -1047,10 +1047,11 @@ export function createMessageThread(
   coupleName: string,
   subject: string,
   body: string,
-  meta?: { weddingDate?: string; guestCount?: string }
+  meta?: { weddingDate?: string; guestCount?: string; packageName?: string }
 ): VendorMessageThread {
   const now = new Date().toISOString();
   const metaLines: string[] = [];
+  if (meta?.packageName) metaLines.push(`Package: ${meta.packageName}`);
   if (meta?.weddingDate) metaLines.push(`Wedding Date: ${meta.weddingDate}`);
   if (meta?.guestCount) metaLines.push(`Guest Count: ${meta.guestCount}`);
   const fullBody = metaLines.length > 0 ? `${body}\n\n---\n${metaLines.join(' · ')}` : body;

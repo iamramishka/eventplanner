@@ -24,9 +24,12 @@ export async function POST(req: NextRequest) {
 
     const weddingDate = body.weddingDate ? String(body.weddingDate).trim() : undefined;
     const guestCount = body.guestCount ? String(body.guestCount).trim() : undefined;
-    const subject = `Quote enquiry from ${coupleName}`;
+    const packageName = body.packageName ? String(body.packageName).trim() : '';
+    const subject = packageName
+      ? `Enquiry for ${packageName} — ${coupleName}`
+      : `Quote enquiry from ${coupleName}`;
 
-    const thread = createMessageThread(vendorId, coupleName, subject, message, { weddingDate, guestCount });
+    const thread = createMessageThread(vendorId, coupleName, subject, message, { weddingDate, guestCount, packageName });
 
     return NextResponse.json({ ok: true, threadId: thread.id }, { status: 201 });
   } catch (err) {

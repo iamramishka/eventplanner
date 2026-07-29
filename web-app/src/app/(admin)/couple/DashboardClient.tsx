@@ -4307,29 +4307,50 @@ function VendorProfileView({ vendor, isSaved, onSave, onBack, saving }: any) {
    GET QUOTE DRAWER
 ════════════════════════════════════════ */
 function GetQuoteDrawer({ vendor, onClose }: any) {
-  const [msgText, setMsgText] = useState('');
+  const [selectedPkg, setSelectedPkg] = useState('');
   const [weddingDate, setWeddingDate] = useState('');
   const [guestCount, setGuestCount] = useState('');
+  const [notes, setNotes] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [err, setErr] = useState('');
-  const isPremium = false; // payment gate — couples on free/trial plan cannot send
+  const [error, setError] = useState('');
 
-  const initials = vendor.businessName.split(' ').slice(0, 2).map((w: string) => w[0]?.toUpperCase()).join('');
+  const pkgOptions = [
+    ...(vendor.packages || []).map((p: any) => p.name),
+    'Custom / Other',
+  ];
+
+  const initials = vendor.businessName
+    .split(' ').filter((w: string) => w.length > 0).slice(0, 2)
+    .map((w: string) => w[0].toUpperCase()).join('');
 
   async function handleSend() {
-    if (!isPremium || !msgText.trim()) return;
-    setSending(true); setErr('');
+    if (!selectedPkg || !weddingDate) {
+      setError('Please select a package and your wedding date.');
+      return;
+    }
+    setSending(true);
+    setError('');
     try {
       const res = await fetch('/api/messages/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vendorId: vendor.id, message: msgText, weddingDate, guestCount }),
+        body: JSON.stringify({
+          vendorId: vendor.id,
+          packageName: selectedPkg,
+          weddingDate,
+          guestCount,
+          message: notes || `Enquiry for ${selectedPkg}`,
+          coupleName: 'A Couple',
+        }),
       });
-      if (!res.ok) throw new Error('Failed to send message.');
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || 'Failed to send');
+      }
       setSent(true);
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setSending(false);
     }
@@ -4339,61 +4360,93 @@ function GetQuoteDrawer({ vendor, onClose }: any) {
     <div className="gq-overlay">
       <div className="gq-backdrop" onClick={onClose} />
       <div className="gq-drawer">
-        <button className="gq-close" onClick={onClose}><X size={20} /></button>
+        <button className="gq-close" onClick={onClose}><X size={18} /></button>
 
         <div className="gq-header">
           <div className="gq-vendor-avatar">
-            {vendor.logoBase64 ? <img src={vendor.logoBase64} alt="logo" /> : <span>{initials}</span>}
+            {vendor.logoBase64
+              ? <img src={vendor.logoBase64} alt={vendor.businessName} />
+              : <span>{initials}</span>}
           </div>
           <div>
-            <strong className="gq-vendor-name">{vendor.businessName}</strong>
-            <p className="gq-vendor-status"><span className="gq-dot" />Typically replies within a few hours</p>
+            <span className="gq-vendor-name">{vendor.businessName}</span>
+            <p className="gq-vendor-status">
+              <span className="gq-dot" /> Typically replies within a few hours
+            </p>
           </div>
         </div>
 
         {sent ? (
           <div className="gq-sent-state">
-            <div className="gq-sent-check"><Check size={28} /></div>
-            <p>Message sent! The vendor will reply to your inbox shortly.</p>
+            <div className="gq-sent-check"><Check size={28} color="#16a34a" /></div>
+            <p>Your enquiry has been sent! The vendor will be in touch soon.</p>
+            <button className="btn btn-outline" onClick={onClose}>Close</button>
           </div>
         ) : (
           <>
-            <p className="gq-intro">Send a message to get a quote or ask any questions.</p>
+            <p className="gq-intro">
+              Fill in your details and {vendor.businessName} will get back to you.
+            </p>
 
-            <div className="gq-message-wrap">
+            <div className="gq-field">
+              <label>Which package are you interested in?</label>
+              <select
+                className="gq-select"
+                value={selectedPkg}
+                onChange={e => setSelectedPkg(e.target.value)}
+              >
+                <option value="">Select a package…</option>
+                {pkgOptions.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+
+            <div className="gq-field">
+              <label><CalendarDays size={13} /> Wedding date</label>
+              <input
+                type="date"
+                className="gq-input"
+                value={weddingDate}
+                onChange={e => setWeddingDate(e.target.value)}
+              />
+            </div>
+
+            <div className="gq-field">
+              <label><Users size={13} /> Guest count (approx.)</label>
+              <input
+                type="number"
+                className="gq-input"
+                placeholder="e.g., 150"
+                value={guestCount}
+                onChange={e => setGuestCount(e.target.value)}
+              />
+            </div>
+
+            <div className="gq-field">
+              <label>Additional notes</label>
               <textarea
                 className="gq-textarea"
-                rows={5}
-                value={msgText}
-                onChange={e => setMsgText(e.target.value)}
-                placeholder="Describe your event, date, requirements..."
-                disabled={!isPremium}
+                rows={4}
+                placeholder="Any special requirements, venue details, or questions…"
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
               />
-              {!isPremium && (
-                <div className="gq-lock-overlay">
-                  <div className="gq-lock-box">
-                    <Lock size={18} />
-                    <span>Upgrade to send messages</span>
-                  </div>
-                </div>
-              )}
             </div>
 
-            <div className="gq-field">
-              <label><Calendar size={13} /> Wedding date</label>
-              <input type="date" className="form-input" value={weddingDate} onChange={e => setWeddingDate(e.target.value)} disabled={!isPremium} />
-            </div>
-            <div className="gq-field">
-              <label><UsersIcon size={13} /> Guest count (approx.)</label>
-              <input type="number" className="form-input" value={guestCount} onChange={e => setGuestCount(e.target.value)} placeholder="e.g., 150" disabled={!isPremium} />
-            </div>
+            {error && <p className="gq-error">{error}</p>}
 
-            {err && <p className="gq-error">{err}</p>}
-
-            <button className="btn btn-primary gq-send-btn" onClick={handleSend} disabled={!isPremium || !msgText.trim() || sending}>
-              <Send size={15} /> {sending ? 'Sending...' : 'Send'}
+            <button
+              className="btn btn-primary gq-send-btn"
+              onClick={handleSend}
+              disabled={sending}
+            >
+              {sending
+                ? <><RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Sending…</>
+                : <><Send size={14} /> Send Enquiry</>}
             </button>
-            <p className="gq-note">Vendor will receive this in their dashboard and via email.</p>
+
+            <p className="gq-note">
+              The vendor will receive this in their dashboard and via email.
+            </p>
           </>
         )}
       </div>
