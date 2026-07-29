@@ -4002,14 +4002,12 @@ function VendorsModule({ wedding, setWedding }: any) {
   }, []);
 
   useEffect(() => {
-    const coupleName = wedding?.partner1Name && wedding?.partner2Name
-      ? `${wedding.partner1Name} & ${wedding.partner2Name}`
-      : 'A Couple';
-    fetch(`/api/messages/couple?coupleName=${encodeURIComponent(coupleName)}`)
+    // No coupleName query param — the server derives it from the authenticated session.
+    fetch('/api/messages/couple')
       .then(r => r.json())
       .then(d => setSentThreads(d.threads || []))
       .catch(() => {});
-  }, [wedding?.partner1Name, wedding?.partner2Name]);
+  }, []);
 
   const categories = ['All', ...Array.from(new Set(vendors.map(v => v.category).filter(Boolean)))];
   const savedIds: string[] = plan.savedVendorIds || [];
