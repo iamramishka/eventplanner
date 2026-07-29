@@ -9,7 +9,7 @@ import {
   ToggleLeft, ToggleRight, Upload, X, Save, AlertCircle,
   Globe, DollarSign, Image as ImageIcon, FileText,
   Search, ImageOff, RefreshCw, Check, Filter,
-  Info, Send
+  Info, Send, Lock
 } from 'lucide-react';
 import styles from './vendor.module.css';
 
@@ -129,7 +129,7 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
           {activeModule === 'listings' && <ListingsModule vendorId={vendor.id} listings={listings} onListingsChange={setListings} />}
           {activeModule === 'bookings' && <BookingsModule vendorId={vendor.id} bookings={bookingRecords} onBookingsChange={setBookingRecords} onPortalChange={setPortal} />}
           {activeModule === 'availability' && <AvailabilityModule vendorId={vendor.id} listings={listings} availability={availability} onPortalChange={setPortal} />}
-          {activeModule === 'messages' && <MessagesModule vendor={vendor} threads={messageThreads} onPortalChange={setPortal} />}
+          {activeModule === 'messages' && <MessagesModule vendor={vendor} threads={messageThreads} points={portal.points ?? 0} onPortalChange={setPortal} />}
           {activeModule === 'analytics' && <AnalyticsModule vendor={vendor} listings={listings} bookings={bookingRecords} analytics={analytics} />}
           {activeModule === 'payouts' && <PayoutsModule payouts={payouts} />}
           {activeModule === 'settings' && <SettingsModule vendor={vendor} settings={vendorSettings} onPortalChange={setPortal} />}
@@ -1313,13 +1313,15 @@ function extractMeta(body: string): { clean: string; weddingDate?: string; guest
   return { clean: parts[0], weddingDate: meta['Wedding Date'], guestCount: meta['Guest Count'] };
 }
 
-function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }: any) {
+function MessagesModule({ vendor, threads: initialThreads = [], points: initialPoints = 0, onPortalChange }: any) {
   const [activeId, setActiveId] = useState(initialThreads[0]?.id || '');
   const [replyText, setReplyText] = useState('');
   const [readIds, setReadIds] = useState<Record<string, boolean>>({});
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [points, setPoints] = useState(initialPoints);
+  const [unlocking, setUnlocking] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const threads = initialThreads.map((thread: any) => ({
@@ -1352,6 +1354,29 @@ function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }
       setError(err.message || 'Message update failed.');
     }
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
+  }
+
+  async function unlockThread(threadId: string) {
+    setUnlocking(threadId);
+    setError('');
+    try {
+      const res = await fetch(`/api/vendors/${vendor.id}/unlock-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ threadId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Unlock failed.');
+      setPoints(data.points);
+      const portalRes = await fetch(`/api/vendors/${vendor.id}/portal`);
+      const portalData = await portalRes.json();
+      onPortalChange(portalData);
+      setNotice('Message unlocked!');
+    } catch (err: any) {
+      setError(err.message || 'Could not unlock message.');
+    } finally {
+      setUnlocking(null);
+    }
   }
 
   async function sendReply() {
@@ -1441,9 +1466,14 @@ function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }
           <div style={listPanelStyle}>
             <div style={listHeaderStyle}>
               <span style={{ fontWeight: 700, fontSize: 14 }}>Inbox</span>
-              <span style={{ fontSize: 12, color: 'var(--adm-text-muted)', background: 'var(--adm-hover-bg)', borderRadius: 20, padding: '2px 10px' }}>
-                {threads.filter((t: any) => t.unread).length} unread
-              </span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: 12, color: 'var(--adm-text-muted)', background: 'var(--adm-hover-bg)', borderRadius: 20, padding: '2px 10px' }}>
+                  {threads.filter((t: any) => t.unread && !t.locked).length} unread
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--adm-primary, #c8956c)', background: '#fef3c7', borderRadius: 20, padding: '2px 10px' }}>
+                  {points} pts
+                </span>
+              </div>
             </div>
             <div style={{ overflowY: 'auto', flex: 1 }}>
               {threads.map((thread: any) => {
@@ -1451,12 +1481,14 @@ function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }
                 return (
                   <button
                     key={thread.id}
-                    onClick={() => openThread(thread.id)}
+                    onClick={() => !thread.locked && openThread(thread.id)}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '14px 16px',
-                      background: isActive ? 'var(--adm-hover-bg)' : 'transparent',
+                      display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+                      padding: '14px 16px', background: isActive ? 'var(--adm-hover-bg)' : 'transparent',
                       borderLeft: isActive ? '3px solid var(--inv-rose, #e86a8a)' : '3px solid transparent',
-                      border: 'none', borderBottom: '1px solid var(--adm-border)', cursor: 'pointer', textAlign: 'left',
+                      border: 'none', borderBottom: '1px solid var(--adm-border)',
+                      cursor: thread.locked ? 'default' : 'pointer', textAlign: 'left',
+                      opacity: thread.locked ? 0.85 : 1,
                     }}
                   >
                     <div style={{
@@ -1468,13 +1500,35 @@ function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                        <span style={{ fontWeight: thread.unread ? 700 : 500, fontSize: 14, color: 'var(--adm-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 130 }}>{thread.coupleName}</span>
-                        <span style={{ fontSize: 11, color: 'var(--adm-text-muted)', flexShrink: 0 }}>{timeAgo(thread.lastMessageAt)}</span>
+                        <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--adm-text)' }}>
+                          {thread.coupleName}
+                        </span>
+                        <span style={{ fontSize: 11, color: 'var(--adm-text-muted)', flexShrink: 0 }}>
+                          {timeAgo(thread.lastMessageAt)}
+                        </span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 12, color: 'var(--adm-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{thread.lastMessage}</span>
-                        {thread.unread && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#e86a8a', flexShrink: 0, display: 'inline-block' }} />}
-                      </div>
+                      {thread.locked ? (
+                        <button
+                          onClick={e => { e.stopPropagation(); unlockThread(thread.id); }}
+                          disabled={unlocking === thread.id}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            background: 'var(--adm-primary, #c8956c)', color: '#fff',
+                            border: 'none', borderRadius: 20, padding: '4px 12px',
+                            fontSize: 12, fontWeight: 600, cursor: 'pointer', marginTop: 3,
+                          }}
+                        >
+                          <Lock size={11} />
+                          {unlocking === thread.id ? 'Unlocking…' : `Unlock · ${thread.pointsCost ?? 5} pts`}
+                        </button>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 12, color: 'var(--adm-text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {thread.lastMessage}
+                          </span>
+                          {thread.unread && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#e86a8a', flexShrink: 0, display: 'inline-block' }} />}
+                        </div>
+                      )}
                     </div>
                   </button>
                 );
