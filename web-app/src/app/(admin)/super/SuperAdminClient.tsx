@@ -39,7 +39,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
   const labels: Record<string, string> = {
     dashboard: 'Dashboard', couples: 'Couples', vendors: 'Vendors',
     templates: 'Templates', analytics: 'Analytics', plans: 'Plans', cleanup: 'Trial Cleanup',
-    cms: 'Content CMS', reports: 'Reports', settings: 'Settings', logs: 'Logs'
+    revenue: 'Revenue', cms: 'Content CMS', reports: 'Reports', settings: 'Settings', logs: 'Logs'
   };
   
   return (
@@ -70,6 +70,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
 
           <div className={cn("nav-section-label")}>Commerce</div>
           <NavItem id="plans" icon={<CreditCard size={18} />} label="Plans" active={activeModule} onClick={handleNavClick} />
+          <NavItem id="revenue" icon={<TrendingUp size={18} />} label="Revenue" active={activeModule} onClick={handleNavClick} />
           <NavItem id="cleanup" icon={<Trash2 size={18} />} label="Trial Cleanup" active={activeModule} onClick={handleNavClick} />
           
           <div className={cn("nav-section-label")}>System</div>
@@ -119,6 +120,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
           {activeModule === 'templates' && <TemplatesModule initialSettings={platformSettings} />}
           {activeModule === 'plans' && <PlansModule initialPlans={initialPlans} />}
           {activeModule === 'cleanup' && <CleanupModule />}
+          {activeModule === 'revenue' && <RevenueModule />}
           {activeModule === 'settings' && <SettingsModule initialSettings={platformSettings} onSaved={setPlatformSettings} />}
           {activeModule === 'logs' && <LogsModule />}
           {activeModule === 'analytics' && <AnalyticsModule />}
@@ -1201,6 +1203,85 @@ function CleanupModule() {
                 </ul>
               </div>
             )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function RevenueModule() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [txPage, setTxPage] = useState(1);
+  const TX_PAGE = 10;
+
+  useEffect(() => {
+    fetch('/api/admin/analytics/revenue')
+      .then(r => r.json())
+      .then(setData)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const txs = data?.transactions || [];
+  const totalTxPages = Math.ceil(txs.length / TX_PAGE) || 1;
+  const pagedTxs = txs.slice((txPage - 1) * TX_PAGE, txPage * TX_PAGE);
+
+  const fmt = (n: number) => `LKR ${Number(n).toLocaleString()}`;
+
+  return (
+    <section className={cn('module')}>
+      <div className={cn('module-header')}>
+        <div>
+          <h1 className={cn('module-title')}>Revenue</h1>
+          <p className={cn('module-desc')}>Financial overview and transactions</p>
+        </div>
+      </div>
+
+      <div className={cn('kpi-grid')}>
+        <KpiCard loading={loading} color="green"  icon={<TrendingUp size={22} />}  value={loading ? null : fmt(data?.mrr || 0)}       label="MRR"           trend="monthly" />
+        <KpiCard loading={loading} color="blue"   icon={<CreditCard size={22} />} value={loading ? null : fmt(data?.total || 0)}      label="Total Revenue"  trend="all time" />
+        <KpiCard loading={loading} color="purple" icon={<TrendingUp size={22} />} value={loading ? null : fmt(data?.thisMonth || 0)}  label="This Month"     trend="current month" />
+      </div>
+
+      <div className={cn('table-card')} style={{ marginTop: 24 }}>
+        <div className={cn('table-card-header')}>
+          <h3 className={cn('table-title')}>Recent Activity</h3>
+        </div>
+        <div className={cn('table-responsive')}>
+          <table className={cn('data-table')}>
+            <thead>
+              <tr>
+                <th>Couple</th>
+                <th>Plan</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={5} style={{ textAlign: 'center', color: '#94A3B8', padding: 24 }}>Loading...</td></tr>
+              ) : pagedTxs.map((tx: any, i: number) => (
+                <tr key={i}>
+                  <td>{tx.coupleName}</td>
+                  <td><span className={cn('badge', tx.plan === 'premium' ? 'badge-green' : 'badge-gray')}>{tx.plan}</span></td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(tx.amount)}</td>
+                  <td>{tx.date}</td>
+                  <td><span className={cn('badge', tx.status === 'paid' ? 'badge-green' : 'badge-gray')}>{tx.status}</span></td>
+                </tr>
+              ))}
+              {!loading && pagedTxs.length === 0 && (
+                <tr><td colSpan={5} style={{ textAlign: 'center', color: '#94A3B8', padding: 24 }}>No transactions found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {totalTxPages > 1 && (
+          <div className={cn('pagination')}>
+            <button className={cn('page-btn')} disabled={txPage === 1} onClick={() => setTxPage(p => p - 1)}>&#8249;</button>
+            <span className={cn('page-info')}>Page {txPage} of {totalTxPages}</span>
+            <button className={cn('page-btn')} disabled={txPage === totalTxPages} onClick={() => setTxPage(p => p + 1)}>&#8250;</button>
           </div>
         )}
       </div>
