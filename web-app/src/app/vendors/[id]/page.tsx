@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { notFound } from 'next/navigation';
+import { getVendorById, getListingsByVendor, toPublicVendor } from '@/lib/vendorStore';
 
 function sanitizeHtml(html: string): string {
   return html
@@ -7,6 +8,7 @@ function sanitizeHtml(html: string): string {
     .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
     .replace(/\son\w+="[^"]*"/gi, '')
     .replace(/\son\w+='[^']*'/gi, '')
+    .replace(/\son\w+=[^\s>]*/gi, '')
     .replace(/href=["']\s*javascript:[^"']*/gi, 'href="#"')
     .replace(/href=["']\s*data:[^"']*/gi, 'href="#"');
 }
@@ -22,26 +24,13 @@ const richContentCss = `
   .richContent strong { font-weight: 600; }
 `;
 
-async function getVendor(id: string) {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${base}/api/vendors/${id}`, { cache: 'no-store' });
-  if (!res.ok) return null;
-  const json = await res.json();
-  return json.vendor ?? null;
-}
-
-async function getListings(id: string) {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  const res = await fetch(`${base}/api/vendors/${id}/listings`, { cache: 'no-store' });
-  if (!res.ok) return [];
-  const json = await res.json();
-  return (json.listings ?? []).filter((l: any) => l.active);
-}
-
 export default async function VendorDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [vendor, listings] = await Promise.all([getVendor(id), getListings(id)]);
-  if (!vendor) notFound();
+  const raw = getVendorById(id);
+  if (!raw || raw.status !== 'approved') notFound();
+
+  const vendor = toPublicVendor(raw);
+  const listings = getListingsByVendor(id).filter((l: any) => l.active);
 
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: 'system-ui, sans-serif' }}>
