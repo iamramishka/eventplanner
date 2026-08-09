@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -9,11 +8,8 @@ import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import Link from '@tiptap/extension-link';
 import { useEffect, useCallback } from 'react';
-import {
-  Bold, Italic, Underline as UnderlineIcon, Heading2, Heading3,
-  List, ListOrdered, Highlighter, Link as LinkIcon,
-  RemoveFormatting, Palette,
-} from 'lucide-react';
+// @ts-ignore -- lucide-react v1.30 uses "typings" not "exports.types"; bundler moduleResolution skips it; all icons exist at runtime
+import { Bold, Italic, Underline as UnderlineIcon, Heading2, Heading3, List, ListOrdered, Highlighter, Link as LinkIcon, RemoveFormatting, Palette } from 'lucide-react';
 
 interface RichTextEditorProps {
   value: string;
