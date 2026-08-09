@@ -594,11 +594,7 @@ function ProfileModule({ vendor: initialVendor, onVendorSaved }: any) {
       {/* ── Content Tab ── */}
       {activeTab === 'content' && (
         <div className="profCard">
-          <div className="profCardTitle"><FileText size={18} style={{ color: 'var(--inv-rose)' }} /> Editable Content (Markdown)</div>
-          <div style={{ background: '#FFF8E1', border: '1px solid #FDE68A', borderRadius: '.5rem', padding: '.75rem 1rem', marginBottom: '1.5rem', display: 'flex', gap: '.5rem', fontSize: '.85rem', color: '#92400E' }}>
-            <Info size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-            Use <strong>Markdown</strong> syntax for rich text. E.g. <code>**bold**</code>, <code>## Heading</code>, <code>- bullet</code>. These render on your public profile.
-          </div>
+          <div className="profCardTitle"><FileText size={18} style={{ color: 'var(--inv-rose)' }} /> Editable Content</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div className="profField">
               <label className="profLabel">About Your Business</label>
