@@ -6,7 +6,9 @@ function sanitizeHtml(html: string): string {
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
     .replace(/\son\w+="[^"]*"/gi, '')
-    .replace(/\son\w+='[^']*'/gi, '');
+    .replace(/\son\w+='[^']*'/gi, '')
+    .replace(/href=["']\s*javascript:[^"']*/gi, 'href="#"')
+    .replace(/href=["']\s*data:[^"']*/gi, 'href="#"');
 }
 
 const richContentCss = `
@@ -36,8 +38,9 @@ async function getListings(id: string) {
   return (json.listings ?? []).filter((l: any) => l.active);
 }
 
-export default async function VendorDetailPage({ params }: { params: { id: string } }) {
-  const [vendor, listings] = await Promise.all([getVendor(params.id), getListings(params.id)]);
+export default async function VendorDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const [vendor, listings] = await Promise.all([getVendor(id), getListings(id)]);
   if (!vendor) notFound();
 
   return (
