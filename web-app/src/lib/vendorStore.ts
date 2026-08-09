@@ -799,6 +799,8 @@ export function toPublicVendor(v: VendorRegistration) {
     onboardingStep: v.onboardingStep,
     featured: Boolean(v.featured),
     createdAt: v.createdAt,
+    aboutMarkdown: v.aboutMarkdown || '',
+    faqMarkdown: v.faqMarkdown || '',
   };
 }
 

@@ -22,6 +22,14 @@ const richContentCss = `
   .richContent mark { background: #FEF08A; border-radius: 2px; padding: 0 2px; }
   .richContent p { margin: .3rem 0; }
   .richContent strong { font-weight: 600; }
+  .faqAccordion { display: flex; flex-direction: column; gap: .5rem; margin-top: .5rem; }
+  .faqItem { border: 1px solid #E5E7EB; border-radius: 8px; overflow: hidden; }
+  .faqItem summary.faqQ { padding: .75rem 1rem; cursor: pointer; font-weight: 600; font-size: .95rem; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  .faqItem summary.faqQ::-webkit-details-marker { display: none; }
+  .faqItem summary.faqQ::after { content: '+'; font-size: 1.1rem; color: #9CA3AF; }
+  .faqItem[open] summary.faqQ::after { content: '−'; }
+  .faqItem .faqA { padding: .75rem 1rem; font-size: .9rem; color: #374151; line-height: 1.6; border-top: 1px solid #F3F4F6; white-space: pre-wrap; }
+  .sectionHeading { font-size: 1.1rem; font-weight: 700; color: #111827; margin: 0 0 .75rem; }
 `;
 
 export default async function VendorDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -45,6 +53,39 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
           {vendor.description && <p style={{ marginTop: '.75rem', color: '#374151', lineHeight: 1.6 }}>{vendor.description}</p>}
         </div>
       </header>
+
+      {/* About + FAQ */}
+      {(vendor.aboutMarkdown || vendor.faqMarkdown) && (
+        <section style={{ maxWidth: 900, margin: '2rem auto', padding: '0 1.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {vendor.aboutMarkdown && (
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: '1.5rem' }}>
+              <h2 className="sectionHeading">About</h2>
+              <div
+                className="richContent"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(vendor.aboutMarkdown) }}
+              />
+            </div>
+          )}
+          {vendor.faqMarkdown && (() => {
+            let faqs: { id: string; q: string; a: string }[] = [];
+            try { faqs = JSON.parse(vendor.faqMarkdown).filter((i: any) => i.q); } catch { /* skip */ }
+            if (faqs.length === 0) return null;
+            return (
+              <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: '1.5rem' }}>
+                <h2 className="sectionHeading">Frequently Asked Questions</h2>
+                <div className="faqAccordion">
+                  {faqs.map((faq) => (
+                    <details key={faq.id} className="faqItem">
+                      <summary className="faqQ">{faq.q}</summary>
+                      <p className="faqA">{faq.a}</p>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </section>
+      )}
 
       {/* Listings */}
       <main style={{ maxWidth: 900, margin: '2rem auto', padding: '0 1.5rem' }}>
