@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import styles from './vendor.module.css';
 import RichTextEditor from '@/components/RichTextEditor';
+import FaqEditor from '@/components/FaqEditor';
 
 // ─── Main Portal ────────────────────────────────────────────────
 export default function VendorPortalClient({ vendor: initialVendor, listings: initialListings, portal: initialPortal }: any) {
@@ -601,13 +602,18 @@ function ProfileModule({ vendor: initialVendor, onVendorSaved }: any) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div className="profField">
               <label className="profLabel">About Your Business</label>
-              <textarea id="prof-aboutMarkdown" className={`profTextarea profTextareaCode`} rows={10} value={vendor.aboutMarkdown || ''} onChange={e => change('aboutMarkdown', e.target.value)} placeholder={`## Our Story\n\nTell your brand story here...\n\n## Our Approach\n\nWhat makes you different?\n\n## Awards & Recognition\n\n- Award name — Year`} />
-              <span className="profHint">{(vendor.aboutMarkdown || '').length} characters</span>
+              <RichTextEditor
+                value={vendor.aboutMarkdown || ''}
+                onChange={(html) => change('aboutMarkdown', html)}
+                placeholder="Tell your brand story, your approach, and any awards…"
+              />
             </div>
             <div className="profField">
               <label className="profLabel">FAQ Section</label>
-              <textarea id="prof-faqMarkdown" className={`profTextarea profTextareaCode`} rows={8} value={vendor.faqMarkdown || ''} onChange={e => change('faqMarkdown', e.target.value)} placeholder={`## Frequently Asked Questions\n\n**How far in advance should we book?**\nWe recommend booking 6–12 months in advance for peak season dates.\n\n**Do you travel outside Colombo?**\nYes, island-wide. Travel costs may apply for distant venues.`} />
-              <span className="profHint">{(vendor.faqMarkdown || '').length} characters</span>
+              <FaqEditor
+                value={vendor.faqMarkdown || ''}
+                onChange={(json) => change('faqMarkdown', json)}
+              />
             </div>
           </div>
         </div>
