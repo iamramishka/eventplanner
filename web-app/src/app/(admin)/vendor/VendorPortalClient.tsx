@@ -12,6 +12,8 @@ import {
   Info, Send
 } from 'lucide-react';
 import styles from './vendor.module.css';
+import RichTextEditor from '@/components/RichTextEditor';
+import FaqEditor from '@/components/FaqEditor';
 
 // ─── Main Portal ────────────────────────────────────────────────
 export default function VendorPortalClient({ vendor: initialVendor, listings: initialListings, portal: initialPortal }: any) {
@@ -592,21 +594,22 @@ function ProfileModule({ vendor: initialVendor, onVendorSaved }: any) {
       {/* ── Content Tab ── */}
       {activeTab === 'content' && (
         <div className="profCard">
-          <div className="profCardTitle"><FileText size={18} style={{ color: 'var(--inv-rose)' }} /> Editable Content (Markdown)</div>
-          <div style={{ background: '#FFF8E1', border: '1px solid #FDE68A', borderRadius: '.5rem', padding: '.75rem 1rem', marginBottom: '1.5rem', display: 'flex', gap: '.5rem', fontSize: '.85rem', color: '#92400E' }}>
-            <Info size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-            Use <strong>Markdown</strong> syntax for rich text. E.g. <code>**bold**</code>, <code>## Heading</code>, <code>- bullet</code>. These render on your public profile.
-          </div>
+          <div className="profCardTitle"><FileText size={18} style={{ color: 'var(--inv-rose)' }} /> Editable Content</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div className="profField">
               <label className="profLabel">About Your Business</label>
-              <textarea id="prof-aboutMarkdown" className={`profTextarea profTextareaCode`} rows={10} value={vendor.aboutMarkdown || ''} onChange={e => change('aboutMarkdown', e.target.value)} placeholder={`## Our Story\n\nTell your brand story here...\n\n## Our Approach\n\nWhat makes you different?\n\n## Awards & Recognition\n\n- Award name — Year`} />
-              <span className="profHint">{(vendor.aboutMarkdown || '').length} characters</span>
+              <RichTextEditor
+                value={vendor.aboutMarkdown || ''}
+                onChange={(html) => change('aboutMarkdown', html)}
+                placeholder="Tell your brand story, your approach, and any awards…"
+              />
             </div>
             <div className="profField">
               <label className="profLabel">FAQ Section</label>
-              <textarea id="prof-faqMarkdown" className={`profTextarea profTextareaCode`} rows={8} value={vendor.faqMarkdown || ''} onChange={e => change('faqMarkdown', e.target.value)} placeholder={`## Frequently Asked Questions\n\n**How far in advance should we book?**\nWe recommend booking 6–12 months in advance for peak season dates.\n\n**Do you travel outside Colombo?**\nYes, island-wide. Travel costs may apply for distant venues.`} />
-              <span className="profHint">{(vendor.faqMarkdown || '').length} characters</span>
+              <FaqEditor
+                value={vendor.faqMarkdown || ''}
+                onChange={(json) => change('faqMarkdown', json)}
+              />
             </div>
           </div>
         </div>
@@ -1027,11 +1030,15 @@ function ListingsModule({ vendorId, listings: initial, onListingsChange }: any) 
                 </div>
               </div>
 
-              <div className="lstFormSection">Content (Markdown)</div>
+              <div className="lstFormSection">Detailed Content</div>
               <div className="lstFormField">
                 <label className="lstFormLabel">Detailed Content</label>
-                <textarea id="listing-form-content" className={`lstFormTextarea lstFormTextareaCode`} rows={6} value={form.contentMarkdown} onChange={e => setForm((f: any) => ({ ...f, contentMarkdown: e.target.value }))} placeholder={`## What's Included\n\n- Item 1\n- Item 2\n\n## Timeline\n\nDetails here...`} />
-                <span className="lstFormHint">Markdown supported. Renders on the public listing page.</span>
+                <RichTextEditor
+                  value={form.contentMarkdown}
+                  onChange={(html) => setForm((f: any) => ({ ...f, contentMarkdown: html }))}
+                  placeholder="## What's Included&#10;&#10;- Item 1&#10;- Item 2"
+                />
+                <span className="lstFormHint">Formats and renders on the public listing page.</span>
               </div>
 
               <div className="lstFormSection">Settings</div>
