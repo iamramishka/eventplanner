@@ -12,6 +12,7 @@ import {
   Info, Send
 } from 'lucide-react';
 import styles from './vendor.module.css';
+import RichTextEditor from '@/components/RichTextEditor';
 
 // ─── Main Portal ────────────────────────────────────────────────
 export default function VendorPortalClient({ vendor: initialVendor, listings: initialListings, portal: initialPortal }: any) {
@@ -1027,11 +1028,15 @@ function ListingsModule({ vendorId, listings: initial, onListingsChange }: any) 
                 </div>
               </div>
 
-              <div className="lstFormSection">Content (Markdown)</div>
+              <div className="lstFormSection">Detailed Content</div>
               <div className="lstFormField">
                 <label className="lstFormLabel">Detailed Content</label>
-                <textarea id="listing-form-content" className={`lstFormTextarea lstFormTextareaCode`} rows={6} value={form.contentMarkdown} onChange={e => setForm((f: any) => ({ ...f, contentMarkdown: e.target.value }))} placeholder={`## What's Included\n\n- Item 1\n- Item 2\n\n## Timeline\n\nDetails here...`} />
-                <span className="lstFormHint">Markdown supported. Renders on the public listing page.</span>
+                <RichTextEditor
+                  value={form.contentMarkdown}
+                  onChange={(html) => setForm((f: any) => ({ ...f, contentMarkdown: html }))}
+                  placeholder="## What's Included&#10;&#10;- Item 1&#10;- Item 2"
+                />
+                <span className="lstFormHint">Formats and renders on the public listing page.</span>
               </div>
 
               <div className="lstFormSection">Settings</div>
