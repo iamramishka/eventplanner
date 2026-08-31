@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Star, Heart, Columns, MapPin } from 'lucide-react';
 import styles from './vendor.module.css';
 import useShortlist from '@/lib/useShortlist';
@@ -77,8 +78,13 @@ export default function VendorCard({ vendor, onCompare }: VendorCardProps) {
             <Star size={14} fill={vendor.rating ? '#F59E0B' : '#CBD5E1'} color={vendor.rating ? '#F59E0B' : '#CBD5E1'} />
             <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#374151' }}>{vendor.rating || 'New'}</span>
           </div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#111827' }}>
-            {vendor.currency || 'LKR'} {vendor.basePrice?.toLocaleString() ?? '—'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#111827' }}>
+              {vendor.currency || 'LKR'} {vendor.basePrice?.toLocaleString() ?? '—'}
+            </div>
+            <Link href={`/vendors/${vendor.id}`} style={{ fontSize: '0.8rem', fontWeight: 600, color: '#e24b6d', textDecoration: 'none', padding: '0.25rem 0.6rem', borderRadius: 6, border: '1px solid #e24b6d' }}>
+              View Details
+            </Link>
           </div>
         </div>
       </div>

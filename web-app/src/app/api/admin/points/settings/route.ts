@@ -16,7 +16,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
     const pointsPerUnlock = Number(body.pointsPerUnlock);
-    if (!pointsPerUnlock || pointsPerUnlock < 1) {
+    if (!Number.isFinite(pointsPerUnlock) || !Number.isInteger(pointsPerUnlock) || pointsPerUnlock < 1 || pointsPerUnlock > 100) {
       return NextResponse.json({ error: 'pointsPerUnlock must be a positive number.' }, { status: 400 });
     }
     const updated = updatePointSettings({ pointsPerUnlock });

@@ -9,7 +9,7 @@ import {
   ToggleLeft, ToggleRight, Upload, X, Save, AlertCircle,
   Globe, DollarSign, Image as ImageIcon, FileText,
   Search, ImageOff, RefreshCw, Check, Filter,
-  Info, Send
+  Info
 } from 'lucide-react';
 import styles from './vendor.module.css';
 
@@ -34,6 +34,7 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
   const availability = portal.availability;
   const vendorSettings = portal.settings;
   const analytics = portal.analytics || {};
+  const pointsPerUnlock: number = portal.pointsPerUnlock ?? 1;
 
   const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
@@ -132,7 +133,7 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
           {activeModule === 'listings' && <ListingsModule vendorId={vendor.id} listings={listings} onListingsChange={setListings} />}
           {activeModule === 'bookings' && <BookingsModule vendorId={vendor.id} bookings={bookingRecords} onBookingsChange={setBookingRecords} onPortalChange={setPortal} />}
           {activeModule === 'availability' && <AvailabilityModule vendorId={vendor.id} listings={listings} availability={availability} onPortalChange={setPortal} />}
-          {activeModule === 'leads' && <LeadsModule vendorId={vendor.id} quoteRequests={quoteRequests} unlockedContactIds={unlockedContactIds} points={vendorPoints} pointRequests={vendorPointRequests} onPortalChange={setPortal} />}
+          {activeModule === 'leads' && <LeadsModule vendorId={vendor.id} quoteRequests={quoteRequests} unlockedContactIds={unlockedContactIds} points={vendorPoints} pointRequests={vendorPointRequests} onPortalChange={setPortal} pointsPerUnlock={pointsPerUnlock} />}
           {activeModule === 'analytics' && <AnalyticsModule vendor={vendor} listings={listings} bookings={bookingRecords} analytics={analytics} />}
           {activeModule === 'payouts' && <PayoutsModule payouts={payouts} />}
           {activeModule === 'settings' && <SettingsModule vendor={vendor} settings={vendorSettings} onPortalChange={setPortal} />}
@@ -1291,38 +1292,14 @@ function AvailabilityModule({ vendorId, listings, availability, onPortalChange }
   );
 }
 
-function avatarInitials(name: string) {
-  return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
-}
-
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-function extractMeta(body: string): { clean: string; weddingDate?: string; guestCount?: string } {
-  const parts = body.split('\n\n---\n');
-  if (parts.length < 2) return { clean: body };
-  const meta: Record<string, string> = {};
-  parts[1].split(' · ').forEach(chunk => {
-    const [k, ...rest] = chunk.split(': ');
-    if (k && rest.length) meta[k.trim()] = rest.join(': ').trim();
-  });
-  return { clean: parts[0], weddingDate: meta['Wedding Date'], guestCount: meta['Guest Count'] };
-}
-
-function LeadsModule({ vendorId, quoteRequests, unlockedContactIds, points, pointRequests, onPortalChange }: {
+function LeadsModule({ vendorId, quoteRequests, unlockedContactIds, points, pointRequests, onPortalChange, pointsPerUnlock }: {
   vendorId: string;
   quoteRequests: any[];
   unlockedContactIds: string[];
   points: { balance: number };
   pointRequests: any[];
   onPortalChange: (data: any) => void;
+  pointsPerUnlock: number;
 }) {
   const [unlocking, setUnlocking] = useState<string | null>(null);
   const [showPointReq, setShowPointReq] = useState(false);
@@ -1333,7 +1310,7 @@ function LeadsModule({ vendorId, quoteRequests, unlockedContactIds, points, poin
   const [error, setError] = useState('');
 
   async function handleUnlock(quoteRequestId: string) {
-    if (points.balance < 1) { setError('Insufficient points. Request more points from admin.'); return; }
+    if (points.balance < pointsPerUnlock) { setError('Insufficient points. Request more points from admin.'); return; }
     setUnlocking(quoteRequestId);
     setError('');
     try {
@@ -1347,6 +1324,7 @@ function LeadsModule({ vendorId, quoteRequests, unlockedContactIds, points, poin
       onPortalChange(json);
       setNotice('Contact details unlocked!');
     } catch (err: any) {
+      setNotice('');
       setError(err.message || 'Unlock failed.');
     } finally {
       setUnlocking(null);
@@ -1373,6 +1351,7 @@ function LeadsModule({ vendorId, quoteRequests, unlockedContactIds, points, poin
       setPrNote('');
       setNotice('Point request sent to admin.');
     } catch (err: any) {
+      setNotice('');
       setError(err.message || 'Request failed.');
     } finally {
       setPrSaving(false);
@@ -1419,7 +1398,7 @@ function LeadsModule({ vendorId, quoteRequests, unlockedContactIds, points, poin
       <div className="leadsHeader">
         <div>
           <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#111827', marginBottom: 2 }}>Quote Requests</div>
-          <div className="leadsBal">Points balance: <strong>{points.balance}</strong> — 1 point unlocks one lead&apos;s contact</div>
+          <div className="leadsBal">Points balance: <strong>{points.balance}</strong> — {pointsPerUnlock} point{pointsPerUnlock !== 1 ? 's' : ''} unlocks one lead&apos;s contact</div>
         </div>
         <button className="leadsReqBtn" onClick={() => setShowPointReq(v => !v)}>
           {showPointReq ? 'Cancel' : '+ Request Points'}
@@ -1485,7 +1464,7 @@ function LeadsModule({ vendorId, quoteRequests, unlockedContactIds, points, poin
                       disabled={unlocking === qr.id}
                       onClick={() => handleUnlock(qr.id)}
                     >
-                      {unlocking === qr.id ? 'Unlocking…' : 'Unlock (1 point)'}
+                      {unlocking === qr.id ? 'Unlocking…' : `Unlock (${pointsPerUnlock} point${pointsPerUnlock !== 1 ? 's' : ''})`}
                     </button>
                   </>
                 )}

@@ -9,6 +9,7 @@ import {
   updateSettings,
   VendorBookingStatus,
 } from '@/lib/vendorStore';
+import { requireVendorAccess } from '@/lib/rbac';
 
 // ─── GET /api/vendors/[id]/portal ─────────────────────────────
 export async function GET(
@@ -17,6 +18,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const access = await requireVendorAccess(id);
+    if (access.response) return access.response;
     if (!getVendorById(id)) {
       return NextResponse.json({ error: 'Vendor not found.' }, { status: 404 });
     }
@@ -34,6 +37,8 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
+    const access = await requireVendorAccess(id);
+    if (access.response) return access.response;
     const vendor = getVendorById(id);
     if (!vendor) {
       return NextResponse.json({ error: 'Vendor not found.' }, { status: 404 });
@@ -66,7 +71,7 @@ export async function PATCH(
     if (body.requestPoints) {
       const pointsRequested = Number(body.requestPoints.pointsRequested);
       const note = String(body.requestPoints.note || '').trim();
-      if (!pointsRequested || pointsRequested < 1) {
+      if (!Number.isFinite(pointsRequested) || !Number.isInteger(pointsRequested) || pointsRequested < 1 || pointsRequested > 10000) {
         return NextResponse.json({ error: 'pointsRequested must be a positive number.' }, { status: 400 });
       }
       const vendorName = `${vendor.ownerFirstName || ''} ${vendor.ownerLastName || ''}`.trim() || vendor.businessName || id;

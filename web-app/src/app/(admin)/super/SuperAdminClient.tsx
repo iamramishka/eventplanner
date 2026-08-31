@@ -1241,6 +1241,7 @@ function PointsModule({ requests, onRequestsChange }: { requests: any[]; onReque
   async function handleReview(requestId: string, action: 'approve' | 'reject') {
     setReviewing(requestId);
     setError('');
+    setNotice('');
     try {
       const res = await fetch('/api/admin/points/requests', {
         method: 'PATCH',
@@ -1250,8 +1251,10 @@ function PointsModule({ requests, onRequestsChange }: { requests: any[]; onReque
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed.');
       const updated = await fetch('/api/admin/points/requests').then(r => r.json());
-      if (updated.requests) onRequestsChange(updated.requests);
-      setNotice(`Request ${action}d.`);
+      if (updated.requests) {
+        onRequestsChange(updated.requests);
+        setNotice(`Request ${action}d.`);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed.');
     } finally {
@@ -1265,6 +1268,7 @@ function PointsModule({ requests, onRequestsChange }: { requests: any[]; onReque
     if (!n || n < 1) { setError('Cost must be at least 1.'); return; }
     setSavingSettings(true);
     setError('');
+    setNotice('');
     try {
       const res = await fetch('/api/admin/points/settings', {
         method: 'PATCH',
@@ -1274,6 +1278,7 @@ function PointsModule({ requests, onRequestsChange }: { requests: any[]; onReque
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Failed.');
       setSettings(json.settings);
+      setNewCost(String(json.settings.pointsPerUnlock));
       setNotice('Settings saved.');
     } catch (err: any) {
       setError(err.message || 'Failed.');

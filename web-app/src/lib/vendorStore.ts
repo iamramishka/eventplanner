@@ -1033,10 +1033,14 @@ export function updateSettings(
 
 export function getVendorPortalData(vendorId: string) {
   const bookings = getBookingsByVendor(vendorId);
-  const quoteRequests = getQuoteRequestsByVendor(vendorId);
   const unlockedContactIds = vendorStore.unlockedContacts
     .filter(u => u.vendorId === vendorId)
     .map(u => u.quoteRequestId);
+  const quoteRequests = getQuoteRequestsByVendor(vendorId).map(q => ({
+    ...q,
+    email: unlockedContactIds.includes(q.id) ? q.email : '',
+    mobile: unlockedContactIds.includes(q.id) ? q.mobile : '',
+  }));
   const payouts = getPayoutsByVendor(vendorId);
   const confirmedValue = bookings
     .filter(b => b.status === 'confirmed' || b.status === 'completed')
@@ -1051,6 +1055,7 @@ export function getVendorPortalData(vendorId: string) {
     pointRequests: getPointRequestsByVendor(vendorId),
     payouts,
     settings: getSettingsByVendor(vendorId),
+    pointsPerUnlock: getPointSettings().pointsPerUnlock,
     analytics: {
       bookingCount: bookings.length,
       pendingBookings: bookings.filter(b => b.status === 'pending').length,
@@ -1104,11 +1109,14 @@ export function isContactUnlocked(vendorId: string, quoteRequestId: string): boo
 }
 
 export function unlockContact(vendorId: string, quoteRequestId: string): { ok: boolean; error?: string } {
+  const qr = vendorStore.quoteRequests.find(q => q.id === quoteRequestId && q.vendorId === vendorId);
+  if (!qr) return { ok: false, error: 'Quote request not found.' };
   if (isContactUnlocked(vendorId, quoteRequestId)) return { ok: true };
   const settings = getPointSettings();
   const cost = settings.pointsPerUnlock;
+  const existing = vendorStore.vendorPoints.find(p => p.vendorId === vendorId);
+  if (!existing || existing.balance < cost) return { ok: false, error: 'Insufficient points.' };
   const points = getVendorPoints(vendorId);
-  if (points.balance < cost) return { ok: false, error: 'Insufficient points.' };
   const pidx = vendorStore.vendorPoints.findIndex(p => p.vendorId === vendorId);
   vendorStore.vendorPoints[pidx] = { ...points, balance: points.balance - cost };
   vendorStore.unlockedContacts.push({
