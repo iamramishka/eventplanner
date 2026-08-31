@@ -4,7 +4,7 @@
 import React, { useState, useRef } from 'react';
 import {
   LayoutDashboard, User, Package, CalendarCheck, Calendar,
-  MessageSquare, BarChart2, Banknote, Settings, Menu, Bell,
+  Inbox, BarChart2, Banknote, Settings, Menu, Bell,
   Eye, Clock, CheckCircle, Star, LogOut, Plus, Edit2, Trash2,
   ToggleLeft, ToggleRight, Upload, X, Save, AlertCircle,
   Globe, DollarSign, Image as ImageIcon, FileText,
@@ -25,7 +25,11 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
   const [listings, setListings] = useState<any[]>(initialListings);
   const [portal, setPortal] = useState<any>(initialPortal || {});
   const [bookingRecords, setBookingRecords] = useState<any[]>(initialPortal?.bookings || []);
-  const messageThreads = portal.messages || [];
+  const quoteRequests = portal.quoteRequests || [];
+  const unlockedContactIds: string[] = portal.unlockedContactIds || [];
+  const vendorPoints = portal.points || { balance: 0 };
+  const vendorPointRequests = portal.pointRequests || [];
+  const newLeadsCount = quoteRequests.length;
   const payouts = portal.payouts || [];
   const availability = portal.availability;
   const vendorSettings = portal.settings;
@@ -41,7 +45,6 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
   };
 
   const activePct = listings.length ? Math.round((listings.filter((l: any) => l.active).length / listings.length) * 100) : 0;
-  const unreadMessages = messageThreads.filter((thread: any) => thread.unread).length;
 
   return (
     <div className={`${styles.dashboardScreen} ${sidebarCollapsed ? styles.sidebarCollapsed : ''}`}>
@@ -66,7 +69,7 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
           <div className={styles.navLabel}>Operations</div>
           <NavItem icon={<CalendarCheck size={18} />} label="Bookings" badge={bookingRecords.filter((b: any) => b.status === 'pending').length} isActive={activeModule === 'bookings'} onClick={() => navigateTo('bookings')} />
           <NavItem icon={<Calendar size={18} />} label="Availability" isActive={activeModule === 'availability'} onClick={() => navigateTo('availability')} />
-          <NavItem icon={<MessageSquare size={18} />} label="Messages" badge={unreadMessages} isActive={activeModule === 'messages'} onClick={() => navigateTo('messages')} />
+          <NavItem icon={<Inbox size={18} />} label="Leads" badge={newLeadsCount} isActive={activeModule === 'leads'} onClick={() => navigateTo('leads')} />
 
           <div className={styles.navLabel}>Business</div>
           <NavItem icon={<BarChart2 size={18} />} label="Analytics" isActive={activeModule === 'analytics'} onClick={() => navigateTo('analytics')} />
@@ -129,7 +132,7 @@ export default function VendorPortalClient({ vendor: initialVendor, listings: in
           {activeModule === 'listings' && <ListingsModule vendorId={vendor.id} listings={listings} onListingsChange={setListings} />}
           {activeModule === 'bookings' && <BookingsModule vendorId={vendor.id} bookings={bookingRecords} onBookingsChange={setBookingRecords} onPortalChange={setPortal} />}
           {activeModule === 'availability' && <AvailabilityModule vendorId={vendor.id} listings={listings} availability={availability} onPortalChange={setPortal} />}
-          {activeModule === 'messages' && <MessagesModule vendor={vendor} threads={messageThreads} onPortalChange={setPortal} />}
+          {activeModule === 'leads' && <LeadsModule vendorId={vendor.id} quoteRequests={quoteRequests} unlockedContactIds={unlockedContactIds} points={vendorPoints} pointRequests={vendorPointRequests} onPortalChange={setPortal} />}
           {activeModule === 'analytics' && <AnalyticsModule vendor={vendor} listings={listings} bookings={bookingRecords} analytics={analytics} />}
           {activeModule === 'payouts' && <PayoutsModule payouts={payouts} />}
           {activeModule === 'settings' && <SettingsModule vendor={vendor} settings={vendorSettings} onPortalChange={setPortal} />}
@@ -1313,242 +1316,185 @@ function extractMeta(body: string): { clean: string; weddingDate?: string; guest
   return { clean: parts[0], weddingDate: meta['Wedding Date'], guestCount: meta['Guest Count'] };
 }
 
-function MessagesModule({ vendor, threads: initialThreads = [], onPortalChange }: any) {
-  const [activeId, setActiveId] = useState(initialThreads[0]?.id || '');
-  const [replyText, setReplyText] = useState('');
-  const [readIds, setReadIds] = useState<Record<string, boolean>>({});
+function LeadsModule({ vendorId, quoteRequests, unlockedContactIds, points, pointRequests, onPortalChange }: {
+  vendorId: string;
+  quoteRequests: any[];
+  unlockedContactIds: string[];
+  points: { balance: number };
+  pointRequests: any[];
+  onPortalChange: (data: any) => void;
+}) {
+  const [unlocking, setUnlocking] = useState<string | null>(null);
+  const [showPointReq, setShowPointReq] = useState(false);
+  const [prPoints, setPrPoints] = useState('5');
+  const [prNote, setPrNote] = useState('');
+  const [prSaving, setPrSaving] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const threads = initialThreads.map((thread: any) => ({
-    ...thread,
-    unread: thread.unread && !readIds[thread.id],
-    lastMessage: thread.messages?.[thread.messages.length - 1]?.body?.split('\n')[0] || 'No messages yet.',
-  }));
-  const active = threads.find((t: any) => t.id === activeId) || threads[0];
-  const activeMeta: { clean?: string; weddingDate?: string; guestCount?: string } = active?.messages?.[0]?.body ? extractMeta(active.messages[0].body) : {};
-
-  async function patchPortal(payload: any) {
-    const res = await fetch(`/api/vendors/${vendor.id}/portal`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Message update failed.');
-    onPortalChange(data);
-    return data;
-  }
-
-  async function openThread(id: string) {
-    setActiveId(id);
-    setReadIds(prev => ({ ...prev, [id]: true }));
+  async function handleUnlock(quoteRequestId: string) {
+    if (points.balance < 1) { setError('Insufficient points. Request more points from admin.'); return; }
+    setUnlocking(quoteRequestId);
     setError('');
     try {
-      await patchPortal({ messageRead: { threadId: id } });
+      const res = await fetch(`/api/vendors/${vendorId}/portal`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ unlockContact: { quoteRequestId } }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Unlock failed.');
+      onPortalChange(json);
+      setNotice('Contact details unlocked!');
     } catch (err: any) {
-      setError(err.message || 'Message update failed.');
-    }
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
-  }
-
-  async function sendReply() {
-    if (!active || !replyText.trim()) return;
-    setSaving(true);
-    setError('');
-    setNotice('');
-    try {
-      await patchPortal({ messageReply: { threadId: active.id, message: replyText } });
-      setReplyText('');
-      setNotice('Reply sent.');
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 80);
-    } catch (err: any) {
-      setError(err.message || 'Message send failed.');
+      setError(err.message || 'Unlock failed.');
     } finally {
-      setSaving(false);
+      setUnlocking(null);
     }
   }
 
-  const inboxStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '300px 1fr',
-    gap: 0,
-    border: '1px solid var(--adm-border)',
-    borderRadius: 16,
-    overflow: 'hidden',
-    minHeight: 520,
-    background: 'var(--adm-card-bg)',
-  };
-  const listPanelStyle: React.CSSProperties = {
-    borderRight: '1px solid var(--adm-border)',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  };
-  const listHeaderStyle: React.CSSProperties = {
-    padding: '16px 18px',
-    borderBottom: '1px solid var(--adm-border)',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  };
-  const chatPanelStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  };
-  const chatHeaderStyle: React.CSSProperties = {
-    padding: '14px 20px',
-    borderBottom: '1px solid var(--adm-border)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-  };
-  const bubbleAreaStyle: React.CSSProperties = {
-    flex: 1,
-    overflowY: 'auto',
-    padding: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-  };
-  const replyAreaStyle: React.CSSProperties = {
-    borderTop: '1px solid var(--adm-border)',
-    padding: '14px 16px',
-    display: 'flex',
-    gap: 10,
-    alignItems: 'flex-end',
-  };
+  async function handlePointRequest(e: React.FormEvent) {
+    e.preventDefault();
+    const n = Number(prPoints);
+    if (!n || n < 1) { setError('Enter a valid number of points.'); return; }
+    setPrSaving(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/vendors/${vendorId}/portal`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestPoints: { pointsRequested: n, note: prNote } }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Request failed.');
+      onPortalChange(json);
+      setShowPointReq(false);
+      setPrPoints('5');
+      setPrNote('');
+      setNotice('Point request sent to admin.');
+    } catch (err: any) {
+      setError(err.message || 'Request failed.');
+    } finally {
+      setPrSaving(false);
+    }
+  }
+
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
   return (
-    <section className={styles.moduleSection}>
-      <OpsStyles />
-      <div className={styles.pageHeader}>
+    <div>
+      <style>{`
+        .leadsHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: .5rem; }
+        .leadsBal { font-size: .875rem; color: #374151; }
+        .leadsBal strong { color: #111827; }
+        .leadsReqBtn { padding: .4rem .9rem; background: #F3F4F6; border: 1px solid #D1D5DB; border-radius: 6px; font-size: .8rem; font-weight: 600; cursor: pointer; color: #374151; }
+        .leadsReqBtn:hover { background: #E5E7EB; }
+        .leadsCard { background: white; border: 1px solid #E5E7EB; border-radius: 8px; padding: 1rem; margin-bottom: .75rem; }
+        .leadsMeta { font-size: .8rem; color: #9CA3AF; margin-bottom: .5rem; }
+        .leadsName { font-weight: 700; font-size: .95rem; color: #111827; margin-bottom: .25rem; }
+        .leadsMsg { font-size: .85rem; color: #4B5563; margin-bottom: .75rem; white-space: pre-wrap; }
+        .leadsContact { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+        .leadsBlur { filter: blur(5px); user-select: none; font-size: .85rem; color: #374151; background: #F9FAFB; padding: .25rem .5rem; border-radius: 4px; }
+        .leadsRevealed { font-size: .85rem; color: #374151; background: #F0FDF4; padding: .25rem .5rem; border-radius: 4px; border: 1px solid #BBF7D0; }
+        .leadsUnlockBtn { padding: .3rem .8rem; background: #111827; color: white; border: none; border-radius: 6px; font-size: .8rem; font-weight: 600; cursor: pointer; }
+        .leadsUnlockBtn:disabled { opacity: .5; cursor: not-allowed; }
+        .leadsEmpty { text-align: center; padding: 3rem 1rem; color: #9CA3AF; font-size: .9rem; }
+        .prForm { background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .prFormTitle { font-weight: 700; font-size: .9rem; margin: 0 0 .75rem; color: #111827; }
+        .prRow { display: flex; gap: .5rem; align-items: flex-end; flex-wrap: wrap; }
+        .prInput { padding: .4rem .65rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: .85rem; width: 80px; font-family: inherit; outline: none; }
+        .prNoteInput { padding: .4rem .65rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: .85rem; flex: 1; min-width: 140px; font-family: inherit; outline: none; }
+        .prSubmit { padding: .4rem .9rem; background: #111827; color: white; border: none; border-radius: 6px; font-size: .8rem; font-weight: 600; cursor: pointer; }
+        .prSubmit:disabled { opacity: .5; }
+        .prCancel { padding: .4rem .9rem; background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; border-radius: 6px; font-size: .8rem; font-weight: 600; cursor: pointer; }
+        .leadsNotice { color: #16A34A; font-size: .85rem; margin-bottom: .5rem; }
+        .leadsError { color: #DC2626; font-size: .85rem; margin-bottom: .5rem; }
+        .prHistItem { font-size: .8rem; color: #6B7280; padding: .2rem 0; }
+        .prHistBadge { display: inline-block; padding: .1rem .4rem; border-radius: 4px; font-size: .75rem; font-weight: 600; margin-left: .4rem; }
+        .prHistPending { background: #FEF3C7; color: #92400E; }
+        .prHistApproved { background: #D1FAE5; color: #065F46; }
+        .prHistRejected { background: #FEE2E2; color: #991B1B; }
+      `}</style>
+
+      <div className="leadsHeader">
         <div>
-          <h1 className={styles.pageTitle}>Messages</h1>
-          <p className={styles.pageSubtitle}>Couple enquiry inbox for {vendor.businessName}.</p>
+          <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#111827', marginBottom: 2 }}>Quote Requests</div>
+          <div className="leadsBal">Points balance: <strong>{points.balance}</strong> — 1 point unlocks one lead&apos;s contact</div>
         </div>
+        <button className="leadsReqBtn" onClick={() => setShowPointReq(v => !v)}>
+          {showPointReq ? 'Cancel' : '+ Request Points'}
+        </button>
       </div>
-      {notice && <div className="opsNotice"><Check size={15} /> {notice}</div>}
-      {error && <div className="opsNotice error"><AlertCircle size={15} /> {error}</div>}
-      {threads.length === 0 ? (
-        <EmptyState icon={<MessageSquare size={30} />} title="No enquiries yet" desc="Messages from shortlisted couples and booking requests will appear here." />
-      ) : (
-        <div style={inboxStyle}>
-          {/* ─── Left: thread list ─── */}
-          <div style={listPanelStyle}>
-            <div style={listHeaderStyle}>
-              <span style={{ fontWeight: 700, fontSize: 14 }}>Inbox</span>
-              <span style={{ fontSize: 12, color: 'var(--adm-text-muted)', background: 'var(--adm-hover-bg)', borderRadius: 20, padding: '2px 10px' }}>
-                {threads.filter((t: any) => t.unread).length} unread
-              </span>
-            </div>
-            <div style={{ overflowY: 'auto', flex: 1 }}>
-              {threads.map((thread: any) => {
-                const isActive = active?.id === thread.id;
-                return (
-                  <button
-                    key={thread.id}
-                    onClick={() => openThread(thread.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '14px 16px',
-                      background: isActive ? 'var(--adm-hover-bg)' : 'transparent',
-                      borderLeft: isActive ? '3px solid var(--inv-rose, #e86a8a)' : '3px solid transparent',
-                      border: 'none', borderBottom: '1px solid var(--adm-border)', cursor: 'pointer', textAlign: 'left',
-                    }}
-                  >
-                    <div style={{
-                      width: 40, height: 40, borderRadius: '50%', background: '#2d3748',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0, color: '#e2e8f0', fontWeight: 700, fontSize: 13,
-                    }}>
-                      {avatarInitials(thread.coupleName)}
-                    </div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                        <span style={{ fontWeight: thread.unread ? 700 : 500, fontSize: 14, color: 'var(--adm-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 130 }}>{thread.coupleName}</span>
-                        <span style={{ fontSize: 11, color: 'var(--adm-text-muted)', flexShrink: 0 }}>{timeAgo(thread.lastMessageAt)}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 12, color: 'var(--adm-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{thread.lastMessage}</span>
-                        {thread.unread && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#e86a8a', flexShrink: 0, display: 'inline-block' }} />}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* ─── Right: chat panel ─── */}
-          <div style={chatPanelStyle}>
-            {active ? (
-              <>
-                <div style={chatHeaderStyle}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#2d3748', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e2e8f0', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-                    {avatarInitials(active.coupleName)}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--adm-text)' }}>{active.coupleName}</div>
-                    <div style={{ fontSize: 12, color: 'var(--adm-text-muted)', display: 'flex', gap: 12, marginTop: 2 }}>
-                      {activeMeta.weddingDate && <span>📅 {activeMeta.weddingDate}</span>}
-                      {activeMeta.guestCount && <span>👥 {activeMeta.guestCount} guests</span>}
-                      {!activeMeta.weddingDate && !activeMeta.guestCount && <span>{active.subject}</span>}
-                    </div>
-                  </div>
-                </div>
+      {notice && <div className="leadsNotice">{notice}</div>}
+      {error && <div className="leadsError">{error}</div>}
 
-                <div style={bubbleAreaStyle}>
-                  {active.messages?.map((msg: any) => {
-                    const isVendor = msg.sender === 'vendor';
-                    const { clean } = extractMeta(msg.body);
-                    return (
-                      <div key={msg.id} style={{ display: 'flex', justifyContent: isVendor ? 'flex-end' : 'flex-start' }}>
-                        <div style={{
-                          maxWidth: '72%', padding: '10px 14px', borderRadius: isVendor ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
-                          background: isVendor ? 'var(--inv-rose, #e86a8a)' : 'var(--adm-hover-bg)',
-                          color: isVendor ? '#fff' : 'var(--adm-text)',
-                          fontSize: 14, lineHeight: 1.55,
-                        }}>
-                          <div style={{ whiteSpace: 'pre-wrap' }}>{clean}</div>
-                          <div style={{ fontSize: 11, opacity: .65, marginTop: 4, textAlign: 'right' }}>{timeAgo(msg.createdAt)}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                <div style={replyAreaStyle}>
-                  <textarea
-                    style={{ flex: 1, border: '1px solid var(--adm-border)', borderRadius: 10, padding: '10px 12px', fontSize: 14, resize: 'none', background: 'var(--adm-card-bg)', color: 'var(--adm-text)', fontFamily: 'inherit', lineHeight: 1.5, outline: 'none' }}
-                    rows={3}
-                    value={replyText}
-                    onChange={e => setReplyText(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendReply(); }}
-                    placeholder="Write a reply… (Ctrl+Enter to send)"
-                  />
-                  <button
-                    className={`${styles.btn} ${styles.btnPrimary}`}
-                    onClick={sendReply}
-                    disabled={saving || !replyText.trim()}
-                    style={{ alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: 6 }}
-                  >
-                    {saving ? <><RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Sending</> : <><Send size={14} /> Send Reply</>}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--adm-text-muted)', fontSize: 14 }}>
-                Select a conversation to view messages.
+      {showPointReq && (
+        <div className="prForm">
+          <div className="prFormTitle">Request Points from Admin</div>
+          <form onSubmit={handlePointRequest}>
+            <div className="prRow">
+              <div>
+                <div style={{ fontSize: '.75rem', color: '#6B7280', marginBottom: 2 }}>Points</div>
+                <input className="prInput" type="number" min={1} value={prPoints} onChange={e => setPrPoints(e.target.value)} />
               </div>
-            )}
-          </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '.75rem', color: '#6B7280', marginBottom: 2 }}>Note (optional)</div>
+                <input className="prNoteInput" value={prNote} onChange={e => setPrNote(e.target.value)} placeholder="e.g. payment ref #12345" />
+              </div>
+              <button type="submit" className="prSubmit" disabled={prSaving}>{prSaving ? 'Sending…' : 'Send Request'}</button>
+              <button type="button" className="prCancel" onClick={() => setShowPointReq(false)}>Cancel</button>
+            </div>
+          </form>
+          {pointRequests.length > 0 && (
+            <div style={{ marginTop: '.75rem', borderTop: '1px solid #E5E7EB', paddingTop: '.5rem' }}>
+              <div style={{ fontSize: '.75rem', color: '#9CA3AF', marginBottom: 2 }}>Recent requests:</div>
+              {pointRequests.slice(0, 5).map((r: any) => (
+                <div key={r.id} className="prHistItem">
+                  {r.pointsRequested} pts — {fmt(r.createdAt)}
+                  <span className={`prHistBadge prHist${r.status.charAt(0).toUpperCase() + r.status.slice(1)}`}>{r.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
-    </section>
+
+      {quoteRequests.length === 0 ? (
+        <div className="leadsEmpty">No quote requests yet. When couples fill in your quote form, they&apos;ll appear here.</div>
+      ) : (
+        quoteRequests.map((qr: any) => {
+          const unlocked = unlockedContactIds.includes(qr.id);
+          return (
+            <div key={qr.id} className="leadsCard">
+              <div className="leadsMeta">{fmt(qr.createdAt)} · {qr.eventType || 'Event'} · {qr.eventDate || 'Date TBC'}{qr.guestCount ? ` · ${qr.guestCount} guests` : ''}</div>
+              <div className="leadsName">{qr.name}</div>
+              {qr.message && <div className="leadsMsg">{qr.message}</div>}
+              <div className="leadsContact">
+                {unlocked ? (
+                  <>
+                    <span className="leadsRevealed">📧 {qr.email}</span>
+                    <span className="leadsRevealed">📱 {qr.mobile}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="leadsBlur">email@hidden.com</span>
+                    <span className="leadsBlur">+94 77 xxx xxxx</span>
+                    <button
+                      className="leadsUnlockBtn"
+                      disabled={unlocking === qr.id}
+                      onClick={() => handleUnlock(qr.id)}
+                    >
+                      {unlocking === qr.id ? 'Unlocking…' : 'Unlock (1 point)'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
   );
 }
 
