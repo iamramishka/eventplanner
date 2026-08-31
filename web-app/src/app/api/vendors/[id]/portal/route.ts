@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  appendVendorMessage,
   getVendorById,
   getVendorPortalData,
-  markMessageThreadRead,
+  unlockContact,
+  createPointRequest,
   updateBookingStatus,
   updateAvailability,
   updateSettings,
@@ -20,7 +20,6 @@ export async function GET(
     if (!getVendorById(id)) {
       return NextResponse.json({ error: 'Vendor not found.' }, { status: 404 });
     }
-
     return NextResponse.json(getVendorPortalData(id));
   } catch (err) {
     console.error('[GET /api/vendors/[id]/portal]', err);
@@ -35,11 +34,13 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    if (!getVendorById(id)) {
+    const vendor = getVendorById(id);
+    if (!vendor) {
       return NextResponse.json({ error: 'Vendor not found.' }, { status: 404 });
     }
 
     const body = await req.json();
+
     if (body.bookingStatus) {
       const bookingId = String(body.bookingStatus.bookingId || '');
       const status = String(body.bookingStatus.status || '') as VendorBookingStatus;
@@ -50,26 +51,32 @@ export async function PATCH(
         return NextResponse.json({ error: 'Booking not found.' }, { status: 404 });
       }
     }
-    if (body.messageRead) {
-      const threadId = String(body.messageRead.threadId || '');
-      if (!threadId) return NextResponse.json({ error: 'threadId required.' }, { status: 400 });
-      if (!markMessageThreadRead(id, threadId)) {
-        return NextResponse.json({ error: 'Message thread not found.' }, { status: 404 });
+
+    if (body.unlockContact) {
+      const quoteRequestId = String(body.unlockContact.quoteRequestId || '');
+      if (!quoteRequestId) {
+        return NextResponse.json({ error: 'quoteRequestId is required.' }, { status: 400 });
+      }
+      const result = unlockContact(id, quoteRequestId);
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error || 'Unlock failed.' }, { status: 402 });
       }
     }
-    if (body.messageReply) {
-      const threadId = String(body.messageReply.threadId || '');
-      const message = String(body.messageReply.message || '');
-      if (!threadId || !message.trim()) {
-        return NextResponse.json({ error: 'threadId and message are required.' }, { status: 400 });
+
+    if (body.requestPoints) {
+      const pointsRequested = Number(body.requestPoints.pointsRequested);
+      const note = String(body.requestPoints.note || '').trim();
+      if (!pointsRequested || pointsRequested < 1) {
+        return NextResponse.json({ error: 'pointsRequested must be a positive number.' }, { status: 400 });
       }
-      if (!appendVendorMessage(id, threadId, message)) {
-        return NextResponse.json({ error: 'Message thread not found.' }, { status: 404 });
-      }
+      const vendorName = `${vendor.ownerFirstName || ''} ${vendor.ownerLastName || ''}`.trim() || vendor.businessName || id;
+      createPointRequest(id, vendorName, pointsRequested, note);
     }
+
     if (body.availability) {
       updateAvailability(id, body.availability);
     }
+
     if (body.settings) {
       updateSettings(id, body.settings);
     }
