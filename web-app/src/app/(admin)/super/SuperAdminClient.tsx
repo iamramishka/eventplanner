@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
-import { 
-  LayoutDashboard, Users, Briefcase, LayoutTemplate, CreditCard, Trash2, 
+import {
+  LayoutDashboard, Users, Briefcase, LayoutTemplate, CreditCard, Trash2,
   Settings, ShieldCheck, ShieldOff, PanelLeftClose, User,
   Menu, ChevronRight, LogOut, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle,
-  Search, Plus, Save, Check, X, Star, Eye, RefreshCw, Scroll
+  Search, Plus, Save, Check, X, Star, Eye, RefreshCw, Scroll,
+  UserPlus, Download, CheckCircle, Coins
 } from 'lucide-react';
 import styles from './admin.module.css';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -27,8 +28,6 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
   const [activeModule, setActiveModule] = useState('dashboard');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [simulateLoading, setSimulateLoading] = useState(false);
-  const [simulateEmpty, setSimulateEmpty] = useState(false);
   const [platformSettings, setPlatformSettings] = useState(initialSettings || {});
   
   const handleNavClick = (mod: string) => {
@@ -37,10 +36,21 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
   };
   
   const pendingVendors = initialVendors.filter((v: any) => v.status === 'pending' || v.status === 'pending_review').length;
+  const [allPointRequests, setAllPointRequests] = useState<any[]>([]);
+  const pendingPointRequests = allPointRequests.filter((r: any) => r.status === 'pending').length;
+
+  useEffect(() => {
+    fetch('/api/admin/points/requests')
+      .then(r => r.json())
+      .then(d => { if (d.requests) setAllPointRequests(d.requests); })
+      .catch(() => {});
+  }, []);
+
   const labels: Record<string, string> = {
     dashboard: 'Dashboard', couples: 'Couples', vendors: 'Vendors',
     templates: 'Templates', analytics: 'Analytics', plans: 'Plans', cleanup: 'Trial Cleanup',
-    cms: 'Content CMS', reports: 'Reports', settings: 'Settings', logs: 'Logs'
+    revenue: 'Revenue', cms: 'Content CMS', reports: 'Reports', settings: 'Settings', logs: 'Logs',
+    points: 'Points'
   };
   
   return (
@@ -66,11 +76,13 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
           <NavItem id="dashboard" icon={<LayoutDashboard size={18} />} label="Dashboard" active={activeModule} onClick={handleNavClick} />
           <NavItem id="couples" icon={<Users size={18} />} label="Couples" active={activeModule} onClick={handleNavClick} />
           <NavItem id="vendors" icon={<Briefcase size={18} />} label="Vendors" active={activeModule} onClick={handleNavClick} badge={pendingVendors} />
+          <NavItem id="points" icon={<Coins size={18} />} label="Points" active={activeModule} onClick={handleNavClick} badge={pendingPointRequests} />
           <NavItem id="templates" icon={<LayoutTemplate size={18} />} label="Templates" active={activeModule} onClick={handleNavClick} />
           <NavItem id="analytics" icon={<TrendingUp size={18} />} label="Analytics" active={activeModule} onClick={handleNavClick} />
 
           <div className={cn("nav-section-label")}>Commerce</div>
           <NavItem id="plans" icon={<CreditCard size={18} />} label="Plans" active={activeModule} onClick={handleNavClick} />
+          <NavItem id="revenue" icon={<TrendingUp size={18} />} label="Revenue" active={activeModule} onClick={handleNavClick} />
           <NavItem id="cleanup" icon={<Trash2 size={18} />} label="Trial Cleanup" active={activeModule} onClick={handleNavClick} />
           
           <div className={cn("nav-section-label")}>System</div>
@@ -106,12 +118,6 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
               <ShieldCheck size={14} /> Super Admin
             </div>
             <div style={{display:'flex', gap:8, alignItems:'center'}}>
-              <button className={cn("btn", "btn-ghost", "btn-sm")} onClick={() => setSimulateLoading(s => !s)}>
-                {simulateLoading ? 'Stop Loading' : 'Simulate Loading'}
-              </button>
-              <button className={cn("btn", "btn-ghost", "btn-sm")} onClick={() => setSimulateEmpty(s => !s)}>
-                {simulateEmpty ? 'Restore Data' : 'Simulate Empty'}
-              </button>
               <button className={cn("btn", "btn-ghost", "btn-sm")} onClick={() => signOut({ callbackUrl: '/login' })}>
                 <LogOut size={16} /> <span>Logout</span>
               </button>
@@ -120,15 +126,17 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
         </header>
 
         <main className={cn("page-content")}>
-          {activeModule === 'dashboard' && <DashboardModule couples={simulateEmpty ? [] : initialCouples} vendors={simulateEmpty ? [] : initialVendors} weddings={simulateEmpty ? [] : initialWeddings} loading={simulateLoading} />}
+          {activeModule === 'dashboard' && <DashboardModule couples={initialCouples} vendors={initialVendors} weddings={initialWeddings} loading={false} />}
           {activeModule === 'couples' && <CouplesModule couples={initialCouples} platformSettings={platformSettings} />}
           {activeModule === 'vendors' && <VendorsModule vendors={initialVendors} />}
           {activeModule === 'templates' && <TemplatesModule initialSettings={platformSettings} />}
           {activeModule === 'plans' && <PlansModule initialPlans={initialPlans} />}
           {activeModule === 'cleanup' && <CleanupModule />}
+          {activeModule === 'revenue' && <RevenueModule />}
           {activeModule === 'settings' && <SettingsModule initialSettings={platformSettings} onSaved={setPlatformSettings} />}
           {activeModule === 'logs' && <LogsModule />}
           {activeModule === 'analytics' && <AnalyticsModule />}
+          {activeModule === 'points' && <PointsModule requests={allPointRequests} onRequestsChange={setAllPointRequests} />}
         </main>
       </div>
     </div>
@@ -145,59 +153,217 @@ function NavItem({ id, icon, label, active, onClick, badge }: any) {
   );
 }
 
-function DashboardModule({ couples, vendors, loading }: any) {
-  const activeTrials = loading ? null : couples.filter((c: any) => c.plan === 'trial' && new Date(c.trialEnds) >= new Date()).length;
-  const expiredTrials = loading ? null : couples.filter((c: any) => c.plan === 'trial' && new Date(c.trialEnds) < new Date()).length;
-  
+function DashboardModule({ couples, vendors }: any) {
+  const [signups, setSignups] = useState<{ date: string; count: number }[]>([]);
+  const [rsvps, setRsvps] = useState<{ date: string; count: number }[]>([]);
+  const [funnel, setFunnel] = useState<{ step: string; count: number; pct: number }[]>([]);
+  const [health, setHealth] = useState<any>(null);
+  const [activity, setActivity] = useState<any[]>([]);
+  const [loadingCharts, setLoadingCharts] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      setLoadingCharts(true);
+      try {
+        const [s, r, f, h, logs] = await Promise.all([
+          fetch('/api/admin/analytics/signups').then(x => x.json()),
+          fetch('/api/admin/analytics/rsvps').then(x => x.json()),
+          fetch('/api/admin/analytics/onboarding').then(x => x.json()),
+          fetch('/api/admin/analytics/health').then(x => x.json()),
+          fetch('/api/admin/logs?limit=15').then(x => x.json()),
+        ]);
+        setSignups(s); setRsvps(r); setFunnel(f); setHealth(h);
+        setActivity(Array.isArray(logs) ? logs : (logs.logs || []));
+      } catch {}
+      setLoadingCharts(false);
+    }
+    void load();
+    const interval = setInterval(() => void load(), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const now = new Date();
+  const activeTrials = couples.filter((c: any) => c.plan === 'trial' && new Date(c.trialEnds) >= now).length;
+  const expiring7 = couples.filter((c: any) => {
+    const end = new Date(c.trialEnds);
+    const diff = (end.getTime() - now.getTime()) / 86400000;
+    return c.plan === 'trial' && diff >= 0 && diff <= 7;
+  }).length;
+  const premium = couples.filter((c: any) => c.plan === 'premium').length;
+  const pending = vendors.filter((v: any) => v.status === 'pending' || v.status === 'pending_review').length;
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const signupsToday = signups.find(s => s.date === todayStart.toISOString().slice(0,10))?.count ?? 0;
+  const rsvpsToday = rsvps.find(s => s.date === todayStart.toISOString().slice(0,10))?.count ?? 0;
+
+  const maxSignup = Math.max(1, ...signups.map(s => s.count));
+  const maxRsvp = Math.max(1, ...rsvps.map(s => s.count));
+
   return (
-    <section className={cn("module")}>
-      <div className={cn("module-header")}>
+    <section className={cn('module')}>
+      <div className={cn('module-header')}>
         <div>
-          <h1 className={cn("module-title")}>Dashboard Overview</h1>
-          <p className={cn("module-desc")}>Platform health at a glance</p>
+          <h1 className={cn('module-title')}>Dashboard Overview</h1>
+          <p className={cn('module-desc')}>Platform health at a glance</p>
+        </div>
+        <div className={cn('module-actions')}>
+          <button className={cn('btn','btn-ghost','btn-sm')} onClick={() => window.location.reload()}>
+            <RefreshCw size={14} /> Refresh
+          </button>
         </div>
       </div>
 
-      <div className={cn("kpi-grid")}>
-        <KpiCard loading={loading} color="blue" icon={<Users size={22}/>} value={loading ? null : couples.length} label="Total Couples" trend="+12%" up />
-        <KpiCard loading={loading} color="amber" icon={<Clock size={22}/>} value={activeTrials} label="Active Trials" trend="+5%" up />
-        <KpiCard loading={loading} color="red" icon={<AlertTriangle size={22}/>} value={expiredTrials} label="Expired Trials" trend="3 new" down />
-        <KpiCard loading={loading} color="purple" icon={<Briefcase size={22}/>} value={loading ? null : vendors.length} label="Total Vendors" trend="+8%" up />
+      {/* KPI Row 1 */}
+      <div className={cn('kpi-grid')}>
+        <KpiCard color="blue"   icon={<Users size={22}/>}         value={couples.length}   label="Total Couples"       trend={`+${signupsToday} today`} up={signupsToday > 0} />
+        <KpiCard color="amber"  icon={<Clock size={22}/>}         value={activeTrials}     label="Active Trials"       trend={`${expiring7} expiring`} down={expiring7 > 0} />
+        <KpiCard color="green"  icon={<CheckCircle size={22}/>}   value={premium}          label="Premium"             trend="subscribers" />
+        <KpiCard color="purple" icon={<Briefcase size={22}/>}     value={vendors.length}   label="Total Vendors"       trend={`${pending} pending`} down={pending > 0} />
       </div>
 
-      <div className={cn("chart-grid-2")}>
-        <div className={cn("chart-card")}>
-          <div className={cn("chart-card-header")}>
-            <h3 className={cn("chart-title")}>User Growth</h3>
-            <div className={cn("chart-badge")}>Monthly</div>
+      {/* KPI Row 2 */}
+      <div className={cn('kpi-grid')} style={{ marginTop: 12 }}>
+        <KpiCard color="teal"   icon={<UserPlus size={22}/>}      value={signupsToday}     label="Signups Today"       trend="new registrations" up={signupsToday > 0} />
+        <KpiCard color="rose"   icon={<Check size={22}/>}         value={rsvpsToday}       label="RSVPs Today"         trend="responses received" up={rsvpsToday > 0} />
+        <KpiCard color="red"    icon={<AlertTriangle size={22}/>} value={expiring7}        label="Expiring in 7 Days"  trend="need attention" down={expiring7 > 0} />
+        <KpiCard color="slate"  icon={<ShieldCheck size={22}/>}   value={health?.db ? 1 : 0} label="DB Status"        trend={health?.db ? 'Connected' : 'Error'} up={health?.db} down={!health?.db} />
+      </div>
+
+      {/* Quick Actions */}
+      <div className={cn('quick-actions-bar')}>
+        <span className={cn('quick-actions-label')}>Quick Actions</span>
+        {pending > 0 && (
+          <button className={cn('btn','btn-sm','btn-outline')}>
+            <Eye size={14} /> Review {pending} Pending Vendors
+          </button>
+        )}
+        {expiring7 > 0 && (
+          <button className={cn('btn','btn-sm','btn-outline')}>
+            <AlertTriangle size={14} /> {expiring7} Trials Expiring Soon
+          </button>
+        )}
+        <button className={cn('btn','btn-sm','btn-outline')}>
+          <Download size={14} /> Download Monthly Report
+        </button>
+      </div>
+
+      {/* Charts row */}
+      <div className={cn('chart-grid-2')}>
+        <div className={cn('chart-card')}>
+          <div className={cn('chart-card-header')}>
+            <h3 className={cn('chart-title')}>Couple Signups — Last 30 Days</h3>
+            <div className={cn('chart-badge')}>Daily</div>
           </div>
-          <div style={{ height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>Chart Placeholder</div>
+          {loadingCharts ? (
+            <div className={cn('chart-placeholder-loading')}>Loading...</div>
+          ) : (
+            <div className={cn('bar-chart-wrap')}>
+              <svg viewBox={`0 0 ${signups.length * 14} 80`} className={cn('bar-chart-svg')}>
+                {signups.map((s, i) => {
+                  const h = s.count === 0 ? 2 : Math.max(4, (s.count / maxSignup) * 72);
+                  return (
+                    <rect key={i} x={i * 14 + 1} y={80 - h} width={11} height={h}
+                      fill={s.date === todayStart.toISOString().slice(0,10) ? '#E24B6D' : '#93C5FD'}
+                      rx={2}>
+                      <title>{s.date}: {s.count}</title>
+                    </rect>
+                  );
+                })}
+              </svg>
+              <div className={cn('chart-axis-labels')}>
+                <span>{signups[0]?.date?.slice(5)}</span>
+                <span>Today</span>
+              </div>
+            </div>
+          )}
         </div>
-        <div className={cn("chart-card")}>
-          <div className={cn("chart-card-header")}>
-            <h3 className={cn("chart-title")}>Activity Feed</h3>
-            <div className={cn("chart-badge")}>Live</div>
+
+        <div className={cn('chart-card')}>
+          <div className={cn('chart-card-header')}>
+            <h3 className={cn('chart-title')}>RSVP Submissions — Last 30 Days</h3>
+            <div className={cn('chart-badge')}>Daily</div>
           </div>
-          <div className={cn("activity-feed")}>
-            <div className={cn("activity-item")}>
-              <div className={cn("activity-dot")} style={{ background: '#10B981' }}></div>
-              <div className={cn("activity-content")}>
-                <div className={cn("activity-text")}>New couple registered: Priya & Kasun</div>
-                <div className={cn("activity-time")}>14 mins ago</div>
+          {loadingCharts ? (
+            <div className={cn('chart-placeholder-loading')}>Loading...</div>
+          ) : (
+            <div className={cn('bar-chart-wrap')}>
+              <svg viewBox={`0 0 ${rsvps.length * 14} 80`} className={cn('bar-chart-svg')}>
+                {rsvps.map((s, i) => {
+                  const h = s.count === 0 ? 2 : Math.max(4, (s.count / maxRsvp) * 72);
+                  return (
+                    <rect key={i} x={i * 14 + 1} y={80 - h} width={11} height={h}
+                      fill={s.date === todayStart.toISOString().slice(0,10) ? '#10B981' : '#6EE7B7'}
+                      rx={2}>
+                      <title>{s.date}: {s.count}</title>
+                    </rect>
+                  );
+                })}
+              </svg>
+              <div className={cn('chart-axis-labels')}>
+                <span>{rsvps[0]?.date?.slice(5)}</span>
+                <span>Today</span>
               </div>
             </div>
-            <div className={cn("activity-item")}>
-              <div className={cn("activity-dot")} style={{ background: '#F59E0B' }}></div>
-              <div className={cn("activity-content")}>
-                <div className={cn("activity-text")}>Vendor &quot;SweetBites&quot; pending approval</div>
-                <div className={cn("activity-time")}>2 hours ago</div>
+          )}
+        </div>
+      </div>
+
+      {/* Onboarding Funnel */}
+      <div className={cn('chart-card')} style={{ marginTop: 16 }}>
+        <div className={cn('chart-card-header')}>
+          <h3 className={cn('chart-title')}>Couple Onboarding Funnel</h3>
+          <div className={cn('chart-badge')}>All time</div>
+        </div>
+        <div className={cn('funnel-list')}>
+          {funnel.map((step) => (
+            <div key={step.step} className={cn('funnel-row')}>
+              <span className={cn('funnel-label')}>{step.step}</span>
+              <div className={cn('funnel-bar-track')}>
+                <div className={cn('funnel-bar-fill')} style={{ width: `${step.pct}%` }} />
               </div>
+              <span className={cn('funnel-pct')}>{step.pct}%</span>
+              <span className={cn('funnel-count')}>{step.count}</span>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Activity Feed */}
+      <div className={cn('chart-card')} style={{ marginTop: 16 }}>
+        <div className={cn('chart-card-header')}>
+          <h3 className={cn('chart-title')}>Recent Activity</h3>
+          <div className={cn('chart-badge')}>Live · auto-refresh 60s</div>
+        </div>
+        <div className={cn('activity-feed')}>
+          {activity.length === 0 ? (
+            <p style={{ color: '#94A3B8', fontSize: 14, padding: '12px 0' }}>No recent activity.</p>
+          ) : activity.slice(0, 12).map((log: any, i: number) => {
+            const isError = log.action?.toLowerCase().includes('delete') || log.action?.toLowerCase().includes('error');
+            const isWarning = log.action?.toLowerCase().includes('suspend') || log.action?.toLowerCase().includes('pending');
+            const dot = isError ? '#EF4444' : isWarning ? '#F59E0B' : '#10B981';
+            const when = log.createdAt ? new Date(log.createdAt) : null;
+            const ago = when ? getRelativeTime(when) : '';
+            return (
+              <div key={i} className={cn('activity-item')}>
+                <div className={cn('activity-dot')} style={{ background: dot }} />
+                <div className={cn('activity-content')}>
+                  <div className={cn('activity-text')}>{log.action || log.details || 'System event'}</div>
+                  <div className={cn('activity-time')}>{ago}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
   );
+}
+
+function getRelativeTime(date: Date): string {
+  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 }
 
 function KpiCard({ color, icon, value, label, trend, up, down, loading }: any) {
@@ -1050,6 +1216,241 @@ function CleanupModule() {
                 </ul>
               </div>
             )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PointsModule({ requests, onRequestsChange }: { requests: any[]; onRequestsChange: (r: any[]) => void }) {
+  const [settings, setSettings] = useState<{ pointsPerUnlock: number } | null>(null);
+  const [newCost, setNewCost] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [reviewing, setReviewing] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetch('/api/admin/points/settings')
+      .then(r => r.json())
+      .then(d => { if (d.settings) { setSettings(d.settings); setNewCost(String(d.settings.pointsPerUnlock)); } })
+      .catch(() => {});
+  }, []);
+
+  async function handleReview(requestId: string, action: 'approve' | 'reject') {
+    setReviewing(requestId);
+    setError('');
+    setNotice('');
+    try {
+      const res = await fetch('/api/admin/points/requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed.');
+      const updated = await fetch('/api/admin/points/requests').then(r => r.json());
+      if (updated.requests) {
+        onRequestsChange(updated.requests);
+        setNotice(`Request ${action}d.`);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed.');
+    } finally {
+      setReviewing(null);
+    }
+  }
+
+  async function handleSaveSettings(e: React.FormEvent) {
+    e.preventDefault();
+    const n = Number(newCost);
+    if (!n || n < 1) { setError('Cost must be at least 1.'); return; }
+    setSavingSettings(true);
+    setError('');
+    setNotice('');
+    try {
+      const res = await fetch('/api/admin/points/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pointsPerUnlock: n }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed.');
+      setSettings(json.settings);
+      setNewCost(String(json.settings.pointsPerUnlock));
+      setNotice('Settings saved.');
+    } catch (err: any) {
+      setError(err.message || 'Failed.');
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  const pending = requests.filter(r => r.status === 'pending');
+  const reviewed = requests.filter(r => r.status !== 'pending');
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  return (
+    <div>
+      <style>{`
+        .ptSection { margin-bottom: 2rem; }
+        .ptSectionTitle { font-size: 1rem; font-weight: 700; color: #111827; margin: 0 0 .75rem; padding-bottom: .5rem; border-bottom: 1px solid #E5E7EB; }
+        .ptCard { background: white; border: 1px solid #E5E7EB; border-radius: 8px; padding: .875rem 1rem; margin-bottom: .5rem; display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+        .ptVendorName { font-weight: 600; font-size: .9rem; color: #111827; flex: 1; min-width: 140px; }
+        .ptMeta { font-size: .8rem; color: #6B7280; }
+        .ptActions { display: flex; gap: .5rem; }
+        .ptApprove { padding: .3rem .8rem; background: #065F46; color: white; border: none; border-radius: 6px; font-size: .8rem; font-weight: 600; cursor: pointer; }
+        .ptApprove:disabled { opacity: .5; }
+        .ptReject { padding: .3rem .8rem; background: #FEE2E2; color: #991B1B; border: none; border-radius: 6px; font-size: .8rem; font-weight: 600; cursor: pointer; }
+        .ptReject:disabled { opacity: .5; }
+        .ptBadge { display: inline-block; padding: .15rem .45rem; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+        .ptBadgePending { background: #FEF3C7; color: #92400E; }
+        .ptBadgeApproved { background: #D1FAE5; color: #065F46; }
+        .ptBadgeRejected { background: #FEE2E2; color: #991B1B; }
+        .ptSettingsForm { display: flex; gap: .75rem; align-items: flex-end; flex-wrap: wrap; }
+        .ptSettingsInput { padding: .45rem .7rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: .875rem; width: 80px; font-family: inherit; outline: none; }
+        .ptSettingsSave { padding: .45rem 1rem; background: #111827; color: white; border: none; border-radius: 6px; font-size: .875rem; font-weight: 600; cursor: pointer; }
+        .ptSettingsSave:disabled { opacity: .5; }
+        .ptNotice { color: #16A34A; font-size: .85rem; margin-bottom: .5rem; }
+        .ptError { color: #DC2626; font-size: .85rem; margin-bottom: .5rem; }
+        .ptEmpty { color: #9CA3AF; font-size: .875rem; padding: .75rem 0; }
+      `}</style>
+
+      <h2 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 1.5rem', color: '#111827' }}>Points Management</h2>
+
+      {notice && <div className="ptNotice">{notice}</div>}
+      {error && <div className="ptError">{error}</div>}
+
+      <div className="ptSection">
+        <div className="ptSectionTitle">Unlock Cost Setting</div>
+        {settings ? (
+          <form className="ptSettingsForm" onSubmit={handleSaveSettings}>
+            <div>
+              <div style={{ fontSize: '.8rem', color: '#6B7280', marginBottom: 3 }}>Points per unlock</div>
+              <input className="ptSettingsInput" type="number" min={1} value={newCost} onChange={e => setNewCost(e.target.value)} />
+            </div>
+            <button type="submit" className="ptSettingsSave" disabled={savingSettings}>
+              {savingSettings ? 'Saving…' : 'Save'}
+            </button>
+          </form>
+        ) : (
+          <div className="ptEmpty">Loading…</div>
+        )}
+      </div>
+
+      <div className="ptSection">
+        <div className="ptSectionTitle">Pending Requests ({pending.length})</div>
+        {pending.length === 0 ? (
+          <div className="ptEmpty">No pending requests.</div>
+        ) : (
+          pending.map(r => (
+            <div key={r.id} className="ptCard">
+              <div className="ptVendorName">{r.vendorName}</div>
+              <div className="ptMeta">{r.pointsRequested} points · {fmt(r.createdAt)}{r.note ? ` · "${r.note}"` : ''}</div>
+              <div className="ptActions">
+                <button className="ptApprove" disabled={reviewing === r.id} onClick={() => handleReview(r.id, 'approve')}>
+                  {reviewing === r.id ? '…' : 'Approve'}
+                </button>
+                <button className="ptReject" disabled={reviewing === r.id} onClick={() => handleReview(r.id, 'reject')}>
+                  {reviewing === r.id ? '…' : 'Reject'}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="ptSection">
+        <div className="ptSectionTitle">Reviewed</div>
+        {reviewed.length === 0 ? (
+          <div className="ptEmpty">No reviewed requests yet.</div>
+        ) : (
+          reviewed.slice(0, 20).map(r => (
+            <div key={r.id} className="ptCard">
+              <div className="ptVendorName">{r.vendorName}</div>
+              <div className="ptMeta">{r.pointsRequested} pts · {fmt(r.createdAt)}</div>
+              <span className={`ptBadge ptBadge${r.status.charAt(0).toUpperCase() + r.status.slice(1)}`}>{r.status}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RevenueModule() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [txPage, setTxPage] = useState(1);
+  const TX_PAGE = 10;
+
+  useEffect(() => {
+    fetch('/api/admin/analytics/revenue')
+      .then(r => r.json())
+      .then(setData)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const txs = data?.transactions || [];
+  const totalTxPages = Math.ceil(txs.length / TX_PAGE) || 1;
+  const pagedTxs = txs.slice((txPage - 1) * TX_PAGE, txPage * TX_PAGE);
+
+  const fmt = (n: number) => `LKR ${Number(n).toLocaleString()}`;
+
+  return (
+    <section className={cn('module')}>
+      <div className={cn('module-header')}>
+        <div>
+          <h1 className={cn('module-title')}>Revenue</h1>
+          <p className={cn('module-desc')}>Financial overview and transactions</p>
+        </div>
+      </div>
+
+      <div className={cn('kpi-grid')}>
+        <KpiCard loading={loading} color="green"  icon={<TrendingUp size={22} />}  value={loading ? null : fmt(data?.mrr || 0)}       label="MRR"           trend="monthly" />
+        <KpiCard loading={loading} color="blue"   icon={<CreditCard size={22} />} value={loading ? null : fmt(data?.total || 0)}      label="Total Revenue"  trend="all time" />
+        <KpiCard loading={loading} color="purple" icon={<TrendingUp size={22} />} value={loading ? null : fmt(data?.thisMonth || 0)}  label="This Month"     trend="current month" />
+      </div>
+
+      <div className={cn('table-card')} style={{ marginTop: 24 }}>
+        <div className={cn('table-card-header')}>
+          <h3 className={cn('table-title')}>Recent Activity</h3>
+        </div>
+        <div className={cn('table-responsive')}>
+          <table className={cn('data-table')}>
+            <thead>
+              <tr>
+                <th>Couple</th>
+                <th>Plan</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={5} style={{ textAlign: 'center', color: '#94A3B8', padding: 24 }}>Loading...</td></tr>
+              ) : pagedTxs.map((tx: any, i: number) => (
+                <tr key={i}>
+                  <td>{tx.coupleName}</td>
+                  <td><span className={cn('badge', tx.plan === 'premium' ? 'badge-green' : 'badge-gray')}>{tx.plan}</span></td>
+                  <td style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(tx.amount)}</td>
+                  <td>{tx.date}</td>
+                  <td><span className={cn('badge', tx.status === 'paid' ? 'badge-green' : 'badge-gray')}>{tx.status}</span></td>
+                </tr>
+              ))}
+              {!loading && pagedTxs.length === 0 && (
+                <tr><td colSpan={5} style={{ textAlign: 'center', color: '#94A3B8', padding: 24 }}>No transactions found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {totalTxPages > 1 && (
+          <div className={cn('pagination')}>
+            <button className={cn('page-btn')} disabled={txPage === 1} onClick={() => setTxPage(p => p - 1)}>&#8249;</button>
+            <span className={cn('page-info')}>Page {txPage} of {totalTxPages}</span>
+            <button className={cn('page-btn')} disabled={txPage === totalTxPages} onClick={() => setTxPage(p => p + 1)}>&#8250;</button>
           </div>
         )}
       </div>

@@ -282,3 +282,39 @@ model WeddingVendor {
 
   wedding         Wedding  @relation(fields: [weddingId], references: [id], onDelete: Cascade)
 }
+
+model SupportTicket {
+  id         String   @id @default(cuid())
+  subject    String
+  message    String   @db.Text
+  status     String   @default("open")
+  priority   String   @default("medium")
+  userId     String
+  adminReply String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model CouponCode {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  discountType String
+  value        Float
+  appliesTo    String    @default("all")
+  maxUses      Int?
+  usedCount    Int       @default(0)
+  expiresAt    DateTime?
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+}
+
+model PlatformNotification {
+  id        String   @id @default(cuid())
+  message   String
+  type      String
+  target    String   @default("all")
+  showFrom  DateTime
+  showUntil DateTime
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}

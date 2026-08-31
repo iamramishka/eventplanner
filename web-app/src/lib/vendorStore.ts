@@ -76,20 +76,46 @@ export type VendorAvailability = {
   updatedAt: string;
 };
 
-export type VendorMessageThread = {
+export type QuoteRequest = {
   id: string;
   vendorId: string;
-  bookingId: string | null;
-  coupleName: string;
-  subject: string;
-  unread: boolean;
-  lastMessageAt: string;
-  messages: {
-    id: string;
-    sender: 'couple' | 'vendor';
-    body: string;
-    createdAt: string;
-  }[];
+  name: string;
+  email: string;
+  mobile: string;
+  eventType: string;
+  eventDate: string;
+  guestCount: string;
+  budget: string;
+  message: string;
+  createdAt: string;
+};
+
+export type VendorPoints = {
+  vendorId: string;
+  balance: number;
+};
+
+export type PointRequest = {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  pointsRequested: number;
+  note: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  reviewedAt?: string;
+  reviewNote?: string;
+};
+
+export type UnlockedContact = {
+  id: string;
+  vendorId: string;
+  quoteRequestId: string;
+  unlockedAt: string;
+};
+
+export type PointSettings = {
+  pointsPerUnlock: number;
 };
 
 export type VendorPayout = {
@@ -173,9 +199,13 @@ type VendorStoreShape = {
   listings: VendorListing[];
   bookings: VendorBooking[];
   availability: VendorAvailability[];
-  messageThreads: VendorMessageThread[];
   payouts: VendorPayout[];
   settings: VendorSettings[];
+  quoteRequests: QuoteRequest[];
+  vendorPoints: VendorPoints[];
+  pointRequests: PointRequest[];
+  unlockedContacts: UnlockedContact[];
+  pointSettings: PointSettings;
 };
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'vendors.json');
@@ -190,9 +220,13 @@ const vendorStore = globalStore.__wedInviteVendorStore ||= {
   listings: [],
   bookings: [],
   availability: [],
-  messageThreads: [],
   payouts: [],
   settings: [],
+  quoteRequests: [],
+  vendorPoints: [],
+  pointRequests: [],
+  unlockedContacts: [],
+  pointSettings: { pointsPerUnlock: 1 },
 };
 
 // Fix HMR cache issue where older store shape didn't have listings
@@ -201,9 +235,13 @@ if (!vendorStore.listings) {
 }
 if (!vendorStore.bookings) vendorStore.bookings = [];
 if (!vendorStore.availability) vendorStore.availability = [];
-if (!vendorStore.messageThreads) vendorStore.messageThreads = [];
 if (!vendorStore.payouts) vendorStore.payouts = [];
 if (!vendorStore.settings) vendorStore.settings = [];
+if (!vendorStore.quoteRequests) vendorStore.quoteRequests = [];
+if (!vendorStore.vendorPoints) vendorStore.vendorPoints = [];
+if (!vendorStore.pointRequests) vendorStore.pointRequests = [];
+if (!vendorStore.unlockedContacts) vendorStore.unlockedContacts = [];
+if (!vendorStore.pointSettings) vendorStore.pointSettings = { pointsPerUnlock: 1 };
 
 function ensureDataDir() {
   const dir = path.dirname(DATA_FILE);
@@ -600,51 +638,6 @@ function initVendorStore() {
     });
   }
 
-  if (vendorStore.messageThreads.length === 0) {
-    vendorStore.messageThreads.push(
-      {
-        id: 'msg_seed_001',
-        vendorId: 'vnd_seed_001',
-        bookingId: 'bk_seed_001',
-        coupleName: 'Priya & Kasun',
-        subject: 'Availability for August 15',
-        unread: true,
-        lastMessageAt: new Date(Date.now() - 6 * 3600000).toISOString(),
-        messages: [
-          {
-            id: 'msg_seed_001_a',
-            sender: 'couple',
-            body: 'Can you confirm if August 15 is still available for full-day coverage?',
-            createdAt: new Date(Date.now() - 6 * 3600000).toISOString(),
-          },
-          {
-            id: 'msg_seed_001_b',
-            sender: 'vendor',
-            body: 'Yes, that date is currently open. I can hold it while we confirm package details.',
-            createdAt: new Date(Date.now() - 5 * 3600000).toISOString(),
-          },
-        ],
-      },
-      {
-        id: 'msg_seed_002',
-        vendorId: 'vnd_seed_001',
-        bookingId: 'bk_seed_002',
-        coupleName: 'Nadeesha & Tharaka',
-        subject: 'Pre-wedding shoot details',
-        unread: false,
-        lastMessageAt: new Date(Date.now() - 20 * 3600000).toISOString(),
-        messages: [
-          {
-            id: 'msg_seed_002_a',
-            sender: 'couple',
-            body: 'Thank you, we are excited to work with you.',
-            createdAt: new Date(Date.now() - 20 * 3600000).toISOString(),
-          },
-        ],
-      }
-    );
-  }
-
   if (vendorStore.payouts.length === 0) {
     vendorStore.payouts.push({
       id: 'po_seed_001',
@@ -1001,73 +994,6 @@ export function updateAvailability(
   return updated;
 }
 
-export function getMessageThreadsByVendor(vendorId: string): VendorMessageThread[] {
-  return vendorStore.messageThreads
-    .filter(t => t.vendorId === vendorId)
-    .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
-}
-
-export function markMessageThreadRead(vendorId: string, threadId: string): VendorMessageThread | null {
-  const idx = vendorStore.messageThreads.findIndex(t => t.vendorId === vendorId && t.id === threadId);
-  if (idx === -1) return null;
-  const updated: VendorMessageThread = {
-    ...vendorStore.messageThreads[idx],
-    unread: false,
-  };
-  vendorStore.messageThreads[idx] = updated;
-  return updated;
-}
-
-export function appendVendorMessage(vendorId: string, threadId: string, body: string): VendorMessageThread | null {
-  const idx = vendorStore.messageThreads.findIndex(t => t.vendorId === vendorId && t.id === threadId);
-  if (idx === -1) return null;
-  const text = String(body || '').trim();
-  if (!text) throw new Error('message body required');
-  const now = new Date().toISOString();
-  const updated: VendorMessageThread = {
-    ...vendorStore.messageThreads[idx],
-    unread: false,
-    lastMessageAt: now,
-    messages: [
-      ...vendorStore.messageThreads[idx].messages,
-      {
-        id: `msg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
-        sender: 'vendor',
-        body: text,
-        createdAt: now,
-      },
-    ],
-  };
-  vendorStore.messageThreads[idx] = updated;
-  return updated;
-}
-
-export function createMessageThread(
-  vendorId: string,
-  coupleName: string,
-  subject: string,
-  body: string,
-  meta?: { weddingDate?: string; guestCount?: string }
-): VendorMessageThread {
-  const now = new Date().toISOString();
-  const metaLines: string[] = [];
-  if (meta?.weddingDate) metaLines.push(`Wedding Date: ${meta.weddingDate}`);
-  if (meta?.guestCount) metaLines.push(`Guest Count: ${meta.guestCount}`);
-  const fullBody = metaLines.length > 0 ? `${body}\n\n---\n${metaLines.join(' · ')}` : body;
-  const thread: VendorMessageThread = {
-    id: `thread_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
-    vendorId,
-    bookingId: null,
-    coupleName,
-    subject,
-    unread: true,
-    lastMessageAt: now,
-    messages: [{ id: `msg_${Date.now().toString(36)}`, sender: 'couple', body: fullBody, createdAt: now }],
-  };
-  vendorStore.messageThreads.push(thread);
-  return thread;
-}
-
 export function getPayoutsByVendor(vendorId: string): VendorPayout[] {
   return vendorStore.payouts
     .filter(p => p.vendorId === vendorId)
@@ -1107,7 +1033,14 @@ export function updateSettings(
 
 export function getVendorPortalData(vendorId: string) {
   const bookings = getBookingsByVendor(vendorId);
-  const messages = getMessageThreadsByVendor(vendorId);
+  const unlockedContactIds = vendorStore.unlockedContacts
+    .filter(u => u.vendorId === vendorId)
+    .map(u => u.quoteRequestId);
+  const quoteRequests = getQuoteRequestsByVendor(vendorId).map(q => ({
+    ...q,
+    email: unlockedContactIds.includes(q.id) ? q.email : '',
+    mobile: unlockedContactIds.includes(q.id) ? q.mobile : '',
+  }));
   const payouts = getPayoutsByVendor(vendorId);
   const confirmedValue = bookings
     .filter(b => b.status === 'confirmed' || b.status === 'completed')
@@ -1116,18 +1049,157 @@ export function getVendorPortalData(vendorId: string) {
   return {
     bookings,
     availability: getAvailabilityByVendor(vendorId),
-    messages,
+    quoteRequests,
+    unlockedContactIds,
+    points: getVendorPoints(vendorId),
+    pointRequests: getPointRequestsByVendor(vendorId),
     payouts,
     settings: getSettingsByVendor(vendorId),
+    pointsPerUnlock: getPointSettings().pointsPerUnlock,
     analytics: {
       bookingCount: bookings.length,
       pendingBookings: bookings.filter(b => b.status === 'pending').length,
       confirmedBookings: bookings.filter(b => b.status === 'confirmed').length,
       confirmedValue,
-      unreadMessages: messages.filter(m => m.unread).length,
+      newLeads: quoteRequests.length,
       pendingPayoutValue: payouts
         .filter(p => p.status === 'pending')
         .reduce((sum, payout) => sum + payout.gross - payout.fee, 0),
     },
   };
+}
+
+// ─── Quote Requests ─────────────────────────────────────────────
+
+export function createQuoteRequest(
+  vendorId: string,
+  data: { name: string; email: string; mobile: string; eventType: string; eventDate: string; guestCount: string; budget: string; message: string }
+): QuoteRequest {
+  const q: QuoteRequest = {
+    id: `qr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    vendorId,
+    ...data,
+    createdAt: new Date().toISOString(),
+  };
+  vendorStore.quoteRequests.push(q);
+  return q;
+}
+
+export function getQuoteRequestsByVendor(vendorId: string): QuoteRequest[] {
+  return vendorStore.quoteRequests
+    .filter(q => q.vendorId === vendorId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+// ─── Points ─────────────────────────────────────────────────────
+
+export function getVendorPoints(vendorId: string): VendorPoints {
+  let entry = vendorStore.vendorPoints.find(p => p.vendorId === vendorId);
+  if (!entry) {
+    entry = { vendorId, balance: 0 };
+    vendorStore.vendorPoints.push(entry);
+  }
+  return entry;
+}
+
+export function isContactUnlocked(vendorId: string, quoteRequestId: string): boolean {
+  return vendorStore.unlockedContacts.some(
+    u => u.vendorId === vendorId && u.quoteRequestId === quoteRequestId
+  );
+}
+
+export function unlockContact(vendorId: string, quoteRequestId: string): { ok: boolean; error?: string } {
+  const qr = vendorStore.quoteRequests.find(q => q.id === quoteRequestId && q.vendorId === vendorId);
+  if (!qr) return { ok: false, error: 'Quote request not found.' };
+  if (isContactUnlocked(vendorId, quoteRequestId)) return { ok: true };
+  const settings = getPointSettings();
+  const cost = settings.pointsPerUnlock;
+  const existing = vendorStore.vendorPoints.find(p => p.vendorId === vendorId);
+  if (!existing || existing.balance < cost) return { ok: false, error: 'Insufficient points.' };
+  const points = getVendorPoints(vendorId);
+  const pidx = vendorStore.vendorPoints.findIndex(p => p.vendorId === vendorId);
+  vendorStore.vendorPoints[pidx] = { ...points, balance: points.balance - cost };
+  vendorStore.unlockedContacts.push({
+    id: `uc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    vendorId,
+    quoteRequestId,
+    unlockedAt: new Date().toISOString(),
+  });
+  return { ok: true };
+}
+
+// ─── Point Requests ─────────────────────────────────────────────
+
+export function createPointRequest(
+  vendorId: string,
+  vendorName: string,
+  pointsRequested: number,
+  note: string
+): PointRequest {
+  const r: PointRequest = {
+    id: `pr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    vendorId,
+    vendorName,
+    pointsRequested,
+    note,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  };
+  vendorStore.pointRequests.push(r);
+  return r;
+}
+
+export function getPointRequestsByVendor(vendorId: string): PointRequest[] {
+  return vendorStore.pointRequests
+    .filter(r => r.vendorId === vendorId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export function getAllPointRequests(): PointRequest[] {
+  return [...vendorStore.pointRequests].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+export function reviewPointRequest(
+  requestId: string,
+  action: 'approve' | 'reject',
+  reviewNote?: string
+): PointRequest | null {
+  const idx = vendorStore.pointRequests.findIndex(r => r.id === requestId);
+  if (idx === -1) return null;
+  const r = vendorStore.pointRequests[idx];
+  if (r.status !== 'pending') return null;
+  const updated: PointRequest = {
+    ...r,
+    status: action === 'approve' ? 'approved' : 'rejected',
+    reviewedAt: new Date().toISOString(),
+    reviewNote,
+  };
+  vendorStore.pointRequests[idx] = updated;
+  if (action === 'approve') {
+    const pidx = vendorStore.vendorPoints.findIndex(p => p.vendorId === r.vendorId);
+    if (pidx === -1) {
+      vendorStore.vendorPoints.push({ vendorId: r.vendorId, balance: r.pointsRequested });
+    } else {
+      vendorStore.vendorPoints[pidx] = {
+        ...vendorStore.vendorPoints[pidx],
+        balance: vendorStore.vendorPoints[pidx].balance + r.pointsRequested,
+      };
+    }
+  }
+  return updated;
+}
+
+// ─── Point Settings ──────────────────────────────────────────────
+
+export function getPointSettings(): PointSettings {
+  return vendorStore.pointSettings;
+}
+
+export function updatePointSettings(patch: Partial<PointSettings>): PointSettings {
+  if (typeof patch.pointsPerUnlock === 'number' && patch.pointsPerUnlock > 0) {
+    vendorStore.pointSettings = { ...vendorStore.pointSettings, pointsPerUnlock: patch.pointsPerUnlock };
+  }
+  return vendorStore.pointSettings;
 }
