@@ -8,7 +8,7 @@ import {
   Settings, ShieldCheck, ShieldOff, PanelLeftClose, User,
   Menu, ChevronRight, LogOut, TrendingUp, TrendingDown, Minus, Clock, AlertTriangle,
   Search, Plus, Save, Check, X, Star, Eye, RefreshCw, Scroll,
-  UserPlus, Download, CheckCircle
+  UserPlus, Download, CheckCircle, Coins
 } from 'lucide-react';
 import styles from './admin.module.css';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -36,10 +36,21 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
   };
   
   const pendingVendors = initialVendors.filter((v: any) => v.status === 'pending' || v.status === 'pending_review').length;
+  const [allPointRequests, setAllPointRequests] = useState<any[]>([]);
+  const pendingPointRequests = allPointRequests.filter((r: any) => r.status === 'pending').length;
+
+  useEffect(() => {
+    fetch('/api/admin/points/requests')
+      .then(r => r.json())
+      .then(d => { if (d.requests) setAllPointRequests(d.requests); })
+      .catch(() => {});
+  }, []);
+
   const labels: Record<string, string> = {
     dashboard: 'Dashboard', couples: 'Couples', vendors: 'Vendors',
     templates: 'Templates', analytics: 'Analytics', plans: 'Plans', cleanup: 'Trial Cleanup',
-    revenue: 'Revenue', cms: 'Content CMS', reports: 'Reports', settings: 'Settings', logs: 'Logs'
+    revenue: 'Revenue', cms: 'Content CMS', reports: 'Reports', settings: 'Settings', logs: 'Logs',
+    points: 'Points'
   };
   
   return (
@@ -65,6 +76,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
           <NavItem id="dashboard" icon={<LayoutDashboard size={18} />} label="Dashboard" active={activeModule} onClick={handleNavClick} />
           <NavItem id="couples" icon={<Users size={18} />} label="Couples" active={activeModule} onClick={handleNavClick} />
           <NavItem id="vendors" icon={<Briefcase size={18} />} label="Vendors" active={activeModule} onClick={handleNavClick} badge={pendingVendors} />
+          <NavItem id="points" icon={<Coins size={18} />} label="Points" active={activeModule} onClick={handleNavClick} badge={pendingPointRequests} />
           <NavItem id="templates" icon={<LayoutTemplate size={18} />} label="Templates" active={activeModule} onClick={handleNavClick} />
           <NavItem id="analytics" icon={<TrendingUp size={18} />} label="Analytics" active={activeModule} onClick={handleNavClick} />
 
@@ -124,6 +136,7 @@ export default function SuperAdminClient({ initialWeddings, initialCouples, init
           {activeModule === 'settings' && <SettingsModule initialSettings={platformSettings} onSaved={setPlatformSettings} />}
           {activeModule === 'logs' && <LogsModule />}
           {activeModule === 'analytics' && <AnalyticsModule />}
+          {activeModule === 'points' && <PointsModule requests={allPointRequests} onRequestsChange={setAllPointRequests} />}
         </main>
       </div>
     </div>
@@ -1207,6 +1220,157 @@ function CleanupModule() {
         )}
       </div>
     </section>
+  );
+}
+
+function PointsModule({ requests, onRequestsChange }: { requests: any[]; onRequestsChange: (r: any[]) => void }) {
+  const [settings, setSettings] = useState<{ pointsPerUnlock: number } | null>(null);
+  const [newCost, setNewCost] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [reviewing, setReviewing] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetch('/api/admin/points/settings')
+      .then(r => r.json())
+      .then(d => { if (d.settings) { setSettings(d.settings); setNewCost(String(d.settings.pointsPerUnlock)); } })
+      .catch(() => {});
+  }, []);
+
+  async function handleReview(requestId: string, action: 'approve' | 'reject') {
+    setReviewing(requestId);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/points/requests', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, action }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed.');
+      const updated = await fetch('/api/admin/points/requests').then(r => r.json());
+      if (updated.requests) onRequestsChange(updated.requests);
+      setNotice(`Request ${action}d.`);
+    } catch (err: any) {
+      setError(err.message || 'Failed.');
+    } finally {
+      setReviewing(null);
+    }
+  }
+
+  async function handleSaveSettings(e: React.FormEvent) {
+    e.preventDefault();
+    const n = Number(newCost);
+    if (!n || n < 1) { setError('Cost must be at least 1.'); return; }
+    setSavingSettings(true);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/points/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pointsPerUnlock: n }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed.');
+      setSettings(json.settings);
+      setNotice('Settings saved.');
+    } catch (err: any) {
+      setError(err.message || 'Failed.');
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  const pending = requests.filter(r => r.status === 'pending');
+  const reviewed = requests.filter(r => r.status !== 'pending');
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  return (
+    <div>
+      <style>{`
+        .ptSection { margin-bottom: 2rem; }
+        .ptSectionTitle { font-size: 1rem; font-weight: 700; color: #111827; margin: 0 0 .75rem; padding-bottom: .5rem; border-bottom: 1px solid #E5E7EB; }
+        .ptCard { background: white; border: 1px solid #E5E7EB; border-radius: 8px; padding: .875rem 1rem; margin-bottom: .5rem; display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+        .ptVendorName { font-weight: 600; font-size: .9rem; color: #111827; flex: 1; min-width: 140px; }
+        .ptMeta { font-size: .8rem; color: #6B7280; }
+        .ptActions { display: flex; gap: .5rem; }
+        .ptApprove { padding: .3rem .8rem; background: #065F46; color: white; border: none; border-radius: 6px; font-size: .8rem; font-weight: 600; cursor: pointer; }
+        .ptApprove:disabled { opacity: .5; }
+        .ptReject { padding: .3rem .8rem; background: #FEE2E2; color: #991B1B; border: none; border-radius: 6px; font-size: .8rem; font-weight: 600; cursor: pointer; }
+        .ptReject:disabled { opacity: .5; }
+        .ptBadge { display: inline-block; padding: .15rem .45rem; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+        .ptBadgePending { background: #FEF3C7; color: #92400E; }
+        .ptBadgeApproved { background: #D1FAE5; color: #065F46; }
+        .ptBadgeRejected { background: #FEE2E2; color: #991B1B; }
+        .ptSettingsForm { display: flex; gap: .75rem; align-items: flex-end; flex-wrap: wrap; }
+        .ptSettingsInput { padding: .45rem .7rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: .875rem; width: 80px; font-family: inherit; outline: none; }
+        .ptSettingsSave { padding: .45rem 1rem; background: #111827; color: white; border: none; border-radius: 6px; font-size: .875rem; font-weight: 600; cursor: pointer; }
+        .ptSettingsSave:disabled { opacity: .5; }
+        .ptNotice { color: #16A34A; font-size: .85rem; margin-bottom: .5rem; }
+        .ptError { color: #DC2626; font-size: .85rem; margin-bottom: .5rem; }
+        .ptEmpty { color: #9CA3AF; font-size: .875rem; padding: .75rem 0; }
+      `}</style>
+
+      <h2 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 1.5rem', color: '#111827' }}>Points Management</h2>
+
+      {notice && <div className="ptNotice">{notice}</div>}
+      {error && <div className="ptError">{error}</div>}
+
+      <div className="ptSection">
+        <div className="ptSectionTitle">Unlock Cost Setting</div>
+        {settings ? (
+          <form className="ptSettingsForm" onSubmit={handleSaveSettings}>
+            <div>
+              <div style={{ fontSize: '.8rem', color: '#6B7280', marginBottom: 3 }}>Points per unlock</div>
+              <input className="ptSettingsInput" type="number" min={1} value={newCost} onChange={e => setNewCost(e.target.value)} />
+            </div>
+            <button type="submit" className="ptSettingsSave" disabled={savingSettings}>
+              {savingSettings ? 'Saving…' : 'Save'}
+            </button>
+          </form>
+        ) : (
+          <div className="ptEmpty">Loading…</div>
+        )}
+      </div>
+
+      <div className="ptSection">
+        <div className="ptSectionTitle">Pending Requests ({pending.length})</div>
+        {pending.length === 0 ? (
+          <div className="ptEmpty">No pending requests.</div>
+        ) : (
+          pending.map(r => (
+            <div key={r.id} className="ptCard">
+              <div className="ptVendorName">{r.vendorName}</div>
+              <div className="ptMeta">{r.pointsRequested} points · {fmt(r.createdAt)}{r.note ? ` · "${r.note}"` : ''}</div>
+              <div className="ptActions">
+                <button className="ptApprove" disabled={reviewing === r.id} onClick={() => handleReview(r.id, 'approve')}>
+                  {reviewing === r.id ? '…' : 'Approve'}
+                </button>
+                <button className="ptReject" disabled={reviewing === r.id} onClick={() => handleReview(r.id, 'reject')}>
+                  {reviewing === r.id ? '…' : 'Reject'}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="ptSection">
+        <div className="ptSectionTitle">Reviewed</div>
+        {reviewed.length === 0 ? (
+          <div className="ptEmpty">No reviewed requests yet.</div>
+        ) : (
+          reviewed.slice(0, 20).map(r => (
+            <div key={r.id} className="ptCard">
+              <div className="ptVendorName">{r.vendorName}</div>
+              <div className="ptMeta">{r.pointsRequested} pts · {fmt(r.createdAt)}</div>
+              <span className={`ptBadge ptBadge${r.status.charAt(0).toUpperCase() + r.status.slice(1)}`}>{r.status}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   );
 }
 
